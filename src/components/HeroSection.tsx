@@ -4,15 +4,15 @@ import heroImage from "@/assets/hero-video-ai.jpg";
 
 export const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gradient-hero overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute z-0">
         <img 
           src={heroImage} 
           alt="AI Video Editing Interface" 
           className="w-full h-full object-cover opacity-20"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-video-primary/80 via-video-secondary/60 to-story-warm/40" />
+        <div className="absolute " />
       </div>
       
       {/* Floating Elements */}
@@ -26,14 +26,14 @@ export const HeroSection = () => {
       {/* Main Content */}
       <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
         <div className="animate-fade-in">
-          <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-6xl md:text-7xl font-bold text-purple mb-6 leading-tight">
             Turn Your 
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-story-warm to-accent"> Memories</span>
             <br />
             Into Stories
           </h1>
           
-          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-purple-600 mb-8 max-w-2xl mx-auto">
             Upload your footage, let AI transcribe and organize it, then create beautiful stories 
             with simple prompts. Your personal memories, reimagined.
           </p>
@@ -43,30 +43,29 @@ export const HeroSection = () => {
               <Upload className="w-5 h-5 mr-2" />
               Start Creating Stories
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 bg-white/10 border-white/30 text-white hover:bg-white/20">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-4 bg-white/10 border-purple-600 text-white hover:bg-white/20">
               <Search className="w-5 h-5 mr-2" />
               Explore Features
             </Button>
           </div>
           
           {/* Feature Preview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 mb-16">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
               <Upload className="w-12 h-12 text-story-warm mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Smart Upload</h3>
-              <p className="text-white/80">Upload videos from any device with intelligent processing</p>
+              <h3 className="text-xl font-semibold text-purple-400 mb-2">Smart Upload</h3>
+              <p className="text-gray-600">Upload videos from any device with intelligent processing</p>
             </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
               <Search className="w-12 h-12 text-story-warm mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">AI Search</h3>
-              <p className="text-white/80">Find moments instantly with transcription-powered search</p>
+              <h3 className="text-xl font-semibold text-purple-400 mb-2">AI Search</h3>
+              <p className="text-gray-600">Find moments instantly with transcription-powered search</p>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
               <Sparkles className="w-12 h-12 text-story-warm mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Story Magic</h3>
-              <p className="text-white/80">Generate beautiful stories with simple AI prompts</p>
+              <h3 className="text-xl font-semibold text-purple-400 mb-2">Story Magic</h3>
+              <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
             </div>
           </div>
         </div>
