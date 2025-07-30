@@ -10,7 +10,7 @@ export const HeroSection = () => {
         <img 
           src={heroImage} 
           alt="AI Video Editing Interface" 
-          className="w-full h-full object-cover opacity-20"
+          className="w-full h-[50%] object-cover opacity-20"
         />
         <div className="absolute " />
       </div>
@@ -32,7 +32,6 @@ export const HeroSection = () => {
             <br />
             Into Stories
           </h1>
-          
           <p className="text-xl md:text-2xl text-purple-600 mb-8 max-w-2xl mx-auto">
             Upload your footage, let AI transcribe and organize it, then create beautiful stories 
             with simple prompts. Your personal memories, reimagined.
@@ -50,7 +49,7 @@ export const HeroSection = () => {
           </div>
           
           {/* Feature Preview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 ">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
               <Upload className="w-12 h-12 text-story-warm mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-purple-400 mb-2">Smart Upload</h3>

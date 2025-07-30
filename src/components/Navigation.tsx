@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Video, Search, Sparkles, Upload, Menu, X } from "lucide-react";
+import { Video, Search, Sparkles, Upload, Menu, X, User, LogOut } from "lucide-react";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { app } from "@/lib/firebase";
+import { Dialog } from "./ui/dialog";
+import SignInDialog from "./SignInDialog";
+import { ProfileDropdown } from "./ProfileDropdown";
 
 interface NavigationProps {
   activeSection: string;
@@ -9,6 +14,9 @@ interface NavigationProps {
 
 export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [user, setUser] = useState(null);
 
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Video },
@@ -19,6 +27,37 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+  const handleGoogleLogin = async () => {
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      setShowAuthDialog(false);
+    } catch (error) {
+      console.error("Login failed", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth(app);
+    await signOut(auth);
+  };
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleUploadClick = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+    } else {
+      onSectionChange("upload");
+    }
   };
 
   return (
@@ -40,7 +79,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
               {navigationItems.map((item) => {
                 const IconComponent = item.icon;
                 const isActive = activeSection === item.id;
-                
+
                 return (
                   <Button
                     key={item.id}
@@ -54,6 +93,15 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                   </Button>
                 );
               })}
+              {user ? (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => setShowProfileDialog(true)}>
+                    <User className="w-4 h-4 mr-1" /> Profile
+                  </Button>
+                </>
+              ) : <Button variant="ghost" size="sm" onClick={() => {
+                setShowAuthDialog(true);
+              }}> Sign In</Button>}
             </div>
 
             {/* Mobile Menu Button */}
@@ -75,7 +123,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
               {navigationItems.map((item) => {
                 const IconComponent = item.icon;
                 const isActive = activeSection === item.id;
-                
+
                 return (
                   <Button
                     key={item.id}
@@ -92,13 +140,34 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                   </Button>
                 );
               })}
+              {user ? (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => onSectionChange("profile")}>
+                    <User className="w-4 h-4 mr-1" /> Profile
+                  </Button>
+                </>
+              ) : <Button variant="ghost" size="sm" onClick={() => {
+                setShowAuthDialog(true);
+                setIsMobileMenuOpen(false);
+              }}> Sign In</Button>}
             </div>
           </div>
         )}
       </nav>
 
-      {/* Spacer for fixed navigation */}
-      <div className="h-16"></div>
+      {showProfileDialog && user && (
+        <ProfileDropdown
+          user={user}
+          onLogout={handleLogout}
+        />
+      )}
+      {showAuthDialog && (
+        <SignInDialog
+          open={true}
+          onClose={() => setShowAuthDialog(false)}
+        />
+      )}
+
     </>
   );
 };
