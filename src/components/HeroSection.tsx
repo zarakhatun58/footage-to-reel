@@ -4,15 +4,14 @@ import heroImage from "@/assets/hero-video-ai.jpg";
 
 export const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Background Image with Overlay */}
       <div className="absolute z-0">
         <img 
           src={heroImage} 
           alt="AI Video Editing Interface" 
-          className="w-full h-[50%] object-cover opacity-20"
+          className="w-full h-[50%] object-cover opacity-10"
         />
-        <div className="absolute " />
       </div>
       
       {/* Floating Elements */}

@@ -94,11 +94,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                 );
               })}
               {user ? (
-                <>
-                  <Button variant="ghost" size="sm" onClick={() => setShowProfileDialog(true)}>
-                    <User className="w-4 h-4 mr-1" /> Profile
-                  </Button>
-                </>
+                <ProfileDropdown user={user} onLogout={handleLogout} />
               ) : <Button variant="ghost" size="sm" onClick={() => {
                 setShowAuthDialog(true);
               }}> Sign In</Button>}
@@ -155,12 +151,6 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
         )}
       </nav>
 
-      {showProfileDialog && user && (
-        <ProfileDropdown
-          user={user}
-          onLogout={handleLogout}
-        />
-      )}
       {showAuthDialog && (
         <SignInDialog
           open={true}
