@@ -31,7 +31,7 @@ type SignInDialogProps = {
     onClose: () => void;
 };
 
-const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
+const OldSignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [signUpName, setSignUpName] = useState("");
@@ -234,4 +234,4 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     );
 };
 
-export default SignInDialog;
+export default OldSignInDialog;

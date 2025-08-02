@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Video, Search, Sparkles, Upload, Menu, X, User, LogOut } from "lucide-react";
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { app } from "@/lib/firebase";
-import { Dialog } from "./ui/dialog";
-import SignInDialog from "./SignInDialog";
+import SignInDialog from "./OldSignInDialog";
 import { ProfileDropdown } from "./ProfileDropdown";
 
 interface NavigationProps {
