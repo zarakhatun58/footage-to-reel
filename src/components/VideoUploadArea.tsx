@@ -42,7 +42,6 @@ type UploadedMedia = {
 };
 
 
-
 export const VideoUploadArea = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -97,49 +96,84 @@ export const VideoUploadArea = () => {
     });
   };
 
-  const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMedia['type']) => {
-    const formData = new FormData();
-    formData.append(type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover', file);
+const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMedia['type']) => {
+  const formData = new FormData();
+  formData.append(type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover', file);
 
-    setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
+  setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
+  setUploadedMedia(prev =>
+    prev.map(media => (media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media))
+  );
+
+  try {
+    // 1. Upload the file
+    const uploadRes = await fetch(`${BASE_URL}/api/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await uploadRes.json();
+    const uploadedItem = result.uploaded?.[0];
+    if (!uploadedItem) throw new Error('Upload returned no file');
+
+    // 2. Call generate-all
+    const generateRes = await fetch(`${BASE_URL}/api/story/generate-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mediaId: uploadedItem._id,
+        transcript: uploadedItem.transcript || '',
+        title: 'Auto-generated title'
+      })
+    });
+
+    if (!generateRes.ok) {
+      console.error('❌ Emotion API error:', await generateRes.text());
+      throw new Error('Story generation failed');
+    }
+
+    // 3. Fetch enriched media metadata
+    const enriched = await fetch(`${BASE_URL}/api/media/${uploadedItem._id}`);
+    const enrichedData = await enriched.json();
+    const enrichedMedia = enrichedData.media;
+
+    // 4. Update state with enriched media
+    const newMedia: UploadedMedia = {
+      id: enrichedMedia._id || mediaId,
+      name: enrichedMedia.filename,
+      size: file.size,
+      type,
+      transcriptionStatus: 'completed',
+      thumbnail: enrichedMedia.thumbnail || enrichedMedia.filename,
+      transcript: enrichedMedia.transcript || '',
+      tags: enrichedMedia.tags || [],
+      emotions: enrichedMedia.emotions?.join(', ') || '',
+      story: enrichedMedia.story || '',
+      storyUrl: `${BASE_URL}/uploads/${enrichedMedia.filename}`
+    };
+
     setUploadedMedia(prev =>
-      prev.map(media => (media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media))
+      prev.map(media => (media.id === mediaId ? newMedia : media))
     );
 
-    try {
-      const response = await fetch(`${BASE_URL}/api/upload`, {
-        method: 'POST',
-        body: formData
-      });
+    toast({
+      title: 'Upload complete',
+      description: `${file.name} uploaded and analyzed.`
+    });
 
-      const result = await response.json();
-      const uploadedItem = result.uploaded?.[0];
-      if (!uploadedItem) return;
-      const newMedia = {
-        id: uploadedItem._id || mediaId,
-        name: uploadedItem.filename,
-        size: file.size,
-        type,
-        transcriptionStatus: 'completed',
-        thumbnail: uploadedItem.filename,
-        transcript: uploadedItem.transcript || '',
-        tags: uploadedItem.tags || [],
-        emotions: uploadedItem.emotions || '',
-        story: uploadedItem.story || '',
-        storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`
-      };
-      setUploadedMedia((prev: any) =>
-        prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-      );
+  } catch (error) {
+    console.error('Upload or story generation failed:', error);
+    setUploadedMedia(prev =>
+      prev.map(media => (media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media))
+    );
+    toast({
+      title: 'Upload failed',
+      description: `${file.name} could not be uploaded or processed.`,
+      variant: 'destructive'
+    });
+  }
+};
 
-      toast({ title: 'Upload complete', description: `${file.name} is uploaded.` });
-    } catch (error) {
-      setUploadedMedia(prev =>
-        prev.map(media => (media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media))
-      );
-      toast({ title: 'Upload failed', description: `${file.name} could not be uploaded.`, variant: 'destructive' });
-    }
-  };
 
   const generateTagsAndStory = async (media: UploadedMedia) => {
     const tagsRes = await fetch(`${BASE_URL}/api/tags`, {
@@ -207,15 +241,15 @@ export const VideoUploadArea = () => {
       {uploadedMedia.map(media => (
         <div key={media.id} className="flex flex-col gap-4 p-4 bg-gradient-card rounded-lg border">
           <div className="flex items-start gap-4">
-            {media.thumbnail && (
-              <img src={`${BASE_URL}/uploads/${media.thumbnail}`} alt="Thumbnail" className="w-150 h-200 rounded-md object-cover" />
+            {media.thumbnail && media.type === 'image' && (
+              <img src={`${BASE_URL}/uploads/${media.thumbnail}`} alt="Thumbnail" className="w-40 h-40 rounded-md object-cover" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm text-muted-foreground whitespace-pre-line">{media.transcript}</p>
               <p className="text-sm text-muted-foreground">{media.story}</p>
               {media.transcriptionStatus === 'completed' && (
                 <div className="mt-2 flex items-start gap-2">
-                  <Dialog >
+                  <Dialog>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline" onClick={() => { setEditTranscriptId(media.id); setTranscriptDraft(media.transcript || ''); }}>
                         <Edit2 className="w-4 h-4 mr-1" /> Edit Transcript
@@ -246,7 +280,6 @@ export const VideoUploadArea = () => {
                   <strong>Emotion:</strong> {media.emotions}
                 </p>
               )}
-             
             </div>
           </div>
           {media.type === 'video' && media.storyUrl && (
@@ -257,5 +290,6 @@ export const VideoUploadArea = () => {
     </div>
   );
 };
+
 
 

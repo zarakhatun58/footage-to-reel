@@ -10,7 +10,7 @@ export const HeroSection = () => {
   const [videos, setVideos] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/story/videos')
+    axios.get('http://localhost:5000/api/videos')
       .then(res => setVideos(res.data.videos))
       .catch(err => console.error(err));
   }, []);
@@ -80,10 +80,10 @@ export const HeroSection = () => {
           </div>
           {/* <EmotionDetector/> */}
           {videos.map(video => (
-            <div key={video.id} className="border p-4 rounded-md shadow">
+            <div key={video.filename} className="border p-4 rounded-md shadow">
               <h3 className="text-lg font-semibold">{video.filename}</h3>
-              <p><strong>Transcript:</strong> {video.transcript.slice(0, 100)}...</p>
-              <p><strong>Story:</strong> {video.story.slice(0, 100)}...</p>
+              <p><strong>Transcript:</strong> {video.transcript?.slice(0, 100)}...</p>
+              <p><strong>Story:</strong> {video.story?.slice(0, 100)}...</p>
               <p><strong>Tags:</strong> {video.tags || 'N/A'}</p>
             </div>
           ))}
