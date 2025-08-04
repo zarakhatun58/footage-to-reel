@@ -437,7 +437,7 @@ export const VideoUploadArea = () => {
                 className="w-full rounded-md"
               />
 
-              {media.renderId && <RenderProgress renderId={media.renderId} />}
+            {media.renderId && <RenderProgress renderId={media.renderId} />}
 
               {renderedVideoUrl && (
                 <video controls className="rounded w-full max-w-xl">
