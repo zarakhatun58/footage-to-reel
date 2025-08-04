@@ -124,7 +124,7 @@ export const VideoUploadArea = () => {
 
     try {
       // 1. Upload the file (just upload)
-      const uploadRes = await fetch(`${BASE_URL}/api/upload`, {
+      const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
         method: 'POST',
         body: formData
       });
@@ -326,9 +326,6 @@ export const VideoUploadArea = () => {
     }, 5000); // check every 5 seconds
   };
 
-
-
-
   const handleLike = async (id: string) => {
     await fetch(`${BASE_URL}/api/media/${id}/like`, { method: 'POST' });
   };
@@ -435,7 +432,7 @@ export const VideoUploadArea = () => {
               <video
                 src={media.storyUrl}
                 controls
-                className="w-full rounded-md"
+                className="w-60 rounded-md"
               />
 
               {media.renderId && <RenderProgress renderId={media.renderId} />}
