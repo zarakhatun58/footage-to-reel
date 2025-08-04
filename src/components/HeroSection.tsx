@@ -79,14 +79,14 @@ export const HeroSection = () => {
             </div>
           </div>
           {/* <EmotionDetector/> */}
-          {videos.map(video => (
+          {/* {videos.map(video => (
             <div key={video.filename} className="border p-4 rounded-md shadow">
               <h3 className="text-lg font-semibold">{video.filename}</h3>
               <p><strong>Transcript:</strong> {video.transcript?.slice(0, 100)}...</p>
               <p><strong>Story:</strong> {video.story?.slice(0, 100)}...</p>
               <p><strong>Tags:</strong> {video.tags || 'N/A'}</p>
             </div>
-          ))}
+          ))} */}
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   FileVideo,
   Mic,
@@ -39,6 +39,8 @@ type UploadedMedia = {
   tags?: string[];
   storyUrl?: string;
   rankScore?: number;
+  images?: string[];
+  voiceUrl?: string;
 };
 
 
@@ -49,6 +51,10 @@ export const VideoUploadArea = () => {
   const [editTranscriptId, setEditTranscriptId] = useState<string | null>(null);
   const [transcriptDraft, setTranscriptDraft] = useState<string>('');
   const { toast } = useToast();
+  const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
+  const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
+  const [loadingVideo, setLoadingVideo] = useState(false);
+  const [renderId, setRenderId] = useState<string | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -96,112 +102,176 @@ export const VideoUploadArea = () => {
     });
   };
 
-const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMedia['type']) => {
-  const formData = new FormData();
-  formData.append(type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover', file);
+  const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMedia['type']) => {
+    const formData = new FormData();
+    formData.append(
+      type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+      file
+    );
 
-  setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
-  setUploadedMedia(prev =>
-    prev.map(media => (media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media))
-  );
+    setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
+    setUploadedMedia(prev =>
+      prev.map(media =>
+        media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media
+      )
+    );
 
-  try {
-    // 1. Upload the file
-    const uploadRes = await fetch(`${BASE_URL}/api/upload`, {
-      method: 'POST',
-      body: formData
-    });
+    try {
+      // 1. Upload the file (just upload)
+      const uploadRes = await fetch(`${BASE_URL}/api/upload`, {
+        method: 'POST',
+        body: formData
+      });
 
-    const result = await uploadRes.json();
-    const uploadedItem = result.uploaded?.[0];
-    if (!uploadedItem) throw new Error('Upload returned no file');
+      const result = await uploadRes.json();
+      const uploadedItem = result.uploaded?.[0];
+      if (!uploadedItem) throw new Error('Upload returned no file');
 
-    // 2. Call generate-all
-    const generateRes = await fetch(`${BASE_URL}/api/story/generate-all`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mediaId: uploadedItem._id,
-        transcript: uploadedItem.transcript || '',
-        title: 'Auto-generated title'
-      })
-    });
+      // 2. Use uploadedItem directly (already contains transcript, tags, emotions, etc.)
+      const enrichedMedia = uploadedItem;
 
-    if (!generateRes.ok) {
-      console.error('❌ Emotion API error:', await generateRes.text());
-      throw new Error('Story generation failed');
+      const newMedia: UploadedMedia = {
+        id: enrichedMedia._id || mediaId,
+        name: enrichedMedia.filename,
+        size: file.size,
+        type,
+        transcriptionStatus: 'completed',
+        thumbnail: enrichedMedia.filename,
+        transcript: enrichedMedia.transcript || '',
+        tags: enrichedMedia.tags || [],
+        emotions: enrichedMedia.emotions?.join(', ') || '',
+        story: enrichedMedia.story || '',
+        storyUrl: `${BASE_URL}/uploads/${enrichedMedia.filename}`
+      };
+
+      setUploadedMedia(prev =>
+        prev.map(media => (media.id === mediaId ? newMedia : media))
+      );
+
+      toast({
+        title: 'Upload complete',
+        description: `${file.name} uploaded and analyzed.`
+      });
+
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadedMedia(prev =>
+        prev.map(media =>
+          media.id === mediaId
+            ? { ...media, transcriptionStatus: 'error' }
+            : media
+        )
+      );
+      toast({
+        title: 'Upload failed',
+        description: `${file.name} could not be uploaded.`,
+        variant: 'destructive'
+      });
     }
-
-    // 3. Fetch enriched media metadata
-    const enriched = await fetch(`${BASE_URL}/api/media/${uploadedItem._id}`);
-    const enrichedData = await enriched.json();
-    const enrichedMedia = enrichedData.media;
-
-    // 4. Update state with enriched media
-    const newMedia: UploadedMedia = {
-      id: enrichedMedia._id || mediaId,
-      name: enrichedMedia.filename,
-      size: file.size,
-      type,
-      transcriptionStatus: 'completed',
-      thumbnail: enrichedMedia.thumbnail || enrichedMedia.filename,
-      transcript: enrichedMedia.transcript || '',
-      tags: enrichedMedia.tags || [],
-      emotions: enrichedMedia.emotions?.join(', ') || '',
-      story: enrichedMedia.story || '',
-      storyUrl: `${BASE_URL}/uploads/${enrichedMedia.filename}`
-    };
-
-    setUploadedMedia(prev =>
-      prev.map(media => (media.id === mediaId ? newMedia : media))
-    );
-
-    toast({
-      title: 'Upload complete',
-      description: `${file.name} uploaded and analyzed.`
-    });
-
-  } catch (error) {
-    console.error('Upload or story generation failed:', error);
-    setUploadedMedia(prev =>
-      prev.map(media => (media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media))
-    );
-    toast({
-      title: 'Upload failed',
-      description: `${file.name} could not be uploaded or processed.`,
-      variant: 'destructive'
-    });
-  }
-};
-
-
-  const generateTagsAndStory = async (media: UploadedMedia) => {
-    const tagsRes = await fetch(`${BASE_URL}/api/tags`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript: media.transcript })
-    });
-    const tagsData = await tagsRes.json();
-
-    const storyRes = await fetch(`${BASE_URL}/api/story`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript: media.transcript, tags: tagsData.tags })
-    });
-    const story = await storyRes.json();
-
-    await fetch(`${BASE_URL}/api/save`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...story, mediaId: media.id })
-    });
-
-    setUploadedMedia(prev =>
-      prev.map(m => (m.id === media.id ? { ...m, tags: tagsData.tags, story: story.story, emotions: story.emotion } : m))
-    );
-
-    toast({ title: 'Story Generated', description: 'Your story is saved and ready to share.' });
   };
+
+  useEffect(() => {
+    const fetchUploadedVideos = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/videos`);
+        const data = await res.json();
+
+        if (data?.videos) {
+          const loadedMedia: UploadedMedia[] = data.videos.map((item: any) => ({
+            id: item._id,
+            name: item.filename,
+            size: item.size || 0,
+            type: item.mediaType || 'unknown',
+            transcriptionStatus: 'completed',
+            thumbnail: item.filename,
+            transcript: item.transcript || '',
+            tags: item.tags || [],
+            emotions: item.emotions?.join(', ') || '',
+            story: item.story || '',
+            storyUrl: `${BASE_URL}/uploads/${item.filename}`
+          }));
+
+          setUploadedMedia(loadedMedia);
+        }
+      } catch (err) {
+        console.error('Failed to fetch videos:', err);
+      }
+    };
+    fetchUploadedVideos();
+  }, []);
+
+  const generateStory = async (media: UploadedMedia) => {
+    try {
+      const prompt = 'Create a motivational story about learning to code.'; // or get this from user input
+
+      // Call the story generation API
+      const storyRes = await fetch(`${BASE_URL}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: media.transcript, prompt })
+      });
+
+      const result = await storyRes.json();
+
+      if (!storyRes.ok || !result.story) {
+        throw new Error(result.error || 'No story generated');
+      }
+
+      // Update UI with new story and prompt
+      setUploadedMedia(prev =>
+        prev.map(m =>
+          m.id === media.id
+            ? { ...m, story: result.story, prompt: result.prompt }
+            : m
+        )
+      );
+
+      toast({
+        title: 'Story Generated',
+        description: 'Your story is saved and ready to share.'
+      });
+    } catch (error) {
+      console.error('Story generation failed:', error);
+      toast({
+        title: 'Failed to generate story',
+        description: 'There was a problem creating the story.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+
+  const generateVideoClip = async (storyText: string, images: string[]) => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storyText, images })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setRenderId(data.renderId); // Only if you've declared it
+        toast({
+          title: '🎬 Video rendering started',
+          description: `Render ID: ${data.renderId}`
+        });
+      } else {
+        throw new Error('Video render failed');
+      }
+    } catch (error) {
+      console.error('Video generation error:', error);
+      toast({
+        title: 'Error generating video',
+        description: 'Something went wrong during the video generation process.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+
+
 
   const handleLike = async (id: string) => {
     await fetch(`${BASE_URL}/api/media/${id}/like`, { method: 'POST' });
@@ -237,16 +307,17 @@ const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMed
           </Button>
         </div>
       </Card>
-
       {uploadedMedia.map(media => (
         <div key={media.id} className="flex flex-col gap-4 p-4 bg-gradient-card rounded-lg border">
           <div className="flex items-start gap-4">
             {media.thumbnail && media.type === 'image' && (
               <img src={`${BASE_URL}/uploads/${media.thumbnail}`} alt="Thumbnail" className="w-40 h-40 rounded-md object-cover" />
             )}
+            {media.type === 'video' && media.storyUrl && (
+              <ReactPlayer src={media.storyUrl} controls width="30%" height="auto" className="rounded-lg shadow" />
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{media.transcript}</p>
-              <p className="text-sm text-muted-foreground">{media.story}</p>
+
               {media.transcriptionStatus === 'completed' && (
                 <div className="mt-2 flex items-start gap-2">
                   <Dialog>
@@ -260,33 +331,62 @@ const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMed
                       <Button onClick={() => {
                         setUploadedMedia(prev => prev.map(m => m.id === media.id ? { ...m, transcript: transcriptDraft } : m));
                         setEditTranscriptId(null);
-                        generateTagsAndStory({ ...media, transcript: transcriptDraft });
+                        generateStory({ ...media, transcript: transcriptDraft });
                       }}>Generate & Save Story</Button>
                     </DialogContent>
                   </Dialog>
-                  <Button size="sm" onClick={() => generateTagsAndStory(media)}>
+                  <Button size="sm" onClick={() => generateStory(media)}>
                     Generate Story
                   </Button>
+                  {/* <Button size="sm" onClick={() => generateVideoClip(media.images, media.voiceUrl)}>
+                    {loadingVideo ? 'Generating...' : 'Generate Video Clip'}
+                  </Button> */}
                 </div>
               )}
-
-              {media.tags?.length > 0 && (
-                <div className="mt-2 text-sm text-blue-700">
-                  <strong>AI Tags:</strong> {media.tags.join(', ')}
-                </div>
-              )}
-              {media.emotions && (
-                <p className="text-sm text-pink-600">
-                  <strong>Emotion:</strong> {media.emotions}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mt-2">
+                  <strong>Transcript:</strong> {media.transcript || 'Not available'}
                 </p>
-              )}
+                <p className="text-sm text-blue-700 mt-2">
+                  <strong>AI Tags:</strong> {media.tags?.join(', ') || 'Not generated'}
+                </p>
+                <p className="text-sm text-pink-600 mt-2">
+                  <strong>Emotion:</strong> {media.emotions || 'Not detected'}
+                </p>
+              </div>
             </div>
           </div>
-          {media.type === 'video' && media.storyUrl && (
-            <ReactPlayer src={media.storyUrl} controls width="100%" height="auto" className="rounded-lg shadow" />
-          )}
+          <div className='gap-4 p-4 '>
+            <p
+              className={`text-sm text-black whitespace-pre-wrap transition-all duration-300 ${expandedStoryId === media.id ? '' : 'line-clamp-3'
+                }`}>
+              <strong>Story:</strong> {media.story}
+
+            </p>
+            {media.story?.length > 0 && (
+              <button
+                onClick={() =>
+                  setExpandedStoryId(prev => (prev === media.id ? null : media.id))
+                }
+                className="text-blue-500 text-sm mt-1 hover:underline"
+              >
+                {expandedStoryId === media.id ? 'Show Less' : 'Show More'}
+              </button>
+            )}
+          </div>
         </div>
       ))}
+
+      <div className="flex flex-col gap-4 p-4 bg-gradient-card rounded-lg border mt-4">
+        {loadingVideo && <p className="text-gray-600">⏳ Processing video...</p>}
+
+        {renderedVideoUrl && (
+          <video controls className="rounded w-full max-w-xl">
+            <source src={renderedVideoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
+      </div>
     </div>
   );
 };
