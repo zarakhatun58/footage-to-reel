@@ -277,7 +277,8 @@ export const VideoUploadArea = () => {
                   ...m,
                   type: 'video',
                   storyUrl: videoUrl,
-                  transcriptionStatus: 'completed'
+                  transcriptionStatus: 'completed',
+                  renderId: data.renderId  // ✅ Set renderId here
                 }
                 : m
             )
@@ -437,7 +438,7 @@ export const VideoUploadArea = () => {
                 className="w-full rounded-md"
               />
 
-            {media.renderId && <RenderProgress renderId={media.renderId} />}
+              {media.renderId && <RenderProgress renderId={media.renderId} />}
 
               {renderedVideoUrl && (
                 <video controls className="rounded w-full max-w-xl">
