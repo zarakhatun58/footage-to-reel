@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import ReactPlayer from 'react-player';
 import { BASE_URL } from '@/services/apis';
+import { RenderProgress } from './RenderProgress ';
+import { MediaStatsBar } from './MediaStatsBar';
 
 type UploadedMedia = {
   id: string;
@@ -41,6 +43,10 @@ type UploadedMedia = {
   rankScore?: number;
   images?: string[];
   voiceUrl?: string;
+  renderId?: string; // ✅ add this
+  views?: number;    // ✅ for stats
+  likes?: number;
+  shares?: number;
 };
 
 
@@ -240,25 +246,47 @@ export const VideoUploadArea = () => {
     }
   };
 
+  const generateVideoClip = async (storyText: string, images: string[], mediaId?: string) => {
+    setLoadingVideo(true);
 
-  const generateVideoClip = async (storyText: string, images: string[]) => {
     try {
       const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storyText, images })
+        body: JSON.stringify({ storyText, images, mediaId })
       });
 
       const data = await res.json();
 
-      if (data.success) {
-        setRenderId(data.renderId); // Only if you've declared it
+      if (data.success && data.renderId) {
         toast({
           title: '🎬 Video rendering started',
           description: `Render ID: ${data.renderId}`
         });
+
+        pollRenderStatus(data.renderId, (videoUrl) => {
+          toast({
+            title: '✅ Video Ready!',
+            description: 'Click to view your rendered video.',
+          });
+
+          setUploadedMedia(prev =>
+            prev.map(m =>
+              m.id === data.id
+                ? {
+                  ...m,
+                  type: 'video',
+                  storyUrl: videoUrl,
+                  transcriptionStatus: 'completed'
+                }
+                : m
+            )
+          );
+
+          setLoadingVideo(false);
+        });
       } else {
-        throw new Error('Video render failed');
+        throw new Error('Render initiation failed');
       }
     } catch (error) {
       console.error('Video generation error:', error);
@@ -267,7 +295,34 @@ export const VideoUploadArea = () => {
         description: 'Something went wrong during the video generation process.',
         variant: 'destructive'
       });
+      setLoadingVideo(false);
     }
+  };
+
+
+  const pollRenderStatus = async (renderId: string, onComplete: (videoUrl: string) => void) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/speech/render-status/${renderId}`);
+        const data = await res.json();
+
+        if (data.status === 'done' && data.url) {
+          clearInterval(interval);
+          onComplete(data.url);
+        }
+
+        if (data.status === 'failed') {
+          clearInterval(interval);
+          toast({
+            title: '❌ Render failed',
+            variant: 'destructive'
+          });
+        }
+      } catch (err) {
+        console.error('Render polling error:', err);
+        clearInterval(interval);
+      }
+    }, 5000); // check every 5 seconds
   };
 
 
@@ -338,9 +393,9 @@ export const VideoUploadArea = () => {
                   <Button size="sm" onClick={() => generateStory(media)}>
                     Generate Story
                   </Button>
-                  {/* <Button size="sm" onClick={() => generateVideoClip(media.images, media.voiceUrl)}>
+                  <Button size="sm" onClick={() => generateVideoClip(media.story || '', media.images || [], media.id)}>
                     {loadingVideo ? 'Generating...' : 'Generate Video Clip'}
-                  </Button> */}
+                  </Button>
                 </div>
               )}
               <div className="flex-1 min-w-0">
@@ -374,19 +429,33 @@ export const VideoUploadArea = () => {
               </button>
             )}
           </div>
+          {media.type === 'video' && media.storyUrl && (
+            <>
+              <video
+                src={media.storyUrl}
+                controls
+                className="w-full rounded-md"
+              />
+
+              {media.renderId && <RenderProgress renderId={media.renderId} />}
+
+              {renderedVideoUrl && (
+                <video controls className="rounded w-full max-w-xl">
+                  <source src={renderedVideoUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+
+              {media.renderId && status === 'done' && (
+                <MediaStatsBar media={media} />
+              )}
+            </>
+          )}
+
         </div>
       ))}
 
-      <div className="flex flex-col gap-4 p-4 bg-gradient-card rounded-lg border mt-4">
-        {loadingVideo && <p className="text-gray-600">⏳ Processing video...</p>}
 
-        {renderedVideoUrl && (
-          <video controls className="rounded w-full max-w-xl">
-            <source src={renderedVideoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        )}
-      </div>
     </div>
   );
 };
