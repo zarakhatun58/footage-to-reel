@@ -55,6 +55,7 @@ export const VideoUploadArea = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [editTranscriptId, setEditTranscriptId] = useState<string | null>(null);
   const [transcriptDraft, setTranscriptDraft] = useState<string>('');
   const { toast } = useToast();
@@ -94,12 +95,26 @@ export const VideoUploadArea = () => {
     handleFiles(files);
   }, []);
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      handleFiles(files);
-    }
+const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const tempId = `${Date.now()}-${file.name}`;
+      const mimeType = file.type;
+      const type = mimeType.startsWith('image')
+        ? 'image'
+        : mimeType.startsWith('video')
+        ? 'video'
+        : 'voiceover';
+
+      setUploadedMedia((prev:any )=> [...prev, { id: tempId, name: file.name, type }]);
+      uploadFileToServer(tempId, file, type);
+    });
+
+    e.target.value = '';
   };
+
 
   const handleFiles = (files: File[]) => {
     const supportedTypes = ['video/', 'audio/', 'image/'];
@@ -125,29 +140,101 @@ export const VideoUploadArea = () => {
     });
   };
 
-  const uploadFileToServer = async (
-    mediaId: string,
-    file: File,
-    type: UploadedMedia['type']
-  ) => {
+  // const uploadFileToServer = async (
+  //   mediaId: string,
+  //   file: File,
+  //   type: UploadedMedia['type']
+  // ) => {
+  //   const formData = new FormData();
+  //   formData.append(
+  //     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+  //     file
+  //   );
+
+  //   // ✅ Safe upload progress and state update
+  //   setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
+
+  //   setUploadedMedia((prev: any) => {
+  //     if (!prev.length) return [{ id: mediaId, transcriptionStatus: 'processing' }];
+  //     return prev.map((media: any) =>
+  //       media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media
+  //     );
+  //   });
+
+  //   try {
+  //     // ✅ 1. Upload the file
+  //     const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
+  //       method: 'POST',
+  //       body: formData
+  //     });
+
+  //     const result = await uploadRes.json();
+  //     const uploadedItem = result.uploaded?.[0];
+  //     if (!uploadedItem) throw new Error('Upload returned no file');
+
+  //     // ✅ 2. Use enriched metadata directly
+  //     const newMedia: UploadedMedia = {
+  //       id: uploadedItem._id || mediaId,
+  //       name: uploadedItem.filename,
+  //       size: file.size,
+  //       type,
+  //       transcriptionStatus: 'completed',
+  //       thumbnail:
+  //         uploadedItem.thumbnail ||
+  //         uploadedItem.images?.[0] ||
+  //         (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+  //           ? uploadedItem.filename
+  //           : null),
+  //       transcript: uploadedItem.transcript || '',
+  //       tags: uploadedItem.tags || [],
+  //       emotions: uploadedItem.emotions?.join(', ') || '',
+  //       story: uploadedItem.story || '',
+  //       storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`
+  //     };
+
+  //     // ✅ 3. Update state
+  //     setUploadedMedia(prev =>
+  //       prev.map(media => (media.id === mediaId ? newMedia : media))
+  //     );
+  //     setMediaId(uploadedItem._id);
+  //     setStoryText(uploadedItem.story || '');
+
+  //     toast({
+  //       title: 'Upload complete',
+  //       description: `${file.name} uploaded and analyzed.`
+  //     });
+
+  //   } catch (error) {
+  //     console.error('Upload failed:', error);
+  //     setUploadedMedia(prev =>
+  //       prev.map(media =>
+  //         media.id === mediaId
+  //           ? { ...media, transcriptionStatus: 'error' }
+  //           : media
+  //       )
+  //     );
+  //     toast({
+  //       title: 'Upload failed',
+  //       description: `${file.name} could not be uploaded.`,
+  //       variant: 'destructive'
+  //     });
+  //   }
+  // };
+
+const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
     const formData = new FormData();
     formData.append(
       type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
       file
     );
 
-    // ✅ Safe upload progress and state update
     setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
 
-    setUploadedMedia((prev: any) => {
-      if (!prev.length) return [{ id: mediaId, transcriptionStatus: 'processing' }];
-      return prev.map((media: any) =>
-        media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media
-      );
-    });
+    setUploadedMedia(prev =>
+      prev.map(m => (m.id === mediaId ? { ...m, transcriptionStatus: 'processing' } : m))
+    );
 
     try {
-      // ✅ 1. Upload the file
       const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
         method: 'POST',
         body: formData
@@ -157,8 +244,7 @@ export const VideoUploadArea = () => {
       const uploadedItem = result.uploaded?.[0];
       if (!uploadedItem) throw new Error('Upload returned no file');
 
-      // ✅ 2. Use enriched metadata directly
-      const newMedia: UploadedMedia = {
+      const newMedia = {
         id: uploadedItem._id || mediaId,
         name: uploadedItem.filename,
         size: file.size,
@@ -174,35 +260,22 @@ export const VideoUploadArea = () => {
         tags: uploadedItem.tags || [],
         emotions: uploadedItem.emotions?.join(', ') || '',
         story: uploadedItem.story || '',
-        storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`
+        storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
+        images: uploadedItem.images || []
       };
 
-      // ✅ 3. Update state
-      setUploadedMedia(prev =>
-        prev.map(media => (media.id === mediaId ? newMedia : media))
+      setUploadedMedia((prev:any) =>
+        prev.map((media:any) => (media.id === mediaId ? newMedia : media))
       );
       setMediaId(uploadedItem._id);
       setStoryText(uploadedItem.story || '');
-
-      toast({
-        title: 'Upload complete',
-        description: `${file.name} uploaded and analyzed.`
-      });
-
     } catch (error) {
       console.error('Upload failed:', error);
       setUploadedMedia(prev =>
         prev.map(media =>
-          media.id === mediaId
-            ? { ...media, transcriptionStatus: 'error' }
-            : media
+          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
         )
       );
-      toast({
-        title: 'Upload failed',
-        description: `${file.name} could not be uploaded.`,
-        variant: 'destructive'
-      });
     }
   };
 
@@ -394,31 +467,37 @@ export const VideoUploadArea = () => {
           <Button variant="ai" size="lg" asChild>
             <label className="cursor-pointer">
               <Upload className="w-5 h-5 mr-2" /> Choose Files
-              <input type="file" multiple accept="video/*,audio/*,image/*" onChange={handleFileInput} className="hidden" />
+              <input
+                type="file"
+                multiple
+                accept="video/*,audio/*,image/*"
+                onChange={handleFileInput}
+                className="hidden"
+              />
             </label>
           </Button>
         </div>
       </Card>
-     {uploadedMedia.length > 0 &&
-  uploadedMedia[0]?.id &&
-  uploadProgress[uploadedMedia[0].id] !== undefined && (
-    <div className="w-full mt-2">
-      <ProgressBar
-        completed={uploadProgress[uploadedMedia[0].id]}
-        maxCompleted={100}
-        height="8px"
-        isLabelVisible={false}
-        bgColor="orange"
-        baseBgColor="#e5e7eb" // Tailwind gray-200
-        labelAlignment="right"
-        animateOnRender
-        customLabel={`${uploadProgress[uploadedMedia[0].id]}%`}
-      />
-      <div className="text-xs text-right mt-1 text-gray-600">
-        {uploadProgress[uploadedMedia[0].id]}%
-      </div>
-    </div>
-)}
+      {uploadedMedia.length > 0 &&
+        uploadedMedia[0]?.id &&
+        uploadProgress[uploadedMedia[0].id] !== undefined && (
+          <div className="w-full mt-2">
+            <ProgressBar
+              completed={uploadProgress[uploadedMedia[0].id]}
+              maxCompleted={100}
+              height="8px"
+              isLabelVisible={false}
+              bgColor="orange"
+              baseBgColor="#e5e7eb" // Tailwind gray-200
+              labelAlignment="right"
+              animateOnRender
+              customLabel={`${uploadProgress[uploadedMedia[0].id]}%`}
+            />
+            <div className="text-xs text-right mt-1 text-gray-600">
+              {uploadProgress[uploadedMedia[0].id]}%
+            </div>
+          </div>
+        )}
 
       {uploadedMedia.length > 0 && uploadedMedia.map(media => (
         <div key={media.id} className="border rounded-lg p-4 shadow space-y-4 bg-white">

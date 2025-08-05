@@ -9,11 +9,11 @@ import axios from "axios";
 export const HeroSection = () => {
   const [videos, setVideos] = useState([]);
 
-  useEffect(() => {
-    axios.get('http://localhost:5000/api/videos')
-      .then(res => setVideos(res.data.videos))
-      .catch(err => console.error(err));
-  }, []);
+  // useEffect(() => {
+  //   axios.get('http://localhost:5000/api/videos')
+  //     .then(res => setVideos(res.data.videos))
+  //     .catch(err => console.error(err));
+  // }, []);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
