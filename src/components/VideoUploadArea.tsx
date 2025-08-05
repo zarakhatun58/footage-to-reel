@@ -176,35 +176,35 @@ export const VideoUploadArea = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchUploadedVideos = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/api/videos`);
-        const data = await res.json();
+  // useEffect(() => {
+  //   const fetchUploadedVideos = async () => {
+  //     try {
+  //       const res = await fetch(`${BASE_URL}/api/videos`);
+  //       const data = await res.json();
 
-        if (data?.videos) {
-          const loadedMedia: UploadedMedia[] = data.videos.map((item: any) => ({
-            id: item._id,
-            name: item.filename,
-            size: item.size || 0,
-            type: item.mediaType || 'unknown',
-            transcriptionStatus: 'completed',
-            thumbnail: item.filename,
-            transcript: item.transcript || '',
-            tags: item.tags || [],
-            emotions: item.emotions?.join(', ') || '',
-            story: item.story || '',
-            storyUrl: `${BASE_URL}/uploads/${item.filename}`
-          }));
+  //       if (data?.videos) {
+  //         const loadedMedia: UploadedMedia[] = data.videos.map((item: any) => ({
+  //           id: item._id,
+  //           name: item.filename,
+  //           size: item.size || 0,
+  //           type: item.mediaType || 'unknown',
+  //           transcriptionStatus: 'completed',
+  //           thumbnail: item.filename,
+  //           transcript: item.transcript || '',
+  //           tags: item.tags || [],
+  //           emotions: item.emotions?.join(', ') || '',
+  //           story: item.story || '',
+  //           storyUrl: `${BASE_URL}/uploads/${item.filename}`
+  //         }));
 
-          setUploadedMedia(loadedMedia);
-        }
-      } catch (err) {
-        console.error('Failed to fetch videos:', err);
-      }
-    };
-    fetchUploadedVideos();
-  }, []);
+  //         setUploadedMedia(loadedMedia);
+  //       }
+  //     } catch (err) {
+  //       console.error('Failed to fetch videos:', err);
+  //     }
+  //   };
+  //   fetchUploadedVideos();
+  // }, []);
 
   const generateStory = async (media: UploadedMedia) => {
     try {

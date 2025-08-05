@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 
 const CreateStorVoiceOver = () => {
   const [showAudioOptions, setShowAudioOptions] = useState(false);
+  const [manualOptions, setManualOptions] = useState(false);
   const [selectedAudioMode, setSelectedAudioMode] = useState('original'); // 'original', 'silent', 'custom'
 
   const toggleAudioOptions = () => {
     setShowAudioOptions(!showAudioOptions);
   };
+  const toggleManualOptions = () => {
+    setManualOptions(!manualOptions);
+  };
 
-  const handleAudioModeChange = (mode) => {
+  const handleAudioModeChange = (mode:any) => {
     setSelectedAudioMode(mode);
   };
 
@@ -25,6 +29,13 @@ const CreateStorVoiceOver = () => {
           style={{ backgroundColor: '#FF8C00' }} // Orange color from the image
         >
           {showAudioOptions ? 'Hide Audio Options' : 'Show Audio Options'}
+        </button>
+         <button
+          onClick={toggleManualOptions}
+          className="px-4 py-2 rounded-md font-medium text-white transition-colors duration-200"
+          style={{ backgroundColor: '#FF8C00' }} // Orange color from the image
+        >
+          {manualOptions ? 'Auto Select' : 'Manual select'}
         </button>
       </div>
 
