@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import ProgressBar from "@ramonak/react-progress-bar";
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -367,6 +367,12 @@ export const VideoUploadArea = () => {
     window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
   };
 
+  const videoUrl =
+    uploadedMedia?.length > 0 &&
+      uploadedMedia?.[0]?.type === 'video' &&
+      uploadedMedia?.[0]?.storyUrl
+      ? uploadedMedia[0].storyUrl
+      : null;
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
@@ -393,23 +399,27 @@ export const VideoUploadArea = () => {
           </Button>
         </div>
       </Card>
-      {uploadedMedia.length > 0 &&
-        uploadedMedia[0]?.id &&
-        uploadProgress[uploadedMedia[0].id] !== undefined && (
-          <div className="w-full mt-2 bg-gray-200 rounded h-2 overflow-hidden">
-            <Progress/>
-            <div
-              className="h-2 transition-all duration-300"
-              style={{
-                width: `${uploadProgress[uploadedMedia[0].id]}%`,
-                background: 'linear-gradient(to right, orange, darkorange)'
-              }}
-            />
-            <div className="text-xs text-right mt-1 text-gray-600">
-              {uploadProgress[uploadedMedia[0].id]}%
-            </div>
-          </div>
-        )}
+     {uploadedMedia.length > 0 &&
+  uploadedMedia[0]?.id &&
+  uploadProgress[uploadedMedia[0].id] !== undefined && (
+    <div className="w-full mt-2">
+      <ProgressBar
+        completed={uploadProgress[uploadedMedia[0].id]}
+        maxCompleted={100}
+        height="8px"
+        isLabelVisible={false}
+        bgColor="orange"
+        baseBgColor="#e5e7eb" // Tailwind gray-200
+        labelAlignment="right"
+        animateOnRender
+        customLabel={`${uploadProgress[uploadedMedia[0].id]}%`}
+      />
+      <div className="text-xs text-right mt-1 text-gray-600">
+        {uploadProgress[uploadedMedia[0].id]}%
+      </div>
+    </div>
+)}
+
       {uploadedMedia.length > 0 && uploadedMedia.map(media => (
         <div key={media.id} className="border rounded-lg p-4 shadow space-y-4 bg-white">
           <div className="flex flex-col md:flex-row gap-4">
@@ -417,7 +427,7 @@ export const VideoUploadArea = () => {
               <img
                 src={`${BASE_URL}/uploads/${uploadedMedia[0].thumbnail}`}
                 alt="Thumbnail"
-                className="w-full h-64 object-cover rounded shadow"
+                className="w-60 h-64 object-cover rounded shadow"
               />
             )}
 
@@ -454,20 +464,9 @@ export const VideoUploadArea = () => {
         </div>
       ))}
       {/* Video preview */}
-
-      {/* Video preview */}
-      {uploadedMedia[0].storyUrl && (
+      {videoUrl && (
         <video
-          src={uploadedMedia[0].storyUrl}
-          controls
-          className="rounded w-full col-span-2 mt-4"
-        />
-      )}
-
-
-      {uploadedMedia.length > 0 && uploadedMedia[0]?.type === 'video' && uploadedMedia[0]?.storyUrl && (
-        <video
-          src={uploadedMedia[0].storyUrl}
+          src={videoUrl}
           controls
           className="rounded w-full col-span-2 mt-4"
         />

@@ -5,6 +5,7 @@ import { VideoUploadArea } from "@/components/VideoUploadArea";
 import { SearchInterface } from "@/components/SearchInterface";
 import { StoryGenerator } from "@/components/StoryGenerator";
 import CreateStorVoiceOver from "@/components/CreateStorVoiceOver";
+import { Progress } from '@/components/ui/progress';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
