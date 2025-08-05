@@ -4,10 +4,15 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
 import { Share2, ThumbsUp } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+
 
  const UploadedMediaCard = ({ media, onGenerate, onLike, onShare }) => {
   const [editableTranscript, setEditableTranscript] = useState(media.transcript || '');
   const [editableTitle, setEditableTitle] = useState(media.title || '');
+    const [loadingVideo, setLoadingVideo] = useState(false);
+
+
 
   return (
     <div className="border rounded-xl p-4 bg-background shadow-md space-y-4">

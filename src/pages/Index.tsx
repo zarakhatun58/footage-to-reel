@@ -38,7 +38,7 @@ const Index = () => {
       />
       <main>
         {renderSection()}
-        <CreateStorVoiceOver/>
+        
       </main>
     </div>
   );

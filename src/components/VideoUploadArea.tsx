@@ -23,6 +23,7 @@ import ReactPlayer from 'react-player';
 import { BASE_URL } from '@/services/apis';
 import { RenderProgress } from './RenderProgress ';
 import { MediaStatsBar } from './MediaStatsBar';
+import UploadedMediaCard from './UploadedMediaCard';
 
 type UploadedMedia = {
   id: string;
@@ -60,7 +61,23 @@ export const VideoUploadArea = () => {
   const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
-  const [renderId, setRenderId] = useState<string | null>(null);
+  const [storyText, setStoryText] = useState('');
+  const [mediaId, setMediaId] = useState<string>('');
+
+  const [showAudioOptions, setShowAudioOptions] = useState(false);
+  const [manualOptions, setManualOptions] = useState(false);
+  const [selectedAudioMode, setSelectedAudioMode] = useState('original'); // 'original', 'silent', 'custom'
+
+  const toggleAudioOptions = () => {
+    setShowAudioOptions(!showAudioOptions);
+  };
+  const toggleManualOptions = () => {
+    setManualOptions(!manualOptions);
+  };
+
+  const handleAudioModeChange = (mode: any) => {
+    setSelectedAudioMode(mode);
+  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -108,22 +125,29 @@ export const VideoUploadArea = () => {
     });
   };
 
-  const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMedia['type']) => {
+  const uploadFileToServer = async (
+    mediaId: string,
+    file: File,
+    type: UploadedMedia['type']
+  ) => {
     const formData = new FormData();
     formData.append(
       type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
       file
     );
 
+    // ✅ Safe upload progress and state update
     setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
-    setUploadedMedia(prev =>
-      prev.map(media =>
+
+    setUploadedMedia((prev: any) => {
+      if (!prev.length) return [{ id: mediaId, transcriptionStatus: 'processing' }];
+      return prev.map((media: any) =>
         media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media
-      )
-    );
+      );
+    });
 
     try {
-      // 1. Upload the file (just upload)
+      // ✅ 1. Upload the file
       const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
         method: 'POST',
         body: formData
@@ -133,26 +157,32 @@ export const VideoUploadArea = () => {
       const uploadedItem = result.uploaded?.[0];
       if (!uploadedItem) throw new Error('Upload returned no file');
 
-      // 2. Use uploadedItem directly (already contains transcript, tags, emotions, etc.)
-      const enrichedMedia = uploadedItem;
-
+      // ✅ 2. Use enriched metadata directly
       const newMedia: UploadedMedia = {
-        id: enrichedMedia._id || mediaId,
-        name: enrichedMedia.filename,
+        id: uploadedItem._id || mediaId,
+        name: uploadedItem.filename,
         size: file.size,
         type,
         transcriptionStatus: 'completed',
-        thumbnail: enrichedMedia.filename,
-        transcript: enrichedMedia.transcript || '',
-        tags: enrichedMedia.tags || [],
-        emotions: enrichedMedia.emotions?.join(', ') || '',
-        story: enrichedMedia.story || '',
-        storyUrl: `${BASE_URL}/uploads/${enrichedMedia.filename}`
+        thumbnail:
+          uploadedItem.thumbnail ||
+          uploadedItem.images?.[0] ||
+          (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+            ? uploadedItem.filename
+            : null),
+        transcript: uploadedItem.transcript || '',
+        tags: uploadedItem.tags || [],
+        emotions: uploadedItem.emotions?.join(', ') || '',
+        story: uploadedItem.story || '',
+        storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`
       };
 
+      // ✅ 3. Update state
       setUploadedMedia(prev =>
         prev.map(media => (media.id === mediaId ? newMedia : media))
       );
+      setMediaId(uploadedItem._id);
+      setStoryText(uploadedItem.story || '');
 
       toast({
         title: 'Upload complete',
@@ -175,6 +205,7 @@ export const VideoUploadArea = () => {
       });
     }
   };
+
 
   // useEffect(() => {
   //   const fetchUploadedVideos = async () => {
@@ -206,96 +237,84 @@ export const VideoUploadArea = () => {
   //   fetchUploadedVideos();
   // }, []);
 
-  const generateStory = async (media: UploadedMedia) => {
-    try {
-      const prompt = 'Create a motivational story about learning to code.'; // or get this from user input
+  const generateStory = async () => {
+    if (!uploadedMedia[0]) return;
 
-      // Call the story generation API
-      const storyRes = await fetch(`${BASE_URL}/api/generate`, {
+    try {
+      const prompt = 'Create a motivational story about learning to code.';
+      const res = await fetch(`${BASE_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: media.transcript, prompt })
+        body: JSON.stringify({
+          transcript: uploadedMedia[0].transcript,
+          prompt
+        })
       });
 
-      const result = await storyRes.json();
+      const result = await res.json();
 
-      if (!storyRes.ok || !result.story) {
-        throw new Error(result.error || 'No story generated');
+      if (!res.ok || !result.story) {
+        throw new Error(result.error || 'Story generation failed');
       }
 
-      // Update UI with new story and prompt
+      setStoryText(result.story);
+
       setUploadedMedia(prev =>
         prev.map(m =>
-          m.id === media.id
-            ? { ...m, story: result.story, prompt: result.prompt }
+          m.id === uploadedMedia[0].id
+            ? { ...m, story: result.story, prompt }
             : m
         )
       );
 
-      toast({
-        title: 'Story Generated',
-        description: 'Your story is saved and ready to share.'
-      });
     } catch (error) {
-      console.error('Story generation failed:', error);
-      toast({
-        title: 'Failed to generate story',
-        description: 'There was a problem creating the story.',
-        variant: 'destructive'
-      });
+      console.error('Story generation error:', error);
+      alert('❌ Failed to generate story');
     }
   };
 
-  const generateVideoClip = async (storyText: string, images: string[], mediaId?: string) => {
+  const generateVideoClip = async () => {
+    if (!storyText || !uploadedMedia[0]) return;
     setLoadingVideo(true);
 
     try {
       const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storyText, images, mediaId })
+        body: JSON.stringify({
+          storyText,
+          images: uploadedMedia[0].images || [],
+          mediaId
+        })
       });
 
       const data = await res.json();
 
-      if (data.success && data.renderId) {
-        toast({
-          title: '🎬 Video rendering started',
-          description: `Render ID: ${data.renderId}`
-        });
+      if (data.success && data.renderId && data.videoUrl) {
+        alert('🎬 Video Ready!\nRender ID: ' + data.renderId);
 
-        pollRenderStatus(data.renderId, (videoUrl) => {
-          toast({
-            title: '✅ Video Ready!',
-            description: 'Click to view your rendered video.',
-          });
-
-          setUploadedMedia(prev =>
-            prev.map(m =>
-              m.id === data.id
-                ? {
-                  ...m,
-                  type: 'video',
-                  storyUrl: videoUrl,
-                  transcriptionStatus: 'completed',
-                  renderId: data.renderId  // ✅ Set renderId here
-                }
-                : m
-            )
-          );
-
-          setLoadingVideo(false);
-        });
+        // Save new video result in uploadedMedia
+        setUploadedMedia(prev =>
+          prev.map(m =>
+            m.id === mediaId
+              ? {
+                ...m,
+                type: 'video',
+                storyUrl: data.videoUrl,
+                renderId: data.renderId,
+                transcriptionStatus: 'completed'
+              }
+              : m
+          )
+        );
       } else {
-        throw new Error('Render initiation failed');
+        throw new Error('Render failed');
       }
+
     } catch (error) {
       console.error('Video generation error:', error);
-      toast({
-        title: 'Error generating video',
-        description: 'Something went wrong during the video generation process.',
-        variant: 'destructive'
-      });
+      alert('❌ Video generation failed');
+    } finally {
       setLoadingVideo(false);
     }
   };
@@ -334,6 +353,20 @@ export const VideoUploadArea = () => {
     await fetch(`${BASE_URL}/api/media/${id}/share`, { method: 'POST' });
   };
 
+  const downloadVideo = (url: any) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-video.mp4';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const shareToX = (media: any) => {
+    const tweet = encodeURIComponent(`Check out my story video! ${media.storyUrl}`);
+    window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
@@ -360,100 +393,132 @@ export const VideoUploadArea = () => {
           </Button>
         </div>
       </Card>
-      {uploadedMedia.map(media => (
-        <div key={media.id} className="flex flex-col gap-4 p-4 bg-gradient-card rounded-lg border">
-          <div className="flex items-start gap-4">
-            {media.thumbnail && media.type === 'image' && (
-              <img src={`${BASE_URL}/uploads/${media.thumbnail}`} alt="Thumbnail" className="w-40 h-40 rounded-md object-cover" />
+      {uploadedMedia.length > 0 &&
+        uploadedMedia[0]?.id &&
+        uploadProgress[uploadedMedia[0].id] !== undefined && (
+          <div className="w-full mt-2 bg-gray-200 rounded h-2 overflow-hidden">
+            <Progress/>
+            <div
+              className="h-2 transition-all duration-300"
+              style={{
+                width: `${uploadProgress[uploadedMedia[0].id]}%`,
+                background: 'linear-gradient(to right, orange, darkorange)'
+              }}
+            />
+            <div className="text-xs text-right mt-1 text-gray-600">
+              {uploadProgress[uploadedMedia[0].id]}%
+            </div>
+          </div>
+        )}
+      {uploadedMedia.length > 0 && uploadedMedia.map(media => (
+        <div key={media.id} className="border rounded-lg p-4 shadow space-y-4 bg-white">
+          <div className="flex flex-col md:flex-row gap-4">
+            {uploadedMedia[0].thumbnail && (
+              <img
+                src={`${BASE_URL}/uploads/${uploadedMedia[0].thumbnail}`}
+                alt="Thumbnail"
+                className="w-full h-64 object-cover rounded shadow"
+              />
             )}
-            {media.type === 'video' && media.storyUrl && (
-              <ReactPlayer src={media.storyUrl} controls width="30%" height="auto" className="rounded-lg shadow" />
-            )}
-            <div className="flex-1 min-w-0">
 
-              {media.transcriptionStatus === 'completed' && (
-                <div className="mt-2 flex items-start gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={() => { setEditTranscriptId(media.id); setTranscriptDraft(media.transcript || ''); }}>
-                        <Edit2 className="w-4 h-4 mr-1" /> Edit Transcript
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <Textarea value={transcriptDraft} onChange={(e) => setTranscriptDraft(e.target.value)} className="h-40 mb-4" />
-                      <Button onClick={() => {
-                        setUploadedMedia(prev => prev.map(m => m.id === media.id ? { ...m, transcript: transcriptDraft } : m));
-                        setEditTranscriptId(null);
-                        generateStory({ ...media, transcript: transcriptDraft });
-                      }}>Generate & Save Story</Button>
-                    </DialogContent>
-                  </Dialog>
-                  <Button size="sm" onClick={() => generateStory(media)}>
-                    Generate Story
-                  </Button>
-                  <Button size="sm" onClick={() => generateVideoClip(media.story || '', media.images || [], media.id)}>
-                    {loadingVideo ? 'Generating...' : 'Generate Video Clip'}
-                  </Button>
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mt-2">
-                  <strong>Transcript:</strong> {media.transcript || 'Not available'}
-                </p>
-                <p className="text-sm text-blue-700 mt-2">
-                  <strong>AI Tags:</strong> {media.tags?.join(', ') || 'Not generated'}
-                </p>
-                <p className="text-sm text-pink-600 mt-2">
-                  <strong>Emotion:</strong> {media.emotions || 'Not detected'}
-                </p>
+            <div className="flex-1 space-y-2">
+              <p><strong>Transcript:</strong> {media.transcript || 'Not available'}</p>
+              <p><strong>Tags:</strong> {media.tags?.join(', ') || 'Not generated'}</p>
+              <p><strong>Emotions:</strong> {media.emotions || 'Not detected'}</p>
+
+              <Textarea
+                value={media.story || ''}
+                onChange={e =>
+                  setUploadedMedia(prev =>
+                    prev.map(m =>
+                      m.id === media.id ? { ...m, story: e.target.value } : m
+                    )
+                  )
+                }
+                rows={4}
+                placeholder="Story will appear here..."
+              />
+
+              <div className="flex gap-3">
+                <Button onClick={generateStory}>Generate Story</Button>
+
+                <Button
+                  onClick={generateVideoClip}
+                  disabled={!media.story || loadingVideo}
+                >
+                  {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+                </Button>
               </div>
             </div>
           </div>
-          <div className='gap-4 p-4 '>
-            <p
-              className={`text-sm text-black whitespace-pre-wrap transition-all duration-300 ${expandedStoryId === media.id ? '' : 'line-clamp-3'
-                }`}>
-              <strong>Story:</strong> {media.story}
-
-            </p>
-            {media.story?.length > 0 && (
-              <button
-                onClick={() =>
-                  setExpandedStoryId(prev => (prev === media.id ? null : media.id))
-                }
-                className="text-blue-500 text-sm mt-1 hover:underline"
-              >
-                {expandedStoryId === media.id ? 'Show Less' : 'Show More'}
-              </button>
-            )}
-          </div>
-          {media.type === 'video' && media.storyUrl && (
-            <>
-              <video
-                src={media.storyUrl}
-                controls
-                className="w-60 rounded-md"
-              />
-
-              {media.renderId && <RenderProgress renderId={media.renderId} />}
-
-              {renderedVideoUrl && (
-                <video controls className="rounded w-full max-w-xl">
-                  <source src={renderedVideoUrl} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              )}
-
-              {media.renderId && status === 'done' && (
-                <MediaStatsBar media={media} />
-              )}
-            </>
-          )}
-
         </div>
       ))}
+      {/* Video preview */}
+
+      {/* Video preview */}
+      {uploadedMedia[0].storyUrl && (
+        <video
+          src={uploadedMedia[0].storyUrl}
+          controls
+          className="rounded w-full col-span-2 mt-4"
+        />
+      )}
 
 
+      {uploadedMedia.length > 0 && uploadedMedia[0]?.type === 'video' && uploadedMedia[0]?.storyUrl && (
+        <video
+          src={uploadedMedia[0].storyUrl}
+          controls
+          className="rounded w-full col-span-2 mt-4"
+        />
+      )}
+
+      {/* Audio Options */}
+      <div className="col-span-2 border-t pt-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            <i className="fas fa-music mr-2"></i>Audio Settings
+          </h2>
+          <div className="space-x-2">
+            <Button style={{ backgroundColor: '#FF8C00' }} onClick={toggleAudioOptions}>
+              {showAudioOptions ? 'Hide Audio Options' : 'Show Audio Options'}
+            </Button>
+            <Button style={{ backgroundColor: '#FF8C00' }} onClick={toggleManualOptions}>
+              {manualOptions ? 'Auto Select' : 'Manual Select'}
+            </Button>
+          </div>
+        </div>
+
+        {showAudioOptions && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <p className="text-gray-700 mb-4">Choose how to handle audio in your generated story</p>
+
+            <div className="space-y-3">
+              {['original', 'silent', 'custom'].map(mode => (
+                <label
+                  key={mode}
+                  className="flex items-center p-3 rounded-md cursor-pointer hover:bg-gray-100"
+                >
+                  <input
+                    type="radio"
+                    name="audioMode"
+                    value={mode}
+                    checked={selectedAudioMode === mode}
+                    onChange={() => handleAudioModeChange(mode)}
+                    className="form-radio h-4 w-4 text-blue-600"
+                  />
+                  <span className="ml-3 text-gray-800 font-medium capitalize">{mode}</span>
+                  <p className="ml-2 text-gray-600 text-sm">
+                    {mode === 'original' && 'Use the original audio from your video footage'}
+                    {mode === 'silent' && 'Create a silent video with no audio track'}
+                    {mode === 'custom' && 'Upload your own audio file to replace the original'}
+                  </p>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
