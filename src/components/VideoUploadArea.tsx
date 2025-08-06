@@ -64,9 +64,12 @@ export const VideoUploadArea = () => {
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [storyText, setStoryText] = useState('');
   const [mediaId, setMediaId] = useState<string>('');
-
+  const [storyProgress, setStoryProgress] = useState(0);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [storyAudioUrl, setStoryAudioUrl] = useState('');
   const [showAudioOptions, setShowAudioOptions] = useState(false);
   const [manualOptions, setManualOptions] = useState(false);
+
   const [selectedAudioMode, setSelectedAudioMode] = useState('original'); // 'original', 'silent', 'custom'
 
   const toggleAudioOptions = () => {
@@ -269,6 +272,9 @@ export const VideoUploadArea = () => {
       );
       setMediaId(uploadedItem._id);
       setStoryText(uploadedItem.story || '');
+      if (type === 'audio' && uploadedItem.filename) {
+        setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+      }
     } catch (error) {
       console.error('Upload failed:', error);
       setUploadedMedia(prev =>
@@ -312,9 +318,10 @@ export const VideoUploadArea = () => {
 
   const generateStory = async () => {
     if (!uploadedMedia[0]) return;
-
+    const stop = simulateProgress(setStoryProgress); // Start progress animation
+    const prompt = 'Create a motivational story about learning to code.';
     try {
-      const prompt = 'Create a motivational story about learning to code.';
+
       const res = await fetch(`${BASE_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -331,7 +338,9 @@ export const VideoUploadArea = () => {
       }
 
       setStoryText(result.story);
-
+      if (result.storyAudioUrl) {
+        setStoryAudioUrl(result.storyAudioUrl);
+      }
       setUploadedMedia(prev =>
         prev.map(m =>
           m.id === uploadedMedia[0].id
@@ -343,113 +352,105 @@ export const VideoUploadArea = () => {
     } catch (error) {
       console.error('Story generation error:', error);
       alert('❌ Failed to generate story');
+    } finally {
+      stop(); // Complete progress
     }
   };
 
   const generateVideoClip = async () => {
     if (!storyText || !uploadedMedia[0]) return;
     setLoadingVideo(true);
- try {
-    const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        storyText,
-        images: uploadedMedia[0].images || [],
-        mediaId
-      })
-    });
+    const stop = simulateProgress(setVideoProgress);
+    try {
+      const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storyText,
+          images: uploadedMedia[0].images || [],
+          mediaId
+        })
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success && data.renderId) {
+      if (data.success && data.renderId) {
         const renderId = data.renderId;
-      alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
+        alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
 
-      // Mark status as "processing"
-      setUploadedMedia(prev =>
-        prev.map(m =>
-          m.id === mediaId
-            ? {
+        // Mark status as "processing"
+        setUploadedMedia(prev =>
+          prev.map(m =>
+            m.id === mediaId
+              ? {
                 ...m,
                 type: 'video',
                 storyUrl: '',
                 renderId,
                 transcriptionStatus: 'processing'
               }
-            : m
-        )
-      );
+              : m
+          )
+        );
 
-      // Poll for video readiness
-      const pollForResult = async () => {
-        const maxTries = 20;
-        const delayMs = 5000;
+        // Poll for video readiness
+        const pollForResult = async () => {
+          const maxTries = 20;
+          const delayMs = 5000;
 
-        for (let i = 0; i < maxTries; i++) {
-          const statusRes = await fetch(
-            `${BASE_URL}/api/speech/render-status/${renderId}`
-          );
-          const statusData = await statusRes.json();
+          for (let i = 0; i < maxTries; i++) {
+            const statusRes = await fetch(
+              `${BASE_URL}/api/speech/render-status/${renderId}`
+            );
+            const statusData = await statusRes.json();
 
-          if (statusData.status === 'done' && statusData.url) {
-            setUploadedMedia(prev =>
-              prev.map(m =>
-                m.renderId === renderId
-                  ? {
+            if (statusData.status === 'done' && statusData.url) {
+              setUploadedMedia(prev =>
+                prev.map(m =>
+                  m.renderId === renderId
+                    ? {
                       ...m,
                       storyUrl: statusData.url,
                       transcriptionStatus: 'completed'
                     }
-                  : m
-              )
-            );
-            alert('✅ Video rendering complete!');
-            return;
+                    : m
+                )
+              );
+              alert('✅ Video rendering complete!');
+              return;
+            }
+
+            await new Promise(res => setTimeout(res, delayMs));
           }
 
-          await new Promise(res => setTimeout(res, delayMs));
-        }
+          alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+        };
 
-        alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-      };
-
-      await pollForResult();
-    } else {
-      throw new Error('Shotstack failed to start render');
-    }
-  } catch (error) {
-    console.error('Video generation error:', error);
-    alert('❌ Video generation failed');
+        await pollForResult();
+      } else {
+        throw new Error('Shotstack failed to start render');
+      }
+    } catch (error) {
+      console.error('Video generation error:', error);
+      alert('❌ Video generation failed');
     } finally {
+      stop();
       setLoadingVideo(false);
     }
   };
 
-
-  const pollRenderStatus = async (renderId: string, onComplete: (videoUrl: string) => void) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/api/speech/render-status/${renderId}`);
-        const data = await res.json();
-
-        if (data.status === 'done' && data.url) {
-          clearInterval(interval);
-          onComplete(data.url);
-        }
-
-        if (data.status === 'failed') {
-          clearInterval(interval);
-          toast({
-            title: '❌ Render failed',
-            variant: 'destructive'
-          });
-        }
-      } catch (err) {
-        console.error('Render polling error:', err);
-        clearInterval(interval);
-      }
-    }, 5000); // check every 5 seconds
+  const simulateProgress = (setter: (v: number) => void, duration = 3000) => {
+    setter(0);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      setter(Math.min(progress, 90)); // Cap before full completion
+      if (progress >= 90) clearInterval(interval);
+    }, duration / 10);
+    return () => {
+      clearInterval(interval);
+      setter(100);
+    };
   };
 
   const handleLike = async (id: string) => {
@@ -512,6 +513,7 @@ export const VideoUploadArea = () => {
           </Button>
         </div>
       </Card>
+      {/* Upload Progress (already present) */}
       {uploadedMedia.length > 0 &&
         uploadedMedia[0]?.id &&
         uploadProgress[uploadedMedia[0].id] !== undefined && (
@@ -522,7 +524,7 @@ export const VideoUploadArea = () => {
               height="8px"
               isLabelVisible={false}
               bgColor="orange"
-              baseBgColor="#e5e7eb" // Tailwind gray-200
+              baseBgColor="#e5e7eb"
               labelAlignment="right"
               animateOnRender
               customLabel={`${uploadProgress[uploadedMedia[0].id]}%`}
@@ -532,6 +534,45 @@ export const VideoUploadArea = () => {
             </div>
           </div>
         )}
+
+      {/* Story Generation Progress */}
+      {storyProgress > 0 && storyProgress < 100 && (
+        <div className="w-full mt-4">
+          <ProgressBar
+            completed={storyProgress}
+            maxCompleted={100}
+            height="8px"
+            isLabelVisible={false}
+            bgColor="orange"
+            baseBgColor="#e5e7eb"
+            labelAlignment="right"
+            animateOnRender
+          />
+          <div className="text-xs text-right mt-1 text-gray-600">
+            Generating story: {storyProgress}%
+          </div>
+        </div>
+      )}
+
+      {/* Video Generation Progress */}
+      {videoProgress > 0 && videoProgress < 100 && (
+        <div className="w-full mt-4">
+          <ProgressBar
+            completed={videoProgress}
+            maxCompleted={100}
+            height="8px"
+            isLabelVisible={false}
+            bgColor="orange"
+            baseBgColor="#e5e7eb"
+            labelAlignment="right"
+            animateOnRender
+          />
+          <div className="text-xs text-right mt-1 text-gray-600">
+            Creating video: {videoProgress}%
+          </div>
+        </div>
+      )}
+
 
       {/* {uploadedMedia.length > 0 && uploadedMedia.map(media => (
         <div key={media.id} className="border rounded-lg p-4 shadow space-y-4 bg-white">
@@ -604,7 +645,18 @@ export const VideoUploadArea = () => {
                   rows={4}
                   placeholder="Story will appear here..."
                 />
-
+                {storyText && (
+                  <div className="mt-6 p-4 border rounded bg-gray-50">
+                    <h2 className="text-lg font-semibold mb-2">Generated Story</h2>
+                    <p className="text-sm whitespace-pre-wrap">{storyText}</p>
+                    {storyAudioUrl && (
+                      <div className="mt-4">
+                        <h3 className="text-md font-semibold mb-1">🎧 Story Audio</h3>
+                        <audio controls autoPlay src={storyAudioUrl} className="w-full" />
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <Button onClick={generateStory}>Generate Story</Button>
 
@@ -632,14 +684,17 @@ export const VideoUploadArea = () => {
       )}
 
       {/* Video preview */}
-      {videoUrl && (
-        <video
-          src={videoUrl}
-          controls
-          className="rounded w-full col-span-2 mt-4"
-        />
-      )}
-
+      {uploadedMedia.map(media => (
+        <div key={media.id} className="border p-3 mt-4 rounded">
+          <p><strong>{media.name}</strong> ({media.type})</p>
+          {media.storyUrl && media.type === 'video' && (
+            <video controls className="w-full mt-2 rounded">
+              <source src={media.storyUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </div>
+      ))}
       {/* Audio Options */}
       <div className="col-span-2 border-t pt-4">
         <div className="flex justify-between items-center mb-4">
@@ -682,6 +737,13 @@ export const VideoUploadArea = () => {
                   </p>
                 </label>
               ))}
+
+              {storyAudioUrl && (
+                <div className="mt-6">
+                  <h3 className="text-md font-semibold mb-2">Generated Story Audio Preview</h3>
+                  <audio controls autoPlay src={storyAudioUrl} className="w-full" />
+                </div>
+              )}
             </div>
           </div>
         )}
