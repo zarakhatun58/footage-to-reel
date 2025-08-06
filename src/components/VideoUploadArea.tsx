@@ -413,103 +413,99 @@ export const VideoUploadArea = () => {
     }
   };
 
-  const generateVideoClip = async () => {
-    if (!storyText || !uploadedMedia[0]) return;
+const generateVideoClip = async () => {
+  if (!storyText || !uploadedMedia[0]) return;
 
-    setLoadingVideo(true);
-    const stop = simulateProgress(setVideoProgress);
-    let timeoutId: NodeJS.Timeout | null = null;
+  setLoadingVideo(true);
+  const stop = simulateProgress(setVideoProgress); // starts progress bar
 
-    try {
-      // Show warning after 2 minutes if it's stuck
-      timeoutId = setTimeout(() => {
-        alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-      }, 2 * 60 * 1000);
+  let timeoutId: NodeJS.Timeout | null = null;
 
-      const trimmedImages = uploadedMedia[0].images?.slice(0, 10);
+  try {
+    // Alert user if render takes more than 2 minutes
+    timeoutId = setTimeout(() => {
+      alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+    }, 2 * 60 * 1000);
 
-      const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storyText,
-          images: trimmedImages || [],
-          mediaId
-        })
-      });
+    const trimmedImages = uploadedMedia[0].images?.slice(0, 10);
 
-      const data = await res.json();
+    const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storyText,
+        images: trimmedImages || [],
+        mediaId
+      })
+    });
 
-      // ✅ FIX: Access renderId directly from data (not data.response.id)
-      const renderId = data?.renderId;
+    const data = await res.json();
+    const renderId = data?.renderId;
 
-      if (data.success && renderId) {
-        alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
+    if (!data.success || !renderId) {
+      console.error('❌ Backend did not return a render ID:', data);
+      throw new Error('Render ID not returned from backend.');
+    }
 
-        setUploadedMedia(prev =>
-          prev.map(m =>
-            m.id === mediaId
-              ? {
-                ...m,
-                type: 'video',
-                storyUrl: data?.storyUrl || '', // fallback if null
-                renderId,
-                transcriptionStatus: 'processing'
-              }
-              : m
-          )
-        );
+    alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
 
-        // Optional: check for 202 status
-        if (res.status === 202 || res.ok) {
-          alert('🎬 Video render request queued. It may take a moment to start.');
+    // Update media state immediately
+    setUploadedMedia(prev =>
+      prev.map(m =>
+        m.id === mediaId
+          ? {
+              ...m,
+              type: 'video',
+              storyUrl: data?.storyUrl || '',
+              renderId,
+              transcriptionStatus: 'processing'
+            }
+          : m
+      )
+    );
+
+    // ✅ Start polling for video render status
+    const pollForResult = async () => {
+      const maxTries = 15;
+      const delayMs = 2000;
+
+      for (let i = 0; i < maxTries; i++) {
+        const statusRes = await fetch(`${BASE_URL}/api/speech/render-status/${renderId}`);
+        const statusData = await statusRes.json();
+
+        if (statusData.status === 'done' && statusData.url) {
+          setUploadedMedia(prev =>
+            prev.map(m =>
+              m.renderId === renderId
+                ? {
+                    ...m,
+                    storyUrl: statusData.url,
+                    transcriptionStatus: 'completed'
+                  }
+                : m
+            )
+          );
+          alert('✅ Video rendering complete!');
+          return;
         }
 
-        // ✅ Polling render status
-        const pollForResult = async () => {
-          const maxTries = 15;
-          const delayMs = 2000;
-
-          for (let i = 0; i < maxTries; i++) {
-            const statusRes = await fetch(`${BASE_URL}/api/speech/render-status/${renderId}`);
-            const statusData = await statusRes.json();
-
-            if (statusData.status === 'done' && statusData.url) {
-              setUploadedMedia(prev =>
-                prev.map(m =>
-                  m.renderId === renderId
-                    ? {
-                      ...m,
-                      storyUrl: statusData.url,
-                      transcriptionStatus: 'completed'
-                    }
-                    : m
-                )
-              );
-              alert('✅ Video rendering complete!');
-              return;
-            }
-
-            await new Promise(res => setTimeout(res, delayMs));
-          }
-
-          alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-        };
-
-        await pollForResult();
-      } else {
-        console.error('Unexpected response:', data);
-        throw new Error('Render ID not returned from backend.');
+        await new Promise(res => setTimeout(res, delayMs));
       }
-    } catch (error) {
-      console.error('Video generation error:', error);
-      alert('❌ Video generation failed');
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
-      stop();
-      setLoadingVideo(false);
-    }
-  };
+
+      alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+    };
+
+    await pollForResult();
+  } catch (error) {
+    console.error('❌ Video generation error:', error);
+    alert('❌ Video generation failed. Please try again.');
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    stop(); // stop progress bar
+    setLoadingVideo(false);
+  }
+};
+
 
 
 
