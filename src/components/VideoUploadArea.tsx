@@ -357,101 +357,11 @@ export const VideoUploadArea = () => {
     }
   };
 
-  // const generateVideoClip = async () => {
-  //   if (!storyText || !uploadedMedia[0]) return;
-  //   setLoadingVideo(true);
-  //   const stop = simulateProgress(setVideoProgress);
-  //    let timeoutId: NodeJS.Timeout | null = null;
-  //   try {
-  //      timeoutId = setTimeout(() => {
-  //       alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-  //     }, 2 * 60 * 1000);
-
-  //     const trimmedImages = uploadedMedia[0].images?.slice(0, 10); 
-
-  //     const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         storyText,
-  //          images: trimmedImages || [],
-  //         // images: uploadedMedia[0].images || [],
-  //         mediaId
-  //       })
-  //     });
-
-  //     const data = await res.json();
-
-  //     if (data.success && data.renderId) {
-  //       const renderId = data.renderId;
-  //       alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
-
-  //       // Mark status as "processing"
-  //       setUploadedMedia(prev =>
-  //         prev.map(m =>
-  //           m.id === mediaId
-  //             ? {
-  //               ...m,
-  //               type: 'video',
-  //               storyUrl: '',
-  //               renderId,
-  //               transcriptionStatus: 'processing'
-  //             }
-  //             : m
-  //         )
-  //       );
-
-  //       // Poll for video readiness
-  //       const pollForResult = async () => {
-  //         const maxTries = 20;
-  //         const delayMs = 5000;
-
-  //         for (let i = 0; i < maxTries; i++) {
-  //           const statusRes = await fetch(
-  //             `${BASE_URL}/api/speech/render-status/${renderId}`
-  //           );
-  //           const statusData = await statusRes.json();
-
-  //           if (statusData.status === 'done' && statusData.url) {
-  //             setUploadedMedia(prev =>
-  //               prev.map(m =>
-  //                 m.renderId === renderId
-  //                   ? {
-  //                     ...m,
-  //                     storyUrl: statusData.url,
-  //                     transcriptionStatus: 'completed'
-  //                   }
-  //                   : m
-  //               )
-  //             );
-  //             alert('✅ Video rendering complete!');
-  //             return;
-  //           }
-
-  //           await new Promise(res => setTimeout(res, delayMs));
-  //         }
-
-  //         alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-  //       };
-
-  //       await pollForResult();
-  //     } else {
-  //       throw new Error('Shotstack failed to start render');
-  //     }
-  //   } catch (error) {
-  //     console.error('Video generation error:', error);
-  //     alert('❌ Video generation failed');
-  //   } finally {
-  //     if (timeoutId) clearTimeout(timeoutId);
-  //     stop();
-  //     setLoadingVideo(false);
-  //   }
-  // };
-
-
-   const generateVideoClip = async () => {
+  const generateVideoClip = async () => {
     if (!storyText || !uploadedMedia[0]) return;
+
     setLoadingVideo(true);
+    const stop = simulateProgress(setVideoProgress);
     let timeoutId: NodeJS.Timeout | null = null;
 
     try {
@@ -472,34 +382,70 @@ export const VideoUploadArea = () => {
       });
 
       const data = await res.json();
+      const renderId = data?.response?.id;
 
-      if (data.success && data.renderId && data.videoUrl) {
-        alert('🎬 Video Ready! Render ID: ' + data.renderId);
+      if (data.success && renderId) {
+        alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
 
         setUploadedMedia(prev =>
           prev.map(m =>
             m.id === mediaId
               ? {
-                  ...m,
-                  type: 'video',
-                  storyUrl: data.videoUrl,
-                  renderId: data.renderId,
-                  transcriptionStatus: 'completed'
-                }
+                ...m,
+                type: 'video',
+                storyUrl: '',
+                renderId,
+                transcriptionStatus: 'processing'
+              }
               : m
           )
         );
+
+        const pollForResult = async () => {
+          const maxTries = 20;
+          const delayMs = 5000;
+
+          for (let i = 0; i < maxTries; i++) {
+            const statusRes = await fetch(`${BASE_URL}/api/speech/render-status/${renderId}`);
+            const statusData = await statusRes.json();
+
+            if (statusData.status === 'done' && statusData.url) {
+              setUploadedMedia(prev =>
+                prev.map(m =>
+                  m.renderId === renderId
+                    ? {
+                      ...m,
+                      storyUrl: statusData.url,
+                      transcriptionStatus: 'completed'
+                    }
+                    : m
+                )
+              );
+              alert('✅ Video rendering complete!');
+              return;
+            }
+
+            await new Promise(res => setTimeout(res, delayMs));
+          }
+
+          alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+        };
+
+        await pollForResult();
       } else {
-        throw new Error('Render failed');
+        console.error('Unexpected response:', data);
+        throw new Error('Render ID not returned from backend.');
       }
     } catch (error) {
       console.error('Video generation error:', error);
       alert('❌ Video generation failed');
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
+      stop();
       setLoadingVideo(false);
     }
   };
+
 
   const simulateProgress = (setter: (v: number) => void, duration = 3000) => {
     setter(0);
@@ -536,6 +482,41 @@ export const VideoUploadArea = () => {
     const tweet = encodeURIComponent(`Check out my story video! ${media.storyUrl}`);
     window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
   };
+const handleAudioUpload = async (
+  event: React.ChangeEvent<HTMLInputElement>,
+  mediaId: string
+) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/audio`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.success && data.audioUrl) {
+      setUploadedMedia(prev =>
+        prev.map(m =>
+          m.id === mediaId ? { ...m, voiceUrl: data.audioUrl } : m
+        )
+      );
+      alert('🎤 Audio uploaded successfully!');
+    } else {
+      throw new Error('Upload failed');
+    }
+  } catch (err) {
+    console.error('Audio upload error:', err);
+    alert('❌ Failed to upload audio');
+  }
+};
+
+
 
   const videoUrl =
     uploadedMedia?.length > 0 &&
@@ -543,7 +524,7 @@ export const VideoUploadArea = () => {
       uploadedMedia?.[0]?.storyUrl
       ? uploadedMedia[0].storyUrl
       : null;
-       const totalRankScore = uploadedMedia.reduce((acc, media) => acc + (media.rankScore || 0), 0);
+  const totalRankScore = uploadedMedia.reduce((acc, media) => acc + (media.rankScore || 0), 0);
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
@@ -685,11 +666,11 @@ export const VideoUploadArea = () => {
           {uploadedMedia.map(media => (
             <div key={media.id} className="border rounded shadow-sm p-3 space-y-2">
               {media.type === 'image' && media.storyUrl && (
-                <img src={media.storyUrl} alt={media.name} className="w-full rounded" />
+                <img src={media.storyUrl} alt={media.name} className="w-64 rounded" />
               )}
 
               {media.type === 'video' && media.storyUrl && (
-                <video controls src={media.storyUrl} className="w-full rounded" />
+                <video controls src={media.storyUrl} className="w-64 rounded" />
               )}
               <div className="flex-1 space-y-2">
                 <p><strong>Transcript:</strong> {media.transcript || 'Not available'}</p>
@@ -708,17 +689,19 @@ export const VideoUploadArea = () => {
                   rows={4}
                   placeholder="Story will appear here..."
                 />
-                {storyText && (
-                  <div className="mt-6 p-4 border rounded bg-gray-50">
-                    <h2 className="text-lg font-semibold mb-2">Generated Story</h2>
-                    {storyAudioUrl && (
-                      <div className="mt-4">
-                        <h3 className="text-md font-semibold mb-1">🎧 Story Audio</h3>
-                        <audio controls autoPlay src={storyAudioUrl} className="w-full" />
-                      </div>
-                    )}
-                  </div>
+                {media.voiceUrl && (
+                  <audio controls className="w-full">
+                    <source src={`${BASE_URL}/${media.voiceUrl}`} type="audio/mp3" />
+                    Your browser does not support the audio tag.
+                  </audio>
                 )}
+                {/* ✅ ADD audio upload input HERE */}
+                <input
+                  type="file"
+                  accept="audio/mp3"
+                  onChange={(e) => handleAudioUpload(e, media.id)} // pass media.id
+                  className="mt-2"
+                />
                 <div className="flex gap-3">
                   <Button onClick={generateStory}>Generate Story</Button>
 
@@ -750,56 +733,14 @@ export const VideoUploadArea = () => {
         <div key={media.id} className="border p-3 mt-4 rounded">
           <p><strong>{media.name}</strong> ({media.type})</p>
           {media.storyUrl && media.type === 'video' && (
-            <video controls className="w-full mt-2 rounded">
+            <video controls className="w-64 mt-2 rounded">
               <source src={media.storyUrl} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           )}
         </div>
       ))}
-      {/* Audio Options */}
-      <div className="col-span-2 border-t pt-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">
-            <i className="fas fa-music mr-2"></i>Audio Settings
-          </h2>
-          <div className="space-x-2">
-            <Button style={{ backgroundColor: '#FF8C00' }} onClick={toggleAudioOptions}>
-              {showAudioOptions ? 'Hide Audio Options' : 'Show Audio Options'}
-            </Button>
-            <Button style={{ backgroundColor: '#FF8C00' }} onClick={toggleManualOptions}>
-              {manualOptions ? 'Auto Select' : 'Manual Select'}
-            </Button>
-          </div>
-        </div>
 
-         {uploadedMedia[0]?.storyUrl && (
-        <div className="flex flex-col items-center gap-4 mt-6 border-t pt-4">
-          <video
-            src={uploadedMedia[0].storyUrl}
-            controls
-            className="w-full max-w-xl rounded-lg shadow"
-            onPlay={async () => {
-              const res = await fetch(`${BASE_URL}/api/media/${uploadedMedia[0].id}/view`, { method: 'POST' });
-              const data = await res.json();
-              if (data.success) {
-                setUploadedMedia(prev =>
-                  prev.map(media =>
-                    media.id === uploadedMedia[0].id
-                      ? { ...media, views: data.views, rankScore: data.rankScore }
-                      : media
-                  )
-                );
-              }
-            }}
-          />
-
-          <MediaStatsBar media={uploadedMedia[0]} />
-
-          <div className="text-sm text-gray-600">Total Rank Score: {totalRankScore}</div>
-        </div>
-      )}
-      </div>
     </div>
   );
 };
