@@ -95,7 +95,7 @@ export const VideoUploadArea = () => {
     handleFiles(files);
   }, []);
 
-const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
@@ -105,10 +105,10 @@ const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
       const type = mimeType.startsWith('image')
         ? 'image'
         : mimeType.startsWith('video')
-        ? 'video'
-        : 'voiceover';
+          ? 'video'
+          : 'voiceover';
 
-      setUploadedMedia((prev:any )=> [...prev, { id: tempId, name: file.name, type }]);
+      setUploadedMedia((prev: any) => [...prev, { id: tempId, name: file.name, type }]);
       uploadFileToServer(tempId, file, type);
     });
 
@@ -221,7 +221,7 @@ const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
   //   }
   // };
 
-const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+  const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
     const formData = new FormData();
     formData.append(
       type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
@@ -264,8 +264,8 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
         images: uploadedItem.images || []
       };
 
-      setUploadedMedia((prev:any) =>
-        prev.map((media:any) => (media.id === mediaId ? newMedia : media))
+      setUploadedMedia((prev: any) =>
+        prev.map((media: any) => (media.id === mediaId ? newMedia : media))
       );
       setMediaId(uploadedItem._id);
       setStoryText(uploadedItem.story || '');
@@ -499,7 +499,7 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
           </div>
         )}
 
-      {uploadedMedia.length > 0 && uploadedMedia.map(media => (
+      {/* {uploadedMedia.length > 0 && uploadedMedia.map(media => (
         <div key={media.id} className="border rounded-lg p-4 shadow space-y-4 bg-white">
           <div className="flex flex-col md:flex-row gap-4">
             {uploadedMedia[0].thumbnail && (
@@ -541,7 +541,62 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
             </div>
           </div>
         </div>
-      ))}
+      ))} */}
+      {uploadedMedia.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+          {uploadedMedia.map(media => (
+            <div key={media.id} className="border rounded shadow-sm p-3 space-y-2">
+              {media.type === 'image' && media.storyUrl && (
+                <img src={media.storyUrl} alt={media.name} className="w-full rounded" />
+              )}
+
+              {media.type === 'video' && media.storyUrl && (
+                <video controls src={media.storyUrl} className="w-full rounded" />
+              )}
+              <div className="flex-1 space-y-2">
+                <p><strong>Transcript:</strong> {media.transcript || 'Not available'}</p>
+                <p><strong>Tags:</strong> {media.tags?.join(', ') || 'Not generated'}</p>
+                <p><strong>Emotions:</strong> {media.emotions || 'Not detected'}</p>
+
+                <Textarea
+                  value={media.story || ''}
+                  onChange={e =>
+                    setUploadedMedia(prev =>
+                      prev.map(m =>
+                        m.id === media.id ? { ...m, story: e.target.value } : m
+                      )
+                    )
+                  }
+                  rows={4}
+                  placeholder="Story will appear here..."
+                />
+
+                <div className="flex gap-3">
+                  <Button onClick={generateStory}>Generate Story</Button>
+
+                  <Button
+                    onClick={generateVideoClip}
+                    disabled={!media.story || loadingVideo}
+                  >
+                    {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+                  </Button>
+                </div>
+              </div>
+              {media.type === 'audio' && (
+                <div className="text-sm italic text-muted-foreground">
+                  🎙️ Voiceover uploaded
+                </div>
+              )}
+
+              <div className="text-sm font-semibold truncate">{media.name}</div>
+              <div className="text-xs text-muted-foreground">
+                Status: {media.transcriptionStatus}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Video preview */}
       {videoUrl && (
         <video
