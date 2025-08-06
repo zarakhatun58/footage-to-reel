@@ -24,8 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BASE_URL } from "@/services/apis";
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
-
-import { app } from "@/lib/firebase";
 import { googleLogout } from "@react-oauth/google";
 
 type SignInDialogProps = {

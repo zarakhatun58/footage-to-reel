@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Video, Search, Sparkles, Upload, Menu, X, User, LogOut } from "lucide-react";
-import SignInDialog from "./OldSignInDialog";
+
 import { ProfileDropdown } from "./ProfileDropdown";
 import { googleLogout } from '@react-oauth/google';
 import { useNavigate } from "react-router-dom";
+import SignInDialog from "./SignInDialog";
 
 interface NavigationProps {
   activeSection: string;
