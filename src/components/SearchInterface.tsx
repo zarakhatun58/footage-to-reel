@@ -58,33 +58,72 @@ export const SearchInterface = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  // const handleSearch = async () => {
+  //   if (!searchQuery.trim()) return;
     
-    setIsSearching(true);
+  //   setIsSearching(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const filtered = mockSearchResults.filter(result => 
-        result.transcript.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        result.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-      setSearchResults(filtered);
-      setIsSearching(false);
-    }, 1000);
-  };
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     const filtered = mockSearchResults.filter(result => 
+  //       result.transcript.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //       result.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  //     );
+  //     setSearchResults(filtered);
+  //     setIsSearching(false);
+  //   }, 1000);
+  // };
 
-  const handleSuggestedSearch = (query: string) => {
-    setSearchQuery(query);
-    // Auto-trigger search
-    setTimeout(() => {
-      setIsSearching(true);
-      setTimeout(() => {
-        setSearchResults(mockSearchResults);
-        setIsSearching(false);
-      }, 800);
-    }, 100);
-  };
+const handleSearch = async () => {
+  if (!searchQuery.trim()) return;
+
+  setIsSearching(true);
+
+  try {
+    const res = await fetch(`/api/search-videos?search=${encodeURIComponent(searchQuery)}`);
+    const data = await res.json();
+
+    if (data?.videos) {
+      setSearchResults(
+        data.videos.map((video) => ({
+          id: video._id,
+          videoName: video.title || 'Untitled Video',
+          timestamp: video.timestamp || '00:00', // optional
+          duration: video.duration || '00:30',    // optional
+          transcript: video.transcript || '',
+          tags: video.tags || [],
+          confidence: 100 // or derive from match score if available
+        }))
+      );
+    } else {
+      setSearchResults([]);
+    }
+  } catch (err) {
+    console.error("❌ Search API failed:", err);
+    setSearchResults([]);
+  } finally {
+    setIsSearching(false);
+  }
+};
+const handleSuggestedSearch = (query: string) => {
+  setSearchQuery(query);
+  setTimeout(() => {
+    handleSearch();
+  }, 100);
+};
+
+
+  // const handleSuggestedSearch = (query: string) => {
+  //   setSearchQuery(query);
+  //   // Auto-trigger search
+  //   setTimeout(() => {
+  //     setIsSearching(true);
+  //     setTimeout(() => {
+  //       setSearchResults(mockSearchResults);
+  //       setIsSearching(false);
+  //     }, 800);
+  //   }, 100);
+  // };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

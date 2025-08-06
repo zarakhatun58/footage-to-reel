@@ -143,29 +143,20 @@ export const VideoUploadArea = () => {
     });
   };
 
-  // const uploadFileToServer = async (
-  //   mediaId: string,
-  //   file: File,
-  //   type: UploadedMedia['type']
-  // ) => {
+  // const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
   //   const formData = new FormData();
   //   formData.append(
   //     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
   //     file
   //   );
 
-  //   // ✅ Safe upload progress and state update
   //   setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
 
-  //   setUploadedMedia((prev: any) => {
-  //     if (!prev.length) return [{ id: mediaId, transcriptionStatus: 'processing' }];
-  //     return prev.map((media: any) =>
-  //       media.id === mediaId ? { ...media, transcriptionStatus: 'processing' } : media
-  //     );
-  //   });
+  //   setUploadedMedia(prev =>
+  //     prev.map(m => (m.id === mediaId ? { ...m, transcriptionStatus: 'processing' } : m))
+  //   );
 
   //   try {
-  //     // ✅ 1. Upload the file
   //     const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
   //       method: 'POST',
   //       body: formData
@@ -175,8 +166,7 @@ export const VideoUploadArea = () => {
   //     const uploadedItem = result.uploaded?.[0];
   //     if (!uploadedItem) throw new Error('Upload returned no file');
 
-  //     // ✅ 2. Use enriched metadata directly
-  //     const newMedia: UploadedMedia = {
+  //     const newMedia = {
   //       id: uploadedItem._id || mediaId,
   //       name: uploadedItem.filename,
   //       size: file.size,
@@ -192,98 +182,27 @@ export const VideoUploadArea = () => {
   //       tags: uploadedItem.tags || [],
   //       emotions: uploadedItem.emotions?.join(', ') || '',
   //       story: uploadedItem.story || '',
-  //       storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`
+  //       storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
+  //       images: uploadedItem.images || []
   //     };
 
-  //     // ✅ 3. Update state
-  //     setUploadedMedia(prev =>
-  //       prev.map(media => (media.id === mediaId ? newMedia : media))
+  //     setUploadedMedia((prev: any) =>
+  //       prev.map((media: any) => (media.id === mediaId ? newMedia : media))
   //     );
   //     setMediaId(uploadedItem._id);
   //     setStoryText(uploadedItem.story || '');
-
-  //     toast({
-  //       title: 'Upload complete',
-  //       description: `${file.name} uploaded and analyzed.`
-  //     });
-
+  //     if (type === 'audio' && uploadedItem.filename) {
+  //       setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+  //     }
   //   } catch (error) {
   //     console.error('Upload failed:', error);
   //     setUploadedMedia(prev =>
   //       prev.map(media =>
-  //         media.id === mediaId
-  //           ? { ...media, transcriptionStatus: 'error' }
-  //           : media
+  //         media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
   //       )
   //     );
-  //     toast({
-  //       title: 'Upload failed',
-  //       description: `${file.name} could not be uploaded.`,
-  //       variant: 'destructive'
-  //     });
   //   }
   // };
-
-  const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-    const formData = new FormData();
-    formData.append(
-      type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-      file
-    );
-
-    setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
-
-    setUploadedMedia(prev =>
-      prev.map(m => (m.id === mediaId ? { ...m, transcriptionStatus: 'processing' } : m))
-    );
-
-    try {
-      const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
-        method: 'POST',
-        body: formData
-      });
-
-      const result = await uploadRes.json();
-      const uploadedItem = result.uploaded?.[0];
-      if (!uploadedItem) throw new Error('Upload returned no file');
-
-      const newMedia = {
-        id: uploadedItem._id || mediaId,
-        name: uploadedItem.filename,
-        size: file.size,
-        type,
-        transcriptionStatus: 'completed',
-        thumbnail:
-          uploadedItem.thumbnail ||
-          uploadedItem.images?.[0] ||
-          (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-            ? uploadedItem.filename
-            : null),
-        transcript: uploadedItem.transcript || '',
-        tags: uploadedItem.tags || [],
-        emotions: uploadedItem.emotions?.join(', ') || '',
-        story: uploadedItem.story || '',
-        storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
-        images: uploadedItem.images || []
-      };
-
-      setUploadedMedia((prev: any) =>
-        prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-      );
-      setMediaId(uploadedItem._id);
-      setStoryText(uploadedItem.story || '');
-      if (type === 'audio' && uploadedItem.filename) {
-        setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      setUploadedMedia(prev =>
-        prev.map(media =>
-          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-        )
-      );
-    }
-  };
 
 
   // useEffect(() => {
@@ -315,6 +234,132 @@ export const VideoUploadArea = () => {
   //   };
   //   fetchUploadedVideos();
   // }, []);
+
+  const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+    const formData = new FormData();
+    formData.append(
+      type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+      file
+    );
+
+    // Show image immediately using local blob URL
+    const previewUrl = URL.createObjectURL(file);
+    setUploadedMedia((prev: any) => [
+      ...prev,
+      {
+        id: mediaId,
+        name: file.name,
+        size: file.size,
+        type,
+        transcriptionStatus: 'processing',
+        thumbnail: previewUrl,
+        transcript: '',
+        tags: [],
+        emotions: '',
+        story: '',
+        images: []
+      }
+    ]);
+
+    try {
+      // Setup progress tracking with fetch (using XMLHttpRequest since fetch doesn't support progress natively)
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const result = JSON.parse(xhr.responseText);
+          const uploadedItem = result.uploaded?.[0];
+
+          if (!uploadedItem) throw new Error('Upload returned no file');
+
+          // Update with basic info post-upload
+          const newMedia = {
+            id: uploadedItem._id || mediaId,
+            name: uploadedItem.filename,
+            size: file.size,
+            type,
+            transcriptionStatus: 'processing', // still processing metadata
+            thumbnail:
+              uploadedItem.thumbnail ||
+              uploadedItem.images?.[0] ||
+              (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+                ? uploadedItem.filename
+                : previewUrl),
+            transcript: '',
+            tags: [],
+            emotions: '',
+            story: '',
+            storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
+            images: uploadedItem.images || []
+          };
+
+          setUploadedMedia((prev: any) =>
+            prev.map((media: any) => (media.id === mediaId ? newMedia : media))
+          );
+
+          setMediaId(uploadedItem._id);
+          setStoryText('');
+
+          if (type === 'audio' && uploadedItem.filename) {
+            setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+          }
+
+          // Begin polling for metadata (story/emotions/tags)
+          pollMediaStatus(uploadedItem._id || mediaId);
+        } else {
+          throw new Error(`Upload failed with status ${xhr.status}`);
+        }
+      };
+
+      xhr.onerror = () => {
+        throw new Error('XHR upload failed');
+      };
+
+      xhr.open('POST', `${BASE_URL}/api/uploads`);
+      xhr.send(formData);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadedMedia(prev =>
+        prev.map(media =>
+          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
+        )
+      );
+    }
+  };
+
+  const pollMediaStatus = async (mediaId: string) => {
+    const maxAttempts = 10;
+    const interval = 2000; // 2 seconds
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        attempts++;
+        const res = await fetch(`${BASE_URL}/api/media/${mediaId}`);
+        const data = await res.json();
+
+        if (data.transcriptionStatus === 'completed' || attempts >= maxAttempts) {
+          setUploadedMedia(prev =>
+            prev.map(media => (media.id === mediaId ? { ...media, ...data } : media))
+          );
+        } else {
+          setTimeout(poll, interval);
+        }
+      } catch (err) {
+        console.error('Polling failed:', err);
+      }
+    };
+
+    poll();
+  };
+
 
   const generateStory = async () => {
     if (!uploadedMedia[0]) return;
@@ -482,39 +527,39 @@ export const VideoUploadArea = () => {
     const tweet = encodeURIComponent(`Check out my story video! ${media.storyUrl}`);
     window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
   };
-const handleAudioUpload = async (
-  event: React.ChangeEvent<HTMLInputElement>,
-  mediaId: string
-) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  const handleAudioUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    mediaId: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const formData = new FormData();
-  formData.append('file', file);
+    const formData = new FormData();
+    formData.append('file', file);
 
-  try {
-    const res = await fetch(`${BASE_URL}/api/audio`, {
-      method: 'POST',
-      body: formData
-    });
+    try {
+      const res = await fetch(`${BASE_URL}/api/audio`, {
+        method: 'POST',
+        body: formData
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success && data.audioUrl) {
-      setUploadedMedia(prev =>
-        prev.map(m =>
-          m.id === mediaId ? { ...m, voiceUrl: data.audioUrl } : m
-        )
-      );
-      alert('🎤 Audio uploaded successfully!');
-    } else {
-      throw new Error('Upload failed');
+      if (data.success && data.audioUrl) {
+        setUploadedMedia(prev =>
+          prev.map(m =>
+            m.id === mediaId ? { ...m, voiceUrl: data.audioUrl } : m
+          )
+        );
+        alert('🎤 Audio uploaded successfully!');
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (err) {
+      console.error('Audio upload error:', err);
+      alert('❌ Failed to upload audio');
     }
-  } catch (err) {
-    console.error('Audio upload error:', err);
-    alert('❌ Failed to upload audio');
-  }
-};
+  };
 
 
 
@@ -559,25 +604,27 @@ const handleAudioUpload = async (
       </Card>
       {/* Upload Progress (already present) */}
       {uploadedMedia.length > 0 &&
-        uploadedMedia[0]?.id &&
-        uploadProgress[uploadedMedia[0].id] !== undefined && (
-          <div className="w-full mt-2">
-            <ProgressBar
-              completed={uploadProgress[uploadedMedia[0].id]}
-              maxCompleted={100}
-              height="8px"
-              isLabelVisible={false}
-              bgColor="orange"
-              baseBgColor="#e5e7eb"
-              labelAlignment="right"
-              animateOnRender
-              customLabel={`${uploadProgress[uploadedMedia[0].id]}%`}
-            />
-            <div className="text-xs text-right mt-1 text-gray-600">
-              {uploadProgress[uploadedMedia[0].id]}%
+        uploadedMedia.map(media =>
+          uploadProgress[media.id] !== undefined ? (
+            <div key={media.id} className="w-full mt-2">
+              <ProgressBar
+                completed={uploadProgress[media.id]}
+                maxCompleted={100}
+                height="8px"
+                isLabelVisible={false}
+                bgColor="orange"
+                baseBgColor="#e5e7eb"
+                labelAlignment="right"
+                animateOnRender
+                customLabel={`${uploadProgress[media.id]}%`}
+              />
+              <div className="text-xs text-right mt-1 text-gray-600">
+                {uploadProgress[media.id]}%
+              </div>
             </div>
-          </div>
+          ) : null
         )}
+
 
       {/* Story Generation Progress */}
       {storyProgress > 0 && storyProgress < 100 && (
