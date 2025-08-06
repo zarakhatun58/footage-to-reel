@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   FileVideo,
   Mic,
@@ -24,6 +24,7 @@ import { BASE_URL } from '@/services/apis';
 import { RenderProgress } from './RenderProgress ';
 import { MediaStatsBar } from './MediaStatsBar';
 import UploadedMediaCard from './UploadedMediaCard';
+import AudioUpload from './AudioUpload';
 
 type UploadedMedia = {
   id: string;
@@ -55,12 +56,11 @@ export const VideoUploadArea = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [editTranscriptId, setEditTranscriptId] = useState<string | null>(null);
-  const [transcriptDraft, setTranscriptDraft] = useState<string>('');
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const { toast } = useToast();
-  const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
-  const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [storyText, setStoryText] = useState('');
   const [mediaId, setMediaId] = useState<string>('');
@@ -540,48 +540,9 @@ export const VideoUploadArea = () => {
     const tweet = encodeURIComponent(`Check out my story video! ${media.storyUrl}`);
     window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
   };
-  const handleAudioUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    mediaId: string
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/audio`, {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await res.json();
-
-      if (data.success && data.audioUrl) {
-        setUploadedMedia(prev =>
-          prev.map(m =>
-            m.id === mediaId ? { ...m, voiceUrl: data.audioUrl } : m
-          )
-        );
-        alert('🎤 Audio uploaded successfully!');
-      } else {
-        throw new Error('Upload failed');
-      }
-    } catch (err) {
-      console.error('Audio upload error:', err);
-      alert('❌ Failed to upload audio');
-    }
-  };
 
 
 
-  const videoUrl =
-    uploadedMedia?.length > 0 &&
-      uploadedMedia?.[0]?.type === 'video' &&
-      uploadedMedia?.[0]?.storyUrl
-      ? uploadedMedia[0].storyUrl
-      : null;
   const totalRankScore = uploadedMedia.reduce((acc, media) => acc + (media.rankScore || 0), 0);
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -777,13 +738,13 @@ export const VideoUploadArea = () => {
                 placeholder="Story will appear here..."
               />
 
-              <input
-                type="file"
-                accept="audio/mp3"
-                onChange={(e) => handleAudioUpload(e, uploadedMedia[0]?.id)}
-                className="w-full"
-              />
-
+              {uploadedMedia[0] && (
+                <AudioUpload
+                  media={uploadedMedia[0]}
+                  setUploadedMedia={setUploadedMedia}
+                  BASE_URL={BASE_URL}
+                />
+              )}
               <div className="flex flex-wrap gap-3">
                 <Button onClick={generateStory}>Generate Story</Button>
                 <Button
