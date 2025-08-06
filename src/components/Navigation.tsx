@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Video, Search, Sparkles, Upload, Menu, X, User, LogOut } from "lucide-react";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { app } from "@/lib/firebase";
 import SignInDialog from "./OldSignInDialog";
 import { ProfileDropdown } from "./ProfileDropdown";
+import { googleLogout } from '@react-oauth/google';
+import { useNavigate } from "react-router-dom";
 
 interface NavigationProps {
   activeSection: string;
@@ -16,7 +16,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [user, setUser] = useState(null);
-
+const navigate = useNavigate();
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Video },
     { id: 'upload', label: 'Upload', icon: Upload },
@@ -27,29 +27,13 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-  const handleGoogleLogin = async () => {
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      setShowAuthDialog(false);
-    } catch (error) {
-      console.error("Login failed", error);
-    }
-  };
 
-  const handleLogout = async () => {
-    const auth = getAuth(app);
-    await signOut(auth);
-  };
+ const handleLogout = async () => {
+        localStorage.removeItem('authToken');
+        navigate("/");
+        googleLogout();
+    };
 
-  useEffect(() => {
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleUploadClick = () => {
     if (!user) {
