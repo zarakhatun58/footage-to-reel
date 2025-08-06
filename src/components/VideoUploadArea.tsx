@@ -349,44 +349,78 @@ export const VideoUploadArea = () => {
   const generateVideoClip = async () => {
     if (!storyText || !uploadedMedia[0]) return;
     setLoadingVideo(true);
+ try {
+    const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storyText,
+        images: uploadedMedia[0].images || [],
+        mediaId
+      })
+    });
 
-    try {
-      const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storyText,
-          images: uploadedMedia[0].images || [],
-          mediaId
-        })
-      });
+    const data = await res.json();
 
-      const data = await res.json();
+    if (data.success && data.renderId) {
+        const renderId = data.renderId;
+      alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
 
-      if (data.success && data.renderId && data.videoUrl) {
-        alert('🎬 Video Ready!\nRender ID: ' + data.renderId);
-
-        // Save new video result in uploadedMedia
-        setUploadedMedia(prev =>
-          prev.map(m =>
-            m.id === mediaId
-              ? {
+      // Mark status as "processing"
+      setUploadedMedia(prev =>
+        prev.map(m =>
+          m.id === mediaId
+            ? {
                 ...m,
                 type: 'video',
-                storyUrl: data.videoUrl,
-                renderId: data.renderId,
-                transcriptionStatus: 'completed'
+                storyUrl: '',
+                renderId,
+                transcriptionStatus: 'processing'
               }
-              : m
-          )
-        );
-      } else {
-        throw new Error('Render failed');
-      }
+            : m
+        )
+      );
 
-    } catch (error) {
-      console.error('Video generation error:', error);
-      alert('❌ Video generation failed');
+      // Poll for video readiness
+      const pollForResult = async () => {
+        const maxTries = 20;
+        const delayMs = 5000;
+
+        for (let i = 0; i < maxTries; i++) {
+          const statusRes = await fetch(
+            `${BASE_URL}/api/speech/render-status/${renderId}`
+          );
+          const statusData = await statusRes.json();
+
+          if (statusData.status === 'done' && statusData.url) {
+            setUploadedMedia(prev =>
+              prev.map(m =>
+                m.renderId === renderId
+                  ? {
+                      ...m,
+                      storyUrl: statusData.url,
+                      transcriptionStatus: 'completed'
+                    }
+                  : m
+              )
+            );
+            alert('✅ Video rendering complete!');
+            return;
+          }
+
+          await new Promise(res => setTimeout(res, delayMs));
+        }
+
+        alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+      };
+
+      await pollForResult();
+    } else {
+      throw new Error('Shotstack failed to start render');
+    }
+  } catch (error) {
+    console.error('Video generation error:', error);
+    alert('❌ Video generation failed');
     } finally {
       setLoadingVideo(false);
     }
