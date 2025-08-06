@@ -357,84 +357,146 @@ export const VideoUploadArea = () => {
     }
   };
 
-  const generateVideoClip = async () => {
+  // const generateVideoClip = async () => {
+  //   if (!storyText || !uploadedMedia[0]) return;
+  //   setLoadingVideo(true);
+  //   const stop = simulateProgress(setVideoProgress);
+  //    let timeoutId: NodeJS.Timeout | null = null;
+  //   try {
+  //      timeoutId = setTimeout(() => {
+  //       alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+  //     }, 2 * 60 * 1000);
+
+  //     const trimmedImages = uploadedMedia[0].images?.slice(0, 10); 
+
+  //     const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         storyText,
+  //          images: trimmedImages || [],
+  //         // images: uploadedMedia[0].images || [],
+  //         mediaId
+  //       })
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (data.success && data.renderId) {
+  //       const renderId = data.renderId;
+  //       alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
+
+  //       // Mark status as "processing"
+  //       setUploadedMedia(prev =>
+  //         prev.map(m =>
+  //           m.id === mediaId
+  //             ? {
+  //               ...m,
+  //               type: 'video',
+  //               storyUrl: '',
+  //               renderId,
+  //               transcriptionStatus: 'processing'
+  //             }
+  //             : m
+  //         )
+  //       );
+
+  //       // Poll for video readiness
+  //       const pollForResult = async () => {
+  //         const maxTries = 20;
+  //         const delayMs = 5000;
+
+  //         for (let i = 0; i < maxTries; i++) {
+  //           const statusRes = await fetch(
+  //             `${BASE_URL}/api/speech/render-status/${renderId}`
+  //           );
+  //           const statusData = await statusRes.json();
+
+  //           if (statusData.status === 'done' && statusData.url) {
+  //             setUploadedMedia(prev =>
+  //               prev.map(m =>
+  //                 m.renderId === renderId
+  //                   ? {
+  //                     ...m,
+  //                     storyUrl: statusData.url,
+  //                     transcriptionStatus: 'completed'
+  //                   }
+  //                   : m
+  //               )
+  //             );
+  //             alert('✅ Video rendering complete!');
+  //             return;
+  //           }
+
+  //           await new Promise(res => setTimeout(res, delayMs));
+  //         }
+
+  //         alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+  //       };
+
+  //       await pollForResult();
+  //     } else {
+  //       throw new Error('Shotstack failed to start render');
+  //     }
+  //   } catch (error) {
+  //     console.error('Video generation error:', error);
+  //     alert('❌ Video generation failed');
+  //   } finally {
+  //     if (timeoutId) clearTimeout(timeoutId);
+  //     stop();
+  //     setLoadingVideo(false);
+  //   }
+  // };
+
+
+   const generateVideoClip = async () => {
     if (!storyText || !uploadedMedia[0]) return;
     setLoadingVideo(true);
-    const stop = simulateProgress(setVideoProgress);
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
+      timeoutId = setTimeout(() => {
+        alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+      }, 2 * 60 * 1000);
+
+      const trimmedImages = uploadedMedia[0].images?.slice(0, 10);
+
       const res = await fetch(`${BASE_URL}/api/speech/generate-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storyText,
-          images: uploadedMedia[0].images || [],
+          images: trimmedImages || [],
           mediaId
         })
       });
 
       const data = await res.json();
 
-      if (data.success && data.renderId) {
-        const renderId = data.renderId;
-        alert(`🎬 Video rendering started!\nRender ID: ${renderId}`);
+      if (data.success && data.renderId && data.videoUrl) {
+        alert('🎬 Video Ready! Render ID: ' + data.renderId);
 
-        // Mark status as "processing"
         setUploadedMedia(prev =>
           prev.map(m =>
             m.id === mediaId
               ? {
-                ...m,
-                type: 'video',
-                storyUrl: '',
-                renderId,
-                transcriptionStatus: 'processing'
-              }
+                  ...m,
+                  type: 'video',
+                  storyUrl: data.videoUrl,
+                  renderId: data.renderId,
+                  transcriptionStatus: 'completed'
+                }
               : m
           )
         );
-
-        // Poll for video readiness
-        const pollForResult = async () => {
-          const maxTries = 20;
-          const delayMs = 5000;
-
-          for (let i = 0; i < maxTries; i++) {
-            const statusRes = await fetch(
-              `${BASE_URL}/api/speech/render-status/${renderId}`
-            );
-            const statusData = await statusRes.json();
-
-            if (statusData.status === 'done' && statusData.url) {
-              setUploadedMedia(prev =>
-                prev.map(m =>
-                  m.renderId === renderId
-                    ? {
-                      ...m,
-                      storyUrl: statusData.url,
-                      transcriptionStatus: 'completed'
-                    }
-                    : m
-                )
-              );
-              alert('✅ Video rendering complete!');
-              return;
-            }
-
-            await new Promise(res => setTimeout(res, delayMs));
-          }
-
-          alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-        };
-
-        await pollForResult();
       } else {
-        throw new Error('Shotstack failed to start render');
+        throw new Error('Render failed');
       }
     } catch (error) {
       console.error('Video generation error:', error);
       alert('❌ Video generation failed');
     } finally {
-      stop();
+      if (timeoutId) clearTimeout(timeoutId);
       setLoadingVideo(false);
     }
   };
@@ -481,6 +543,7 @@ export const VideoUploadArea = () => {
       uploadedMedia?.[0]?.storyUrl
       ? uploadedMedia[0].storyUrl
       : null;
+       const totalRankScore = uploadedMedia.reduce((acc, media) => acc + (media.rankScore || 0), 0);
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
@@ -618,7 +681,7 @@ export const VideoUploadArea = () => {
         </div>
       ))} */}
       {uploadedMedia.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+        <div className="flex flex-col md:flex-row gap-4 mt-6">
           {uploadedMedia.map(media => (
             <div key={media.id} className="border rounded shadow-sm p-3 space-y-2">
               {media.type === 'image' && media.storyUrl && (
@@ -648,7 +711,6 @@ export const VideoUploadArea = () => {
                 {storyText && (
                   <div className="mt-6 p-4 border rounded bg-gray-50">
                     <h2 className="text-lg font-semibold mb-2">Generated Story</h2>
-                    <p className="text-sm whitespace-pre-wrap">{storyText}</p>
                     {storyAudioUrl && (
                       <div className="mt-4">
                         <h3 className="text-md font-semibold mb-1">🎧 Story Audio</h3>
@@ -711,42 +773,32 @@ export const VideoUploadArea = () => {
           </div>
         </div>
 
-        {showAudioOptions && (
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <p className="text-gray-700 mb-4">Choose how to handle audio in your generated story</p>
+         {uploadedMedia[0]?.storyUrl && (
+        <div className="flex flex-col items-center gap-4 mt-6 border-t pt-4">
+          <video
+            src={uploadedMedia[0].storyUrl}
+            controls
+            className="w-full max-w-xl rounded-lg shadow"
+            onPlay={async () => {
+              const res = await fetch(`${BASE_URL}/api/media/${uploadedMedia[0].id}/view`, { method: 'POST' });
+              const data = await res.json();
+              if (data.success) {
+                setUploadedMedia(prev =>
+                  prev.map(media =>
+                    media.id === uploadedMedia[0].id
+                      ? { ...media, views: data.views, rankScore: data.rankScore }
+                      : media
+                  )
+                );
+              }
+            }}
+          />
 
-            <div className="space-y-3">
-              {['original', 'silent', 'custom'].map(mode => (
-                <label
-                  key={mode}
-                  className="flex items-center p-3 rounded-md cursor-pointer hover:bg-gray-100"
-                >
-                  <input
-                    type="radio"
-                    name="audioMode"
-                    value={mode}
-                    checked={selectedAudioMode === mode}
-                    onChange={() => handleAudioModeChange(mode)}
-                    className="form-radio h-4 w-4 text-blue-600"
-                  />
-                  <span className="ml-3 text-gray-800 font-medium capitalize">{mode}</span>
-                  <p className="ml-2 text-gray-600 text-sm">
-                    {mode === 'original' && 'Use the original audio from your video footage'}
-                    {mode === 'silent' && 'Create a silent video with no audio track'}
-                    {mode === 'custom' && 'Upload your own audio file to replace the original'}
-                  </p>
-                </label>
-              ))}
+          <MediaStatsBar media={uploadedMedia[0]} />
 
-              {storyAudioUrl && (
-                <div className="mt-6">
-                  <h3 className="text-md font-semibold mb-2">Generated Story Audio Preview</h3>
-                  <audio controls autoPlay src={storyAudioUrl} className="w-full" />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+          <div className="text-sm text-gray-600">Total Rank Score: {totalRankScore}</div>
+        </div>
+      )}
       </div>
     </div>
   );

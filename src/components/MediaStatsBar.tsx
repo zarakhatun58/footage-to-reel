@@ -1,4 +1,4 @@
-import { Eye, Share2, BarChart3, ThumbsUp } from 'lucide-react';
+import { Eye, Share2, BarChart3, ThumbsUp, Download } from 'lucide-react';
 import { useState } from 'react';
 import { BASE_URL } from '../services/apis';
 
@@ -44,6 +44,10 @@ export const MediaStatsBar = ({ media}) => {
         <BarChart3 className="w-4 h-4 text-pink-500" />
         Rank: {stats.rank}
       </div>
+       <a href={media.storyUrl} download className="flex items-center gap-1 text-red-600">
+          <Download className="w-4 h-4" />
+          Download
+        </a>
     </div>
   );
 };
