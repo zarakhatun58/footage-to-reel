@@ -242,7 +242,7 @@ export const VideoUploadArea = () => {
       file
     );
 
-    // Show image immediately using local blob URL
+    // Show preview immediately
     const previewUrl = URL.createObjectURL(file);
     setUploadedMedia((prev: any) => [
       ...prev,
@@ -262,7 +262,6 @@ export const VideoUploadArea = () => {
     ]);
 
     try {
-      // Setup progress tracking with fetch (using XMLHttpRequest since fetch doesn't support progress natively)
       const xhr = new XMLHttpRequest();
 
       xhr.upload.onprogress = (event) => {
@@ -279,22 +278,22 @@ export const VideoUploadArea = () => {
 
           if (!uploadedItem) throw new Error('Upload returned no file');
 
-          // Update with basic info post-upload
+          // ✅ CHANGED: Use actual metadata from backend response
           const newMedia = {
             id: uploadedItem._id || mediaId,
             name: uploadedItem.filename,
             size: file.size,
             type,
-            transcriptionStatus: 'processing', // still processing metadata
+            transcriptionStatus: uploadedItem.status || 'completed',
             thumbnail:
               uploadedItem.thumbnail ||
               uploadedItem.images?.[0] ||
               (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
                 ? uploadedItem.filename
                 : previewUrl),
-            transcript: '',
-            tags: [],
-            emotions: '',
+            transcript: uploadedItem.transcript || '',
+            tags: uploadedItem.tags || [],
+            emotions: uploadedItem.emotions || '',
             story: '',
             storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
             images: uploadedItem.images || []
@@ -311,8 +310,9 @@ export const VideoUploadArea = () => {
             setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
           }
 
-          // Begin polling for metadata (story/emotions/tags)
-          pollMediaStatus(uploadedItem._id || mediaId);
+          // ❌ REMOVED: No need to poll anymore
+          // pollMediaStatus(uploadedItem._id || mediaId);
+
         } else {
           throw new Error(`Upload failed with status ${xhr.status}`);
         }
@@ -334,15 +334,25 @@ export const VideoUploadArea = () => {
     }
   };
 
+
   const pollMediaStatus = async (mediaId: string) => {
     const maxAttempts = 10;
-    const interval = 2000; // 2 seconds
+    const interval = 2000;
     let attempts = 0;
 
     const poll = async () => {
       try {
         attempts++;
         const res = await fetch(`${BASE_URL}/api/media/${mediaId}`);
+
+        // Safely check if it's JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error(`Unexpected response (non-JSON): ${text}`);
+          throw new Error('Non-JSON response received from server');
+        }
+
         const data = await res.json();
 
         if (data.transcriptionStatus === 'completed' || attempts >= maxAttempts) {
@@ -359,6 +369,7 @@ export const VideoUploadArea = () => {
 
     poll();
   };
+
 
 
   const generateStory = async () => {
@@ -445,10 +456,12 @@ export const VideoUploadArea = () => {
               : m
           )
         );
-
+        if (res.status === 202 || res.ok) {
+          alert('🎬 Video render request queued. It may take a moment to start.');
+        }
         const pollForResult = async () => {
           const maxTries = 20;
-          const delayMs = 5000;
+          const delayMs = 3000;
 
           for (let i = 0; i < maxTries; i++) {
             const statusRes = await fetch(`${BASE_URL}/api/speech/render-status/${renderId}`);
@@ -710,85 +723,85 @@ export const VideoUploadArea = () => {
       ))} */}
 
       {uploadedMedia.length > 0 && (
-  <div className="mt-6">
-    <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
+        <div className="mt-6">
+          <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
 
-      {/* Left Side: Media & Info */}
-      <div className="flex flex-col gap-3 w-full md:w-[30%]" >
-        {uploadedMedia.find(m => m.type === 'image')?.storyUrl && (
-          <img
-            src={uploadedMedia.find(m => m.type === 'image')?.storyUrl}
-            alt="Uploaded Image"
-            className="rounded-md w-64 object-cover"
-          />
-        )}
+            {/* Left Side: Media & Info */}
+            <div className="flex flex-col gap-3 w-full md:w-[30%]" >
+              {uploadedMedia.find(m => m.type === 'image')?.storyUrl && (
+                <img
+                  src={uploadedMedia.find(m => m.type === 'image')?.storyUrl}
+                  alt="Uploaded Image"
+                  className="rounded-md w-64 object-cover"
+                />
+              )}
 
-        {uploadedMedia.find(m => m.type === 'video')?.storyUrl && (
-          <video
-            controls
-            src={uploadedMedia.find(m => m.type === 'video')?.storyUrl}
-            className="rounded-md w-64"
-          />
-        )}
+              {uploadedMedia.find(m => m.type === 'video')?.storyUrl && (
+                <video
+                  controls
+                  src={uploadedMedia.find(m => m.type === 'video')?.storyUrl}
+                  className="rounded-md w-64"
+                />
+              )}
 
-        {uploadedMedia.find(m => m.type === 'audio')?.voiceUrl && (
-          <audio controls className="w-full">
-            <source
-              src={`${BASE_URL}/${uploadedMedia.find(m => m.type === 'audio')?.voiceUrl}`}
-              type="audio/mp3"
-            />
-            Your browser does not support the audio tag.
-          </audio>
-        )}
+              {uploadedMedia.find(m => m.type === 'audio')?.voiceUrl && (
+                <audio controls className="w-full">
+                  <source
+                    src={`${BASE_URL}/${uploadedMedia.find(m => m.type === 'audio')?.voiceUrl}`}
+                    type="audio/mp3"
+                  />
+                  Your browser does not support the audio tag.
+                </audio>
+              )}
 
-        <div className="space-y-1 text-sm">
-          <p><strong>Transcript:</strong> {uploadedMedia[0]?.transcript || 'Not available'}</p>
-          <p><strong>Tags:</strong> {uploadedMedia[0]?.tags?.join(', ') || 'Not generated'}</p>
-          <p><strong>Emotions:</strong> {uploadedMedia[0]?.emotions || 'Not detected'}</p>
+              <div className="space-y-1 text-sm">
+                <p><strong>Transcript:</strong> {uploadedMedia[0]?.transcript || 'Not available'}</p>
+                <p><strong>Tags:</strong> {uploadedMedia[0]?.tags?.join(', ') || 'Not generated'}</p>
+                <p><strong>Emotions:</strong> {uploadedMedia[0]?.emotions || 'Not detected'}</p>
+              </div>
+            </div>
+
+            {/* Right Side: Text & Actions */}
+            <div className="flex flex-col gap-3 w-full md:w-[70%]">
+              <Textarea
+                className="w-full"
+                value={uploadedMedia[0]?.story || ''}
+                onChange={e =>
+                  setUploadedMedia(prev =>
+                    prev.map(m =>
+                      m.id === uploadedMedia[0].id ? { ...m, story: e.target.value } : m
+                    )
+                  )
+                }
+                rows={6}
+                placeholder="Story will appear here..."
+              />
+
+              <input
+                type="file"
+                accept="audio/mp3"
+                onChange={(e) => handleAudioUpload(e, uploadedMedia[0]?.id)}
+                className="w-full"
+              />
+
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={generateStory}>Generate Story</Button>
+                <Button
+                  onClick={generateVideoClip}
+                  disabled={!uploadedMedia[0]?.story || loadingVideo}
+                >
+                  {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+                </Button>
+              </div>
+
+              <div className="text-sm font-semibold truncate">{uploadedMedia[0]?.name}</div>
+              <div className="text-xs text-muted-foreground">
+                Status: {uploadedMedia[0]?.transcriptionStatus}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Right Side: Text & Actions */}
-      <div className="flex flex-col gap-3 w-full md:w-[70%]">
-        <Textarea
-          className="w-full"
-          value={uploadedMedia[0]?.story || ''}
-          onChange={e =>
-            setUploadedMedia(prev =>
-              prev.map(m =>
-                m.id === uploadedMedia[0].id ? { ...m, story: e.target.value } : m
-              )
-            )
-          }
-          rows={6}
-          placeholder="Story will appear here..."
-        />
-
-        <input
-          type="file"
-          accept="audio/mp3"
-          onChange={(e) => handleAudioUpload(e, uploadedMedia[0]?.id)}
-          className="w-full"
-        />
-
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={generateStory}>Generate Story</Button>
-          <Button
-            onClick={generateVideoClip}
-            disabled={!uploadedMedia[0]?.story || loadingVideo}
-          >
-            {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
-          </Button>
-        </div>
-
-        <div className="text-sm font-semibold truncate">{uploadedMedia[0]?.name}</div>
-        <div className="text-xs text-muted-foreground">
-          Status: {uploadedMedia[0]?.transcriptionStatus}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* Video preview */}
       {uploadedMedia.map(media => (
@@ -796,10 +809,10 @@ export const VideoUploadArea = () => {
           {/* <p><strong>{media.name}</strong> ({media.type})</p> */}
           {media.storyUrl && media.type === 'video' && (
             <div className='border p-3 mt-4 rounded'>
-            <video controls className="w-64 mt-2 rounded">
-              <source src={media.storyUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+              <video controls className="w-64 mt-2 rounded">
+                <source src={media.storyUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           )}
         </div>
