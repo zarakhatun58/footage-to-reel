@@ -50,6 +50,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "face-api.js": "^0.22.2",
+    "fill-range": "^7.1.1",
     "firebase": "^12.0.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
