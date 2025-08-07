@@ -507,95 +507,99 @@ export const VideoUploadArea = () => {
   //   }
   // };
 
+const getFileName = (url) => {
+  if (!url) return null;
+  return url.split('/').pop(); // safely gets the filename
+};
 
-  const generateApiVideo = async () => {
-    const imageName = uploadedMedia[0]?.images?.[0] || null;
-    const audioName = uploadedMedia[0]?.voiceUrl || null;
-    const mediaId = uploadedMedia[0]?.id || null;
+const generateApiVideo = async () => {
+  const imageName = getFileName(uploadedMedia[0]?.images?.[0]);
+  const audioName = getFileName(uploadedMedia[0]?.voiceUrl);
+  const mediaId = uploadedMedia[0]?.id|| null;
 
-    if (!imageName || !audioName || !mediaId) {
-      alert('❌ Image, audio or media ID missing.');
-      return;
-    }
+  if (!imageName || !audioName || !mediaId) {
+    alert('❌ Image, audio or media ID missing.');
+    return;
+  }
 
-    setLoadingVideo(true);
-    const stop = simulateProgress(setVideoProgress);
+  setLoadingVideo(true);
+  const stop = simulateProgress(setVideoProgress);
 
-    let timeoutId = setTimeout(() => {
-      alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-    }, 2 * 60 * 1000);
+  let timeoutId = setTimeout(() => {
+    alert('⚠️ Video is taking longer than expected to render. Please check back later.');
+  }, 2 * 60 * 1000);
 
-    try {
-      const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageName, audioName, mediaId })
-      });
+  try {
+    const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageName, audioName, mediaId })
+    });
 
-      const data = await res.json();
-      const { videoId, playbackUrl } = data;
+    const data = await res.json();
+    const { videoId, playbackUrl } = data;
 
-      if (!data.success || !videoId) throw new Error('Video ID not returned.');
+    if (!data.success || !videoId) throw new Error('Video ID not returned.');
 
-      alert(`🎬 Video rendering started!\nVideo ID: ${videoId}`);
+    alert(`🎬 Video rendering started!\nVideo ID: ${videoId}`);
 
-      setUploadedMedia(prev =>
-        prev.map(m =>
+    setUploadedMedia(prev =>
+      prev.map(m =>
           m.id === mediaId
-            ? {
+          ? {
               ...m,
               type: 'video',
               renderId: videoId,
               storyUrl: playbackUrl || '',
               encodingStatus: 'processing'
             }
-            : m
-        )
-      );
+          : m
+      )
+    );
 
-      const pollForResult = async () => {
-        const maxTries = 30;
-        const delayMs = 3000;
+    const pollForResult = async () => {
+      const maxTries = 30;
+      const delayMs = 3000;
 
-        for (let i = 0; i < maxTries; i++) {
-          setVideoStatus(`⌛ Rendering... Attempt #${i + 1}`);
+      for (let i = 0; i < maxTries; i++) {
+        setVideoStatus(`⌛ Rendering... Attempt #${i + 1}`);
 
-          const statusRes = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
-          const statusData = await statusRes.json();
-          console.log(`📡 Poll #${i + 1}:`, statusData);
+        const statusRes = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
+        const statusData = await statusRes.json();
+        console.log(`📡 Poll #${i + 1}:`, statusData);
 
-          if (statusData.status === 'ready' && statusData.playbackUrl) {
-            setUploadedMedia(prev =>
-              prev.map(m =>
-                m.renderId === videoId
-                  ? {
+        if (statusData.status === 'ready' && statusData.asset?.iframe) {
+          setUploadedMedia(prev =>
+            prev.map(m =>
+              m.renderId === videoId
+                ? {
                     ...m,
-                    storyUrl: statusData.playbackUrl,
+                    storyUrl: statusData.asset.iframe,
                     encodingStatus: 'completed'
                   }
-                  : m
-              )
-            );
-            alert('✅ Video rendering complete!');
-            return;
-          }
-
-          await new Promise(res => setTimeout(res, delayMs));
+                : m
+            )
+          );
+          alert('✅ Video rendering complete!');
+          return;
         }
 
-        alert('⚠️ Video took too long to process. Please check back later.');
-      };
+        await new Promise(res => setTimeout(res, delayMs));
+      }
 
-      await pollForResult();
-    } catch (err) {
-      console.error('❌ Video generation failed:', err);
-      alert('❌ Something went wrong while generating video.');
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
-      stop();
-      setLoadingVideo(false);
-    }
-  };
+      alert('⚠️ Video took too long to process. Please check back later.');
+    };
+
+    await pollForResult();
+  } catch (err) {
+    console.error('❌ Video generation failed:', err);
+    alert('❌ Something went wrong while generating video.');
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    stop();
+    setLoadingVideo(false);
+  }
+};
 
 
   const simulateProgress = (setter: (v: number) => void, duration = 3000) => {
