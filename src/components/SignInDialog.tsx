@@ -38,6 +38,9 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [signUpEmail, setSignUpEmail] = useState("");
     const [signUpPassword, setSignUpPassword] = useState("");
     const [user, setUser] = useState(null);
+    const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState("");
+
 
     const navigate = useNavigate();
     const handleSubmit = async (e: any) => {
@@ -128,6 +131,21 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
         navigate("/");
         googleLogout();
     };
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!forgotEmail) return alert("Please enter your email");
+
+        try {
+            const res = await axios.post(`${BASE_URL}/api/auth/forgot-password`, {
+                email: forgotEmail,
+            });
+            alert("📨 Reset email sent if account exists!");
+            setForgotPasswordOpen(false);
+        } catch (err: any) {
+            console.error("Forgot password error:", err);
+            alert("Failed to send reset email.");
+        }
+    };
 
 
 
@@ -178,6 +196,25 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 required
                                             />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <button
+                                                type="button"
+                                                className="text-sm text-blue-600 hover:underline"
+                                                onClick={() => setForgotPasswordOpen(true)}
+                                            >
+                                                Forgot password?
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="text-sm text-gray-500 hover:underline"
+                                                onClick={() => {
+                                                    setEmail("");
+                                                    setPassword("");
+                                                }}
+                                            >
+                                                Reset
+                                            </button>
                                         </div>
                                         <Button type="submit" className="w-full">
                                             Sign In
@@ -237,19 +274,45 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                     </form>
                                     <div
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 cursor-pointer hover:shadow-sm flex items-center justify-center gap-2 mt-2"
-                                        
+
                                     >
-                                         <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
                                     </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>
                     </Tabs>
-                    <DialogFooter>
-                       <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
-                    </DialogFooter>
+                   
                 </DialogContent>
             </Dialog>
+            <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Reset Your Password</DialogTitle>
+                        <DialogDescription>
+                            Enter your email to receive a password reset link.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="forgot-email">Email</Label>
+                            <Input
+                                id="forgot-email"
+                                type="email"
+                                value={forgotEmail}
+                                onChange={(e) => setForgotEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full">
+                                Send Reset Link
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 };
