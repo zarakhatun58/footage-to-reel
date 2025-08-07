@@ -96,7 +96,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
         }
 
         try {
-            const res = await fetch(`${BASE_URL}/api/auth/google`, {
+            const res = await fetch(`${BASE_URL}/api/auth/googleLogin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token }),
