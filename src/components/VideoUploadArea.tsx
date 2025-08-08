@@ -446,9 +446,9 @@ const generateVideoClip = async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        imageName: imageNames, // <-- Now sending array of filenames
-        audioName,             // e.g. "narration.mp3"
-        mediaId,                // MongoDB ID
+       imageNames, 
+        audioName,           
+        mediaId,           
       }),
     });
 
