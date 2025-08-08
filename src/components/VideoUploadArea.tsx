@@ -143,97 +143,6 @@ export const VideoUploadArea = () => {
     });
   };
 
-  // const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-  //   const formData = new FormData();
-  //   formData.append(
-  //     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-  //     file
-  //   );
-
-  //   setUploadProgress(prev => ({ ...prev, [mediaId]: 0 }));
-
-  //   setUploadedMedia(prev =>
-  //     prev.map(m => (m.id === mediaId ? { ...m, transcriptionStatus: 'processing' } : m))
-  //   );
-
-  //   try {
-  //     const uploadRes = await fetch(`${BASE_URL}/api/uploads`, {
-  //       method: 'POST',
-  //       body: formData
-  //     });
-
-  //     const result = await uploadRes.json();
-  //     const uploadedItem = result.uploaded?.[0];
-  //     if (!uploadedItem) throw new Error('Upload returned no file');
-
-  //     const newMedia = {
-  //       id: uploadedItem._id || mediaId,
-  //       name: uploadedItem.filename,
-  //       size: file.size,
-  //       type,
-  //       transcriptionStatus: 'completed',
-  //       thumbnail:
-  //         uploadedItem.thumbnail ||
-  //         uploadedItem.images?.[0] ||
-  //         (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-  //           ? uploadedItem.filename
-  //           : null),
-  //       transcript: uploadedItem.transcript || '',
-  //       tags: uploadedItem.tags || [],
-  //       emotions: uploadedItem.emotions?.join(', ') || '',
-  //       story: uploadedItem.story || '',
-  //       storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
-  //       images: uploadedItem.images || []
-  //     };
-
-  //     setUploadedMedia((prev: any) =>
-  //       prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-  //     );
-  //     setMediaId(uploadedItem._id);
-  //     setStoryText(uploadedItem.story || '');
-  //     if (type === 'audio' && uploadedItem.filename) {
-  //       setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-  //     }
-  //   } catch (error) {
-  //     console.error('Upload failed:', error);
-  //     setUploadedMedia(prev =>
-  //       prev.map(media =>
-  //         media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-  //       )
-  //     );
-  //   }
-  // };
-
-
-  // useEffect(() => {
-  //   const fetchUploadedVideos = async () => {
-  //     try {
-  //       const res = await fetch(`${BASE_URL}/api/videos`);
-  //       const data = await res.json();
-
-  //       if (data?.videos) {
-  //         const loadedMedia: UploadedMedia[] = data.videos.map((item: any) => ({
-  //           id: item._id,
-  //           name: item.filename,
-  //           size: item.size || 0,
-  //           type: item.mediaType || 'unknown',
-  //           transcriptionStatus: 'completed',
-  //           thumbnail: item.filename,
-  //           transcript: item.transcript || '',
-  //           tags: item.tags || [],
-  //           emotions: item.emotions?.join(', ') || '',
-  //           story: item.story || '',
-  //           storyUrl: `${BASE_URL}/uploads/${item.filename}`
-  //         }));
-
-  //         setUploadedMedia(loadedMedia);
-  //       }
-  //     } catch (err) {
-  //       console.error('Failed to fetch videos:', err);
-  //     }
-  //   };
-  //   fetchUploadedVideos();
-  // }, []);
 
   const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
     const formData = new FormData();
@@ -507,99 +416,62 @@ export const VideoUploadArea = () => {
   //   }
   // };
 
-const getFileName = (url) => {
-  if (!url) return null;
-  return url.split('/').pop(); // safely gets the filename
-};
 
-const generateApiVideo = async () => {
-  const imageName = getFileName(uploadedMedia[0]?.images?.[0]);
-  const audioName = getFileName(uploadedMedia[0]?.voiceUrl);
-  const mediaId = uploadedMedia[0]?.id|| null;
+const generateVideoClip = async () => {
+  // Find the uploaded media record
+  const media = uploadedMedia.find((m) => m.id === mediaId);
+  if (!media) {
+    alert("Media not found.");
+    return;
+  }
 
-  if (!imageName || !audioName || !mediaId) {
-    alert('❌ Image, audio or media ID missing.');
+  // Derive file names from URLs
+  const imageName = media.images?.[0] ? media.images[0].split("/").pop() : null;
+  const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
+
+  if (!imageName || !audioName) {
+    alert("Missing required image or audio.");
     return;
   }
 
   setLoadingVideo(true);
   const stop = simulateProgress(setVideoProgress);
 
-  let timeoutId = setTimeout(() => {
-    alert('⚠️ Video is taking longer than expected to render. Please check back later.');
-  }, 2 * 60 * 1000);
-
   try {
     const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageName, audioName, mediaId })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageName, // e.g. "uploaded.jpg"
+        audioName, // e.g. "narration.mp3"
+        mediaId,   // MongoDB ID
+      }),
     });
 
     const data = await res.json();
-    const { videoId, playbackUrl } = data;
 
-    if (!data.success || !videoId) throw new Error('Video ID not returned.');
+    if (!data.success) {
+      throw new Error(data.error || "Video generation failed.");
+    }
 
-    alert(`🎬 Video rendering started!\nVideo ID: ${videoId}`);
-
-    setUploadedMedia(prev =>
-      prev.map(m =>
-          m.id === mediaId
-          ? {
-              ...m,
-              type: 'video',
-              renderId: videoId,
-              storyUrl: playbackUrl || '',
-              encodingStatus: 'processing'
-            }
+    setUploadedMedia((prev) =>
+      prev.map((m) =>
+        m.id === mediaId
+          ? { ...m, type: "video", storyUrl: data.playbackUrl, transcriptionStatus: "completed" }
           : m
       )
     );
 
-    const pollForResult = async () => {
-      const maxTries = 30;
-      const delayMs = 3000;
-
-      for (let i = 0; i < maxTries; i++) {
-        setVideoStatus(`⌛ Rendering... Attempt #${i + 1}`);
-
-        const statusRes = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
-        const statusData = await statusRes.json();
-        console.log(`📡 Poll #${i + 1}:`, statusData);
-
-        if (statusData.status === 'ready' && statusData.asset?.iframe) {
-          setUploadedMedia(prev =>
-            prev.map(m =>
-              m.renderId === videoId
-                ? {
-                    ...m,
-                    storyUrl: statusData.asset.iframe,
-                    encodingStatus: 'completed'
-                  }
-                : m
-            )
-          );
-          alert('✅ Video rendering complete!');
-          return;
-        }
-
-        await new Promise(res => setTimeout(res, delayMs));
-      }
-
-      alert('⚠️ Video took too long to process. Please check back later.');
-    };
-
-    await pollForResult();
-  } catch (err) {
-    console.error('❌ Video generation failed:', err);
-    alert('❌ Something went wrong while generating video.');
+    alert("✅ Video generated successfully!");
+  } catch (error) {
+    console.error("❌ Video generation error:", error);
+    alert("❌ Video generation failed. Please try again.");
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
     stop();
     setLoadingVideo(false);
   }
 };
+
 
 
   const simulateProgress = (setter: (v: number) => void, duration = 3000) => {
@@ -845,8 +717,7 @@ const generateApiVideo = async () => {
               <div className="flex flex-wrap gap-3">
                 <Button onClick={generateStory}>Generate Story</Button>
                 <Button
-                  // onClick={generateVideoClip}
-                  onClick={generateApiVideo}
+                  onClick={generateVideoClip}
                   disabled={!uploadedMedia[0]?.story || loadingVideo}
                 >
                   {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
