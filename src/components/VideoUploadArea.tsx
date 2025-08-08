@@ -26,7 +26,7 @@ import { MediaStatsBar } from './MediaStatsBar';
 import UploadedMediaCard from './UploadedMediaCard';
 import AudioUpload from './AudioUpload';
 
-type UploadedMedia = {
+export type UploadedMedia = {
   id: string;
   name: string;
   size: number;
@@ -754,8 +754,8 @@ const generateVideoClip = async () => {
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
-              {/* ✅ Add MediaStatsBar below the video */}
-              <MediaStatsBar media={media} />
+              
+              <MediaStatsBar media={media} BASE_URL="https://footage-flow-server.onrender.com" />
             </div>
           )}
         </div>

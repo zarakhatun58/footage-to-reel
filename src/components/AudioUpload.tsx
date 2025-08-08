@@ -93,6 +93,31 @@ const AudioUpload: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }) => 
     }
   };
 
+   const autoGenerateAudio = async () => {
+    if (!media.story) {
+      alert('No story text to generate audio from');
+      return;
+    }
+    try {
+      const res = await fetch(`${BASE_URL}/api/audio/generate-audio/${media.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: media.story }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUploadedMedia(prev =>
+          prev.map(m => (m.id === media.id ? { ...m, voiceUrl: data.audioUrl } : m))
+        );
+        alert('🎤 Audio auto-generated successfully!');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      alert('❌ Failed to auto-generate audio');
+      console.error(err);
+    }
+  };
   const stopRecording = () => {
     mediaRecorderRef.current?.stop();
   };
@@ -136,6 +161,9 @@ const AudioUpload: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }) => 
           )}
         </div>
       </div>
+       <button onClick={autoGenerateAudio}>
+        Auto Generate Audio
+      </button>
     </div>
   );
 };
