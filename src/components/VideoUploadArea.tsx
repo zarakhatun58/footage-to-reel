@@ -425,12 +425,16 @@ const generateVideoClip = async () => {
     return;
   }
 
-  // Derive file names from URLs
-  const imageName = media.images?.[0] ? media.images[0].split("/").pop() : null;
+  // Extract all image filenames
+  const imageNames = Array.isArray(media.images)
+    ? media.images.map((imgUrl) => imgUrl.split("/").pop()).filter(Boolean)
+    : [];
+
+  // Extract audio filename
   const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
 
-  if (!imageName || !audioName) {
-    alert("Missing required image or audio.");
+  if (imageNames.length === 0 || !audioName) {
+    alert("Missing required image(s) or audio.");
     return;
   }
 
@@ -442,9 +446,9 @@ const generateVideoClip = async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        imageName, // e.g. "uploaded.jpg"
-        audioName, // e.g. "narration.mp3"
-        mediaId,   // MongoDB ID
+        imageName: imageNames, // <-- Now sending array of filenames
+        audioName,             // e.g. "narration.mp3"
+        mediaId,                // MongoDB ID
       }),
     });
 
@@ -457,7 +461,12 @@ const generateVideoClip = async () => {
     setUploadedMedia((prev) =>
       prev.map((m) =>
         m.id === mediaId
-          ? { ...m, type: "video", storyUrl: data.playbackUrl, transcriptionStatus: "completed" }
+          ? {
+              ...m,
+              type: "video",
+              storyUrl: data.playbackUrl,
+              transcriptionStatus: "completed",
+            }
           : m
       )
     );
@@ -471,6 +480,7 @@ const generateVideoClip = async () => {
     setLoadingVideo(false);
   }
 };
+
 
 
 
