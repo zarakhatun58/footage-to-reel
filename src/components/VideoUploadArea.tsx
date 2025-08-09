@@ -11,6 +11,7 @@ import { BASE_URL } from '@/services/apis';
 import { MediaStatsBar } from './MediaStatsBar';
 import AudioUpload from './AudioUpload';
 import getYouTubeID from 'get-youtube-id';
+import axios from 'axios';
 
 
 export type UploadedMedia = {
@@ -406,7 +407,7 @@ export const VideoUploadArea = () => {
 
   const generateVideoClip = async () => {
     // Find the uploaded media record
-   
+
     const media = uploadedMedia.find((m) => m.id === mediaId);
     if (!media) {
       alert("Media not found.");
@@ -531,7 +532,22 @@ export const VideoUploadArea = () => {
     setUploadedMedia((prev) => prev.filter((media) => media.id !== id));
   };
 
-  
+  const getAllVideos = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
+      if (res.data.success) {
+        setUploadedMedia(res.data.videos);
+      }
+    } catch (err) {
+      console.error('Error fetching videos:', err);
+    } finally {
+      setLoadingVideo(false);
+    }
+  };
+
+  useEffect(() => {
+    getAllVideos();
+  }, []);
 
   const extractYouTubeID = (url: any) => {
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
@@ -670,7 +686,11 @@ export const VideoUploadArea = () => {
               <div className="space-y-1 text-sm">
                 <p><strong>Transcript:</strong> {uploadedMedia[0]?.transcript || 'Not available'}</p>
                 <p><strong>Tags:</strong> {uploadedMedia[0]?.tags?.join(', ') || 'Not generated'}</p>
-                <p><strong>Emotions:</strong> {uploadedMedia[0]?.emotions || 'Not detected'}</p>
+                <p><strong>Emotions:</strong>{uploadedMedia[0]?.emotions
+                  ? Array.isArray(uploadedMedia[0].emotions)
+                    ? uploadedMedia[0].emotions.join(', ')
+                    : uploadedMedia[0].emotions // if it's already a string
+                  : 'Not detected'}</p>
               </div>
             </div>
 
@@ -717,17 +737,16 @@ export const VideoUploadArea = () => {
       )}
 
       {/* Video preview */}
+      <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
       {uploadedMedia.map(media => (
-
         <div key={media.id}>
-          <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
           {media.storyUrl && media.type === 'video' && (
             <div className='border p-3 mt-4 rounded'>
-              {/* <video controls className="w-64 mt-2 rounded">
+              <video controls className="w-64 mt-2 rounded">
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
-              </video> */}
-              <iframe
+              </video>
+              {/* <iframe
                 width="320"
                 height="180"
                 src={`https://www.youtube.com/embed/${extractYouTubeID(media.storyUrl)}`}
@@ -735,7 +754,7 @@ export const VideoUploadArea = () => {
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-              ></iframe>
+              ></iframe> */}
 
               <MediaStatsBar media={media} BASE_URL="https://footage-flow-server.onrender.com" />
               <button
@@ -748,6 +767,36 @@ export const VideoUploadArea = () => {
           )}
         </div>
       ))}
+
+      {/* all - video  */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {videos.map(video => (
+          <div key={video._id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
+            <video
+              controls
+              className="w-full h-48 object-cover rounded-t"
+              src={video.storyUrl}
+              preload="metadata"
+            >
+              Your browser does not support the video tag.
+            </video>
+
+            <div className="p-3">
+              <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
+              {/* Optionally show some stats or description */}
+            </div>
+
+            {/* Optional delete button on top-right */}
+            <button
+              onClick={() => handleDeleteVideo(video._id)}
+              className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+              title="Delete Video"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
 
     </div>
   );

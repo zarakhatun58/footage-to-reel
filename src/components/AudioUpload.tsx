@@ -93,7 +93,7 @@ const AudioUpload: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }) => 
     }
   };
 
-   const autoGenerateAudio = async () => {
+  const autoGenerateAudio = async () => {
     if (!media.story) {
       alert('No story text to generate audio from');
       return;
@@ -130,41 +130,48 @@ const AudioUpload: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }) => 
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="font-semibold">🎧 Upload MP3 File</label>
-        <input
-          type="file"
-          accept="audio/mp3"
-          onChange={handleFileChange}
-          className="w-full mt-2"
-        />
-      </div>
+   <div className="space-y-4 max-w-md mx-auto p-3 bg-white rounded shadow-md">
+  <div>
+    <label className="block text-gray-700 font-semibold mb-1 text-sm">🎧 Upload MP3 File</label>
+    <input
+      type="file"
+      accept="audio/mp3"
+      onChange={handleFileChange}
+      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    />
+  </div>
 
-      <div>
-        <label className="font-semibold">🎙️ Record Audio</label>
-        <div className="flex gap-4 mt-2">
-          {!isRecording ? (
-            <button
-              onClick={startRecording}
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              Start Recording
-            </button>
-          ) : (
-            <button
-              onClick={stopRecording}
-              className="bg-red-600 text-white px-4 py-2 rounded"
-            >
-              Stop & Upload
-            </button>
-          )}
-        </div>
-      </div>
-       <button onClick={autoGenerateAudio}>
-        Auto Generate Audio
-      </button>
+  <div>
+    <label className="block text-gray-700 font-semibold mb-1 text-sm">🎙️ Record Audio</label>
+    <div className="flex gap-3">
+      {!isRecording ? (
+        <button
+          onClick={startRecording}
+          className="flex-1 bg-green-600 hover:bg-green-700 transition text-white font-semibold text-sm px-3 py-1.5 rounded shadow"
+        >
+          Start Recording
+        </button>
+      ) : (
+        <button
+          onClick={stopRecording}
+          className="flex-1 bg-red-600 hover:bg-red-700 transition text-white font-semibold text-sm px-3 py-1.5 rounded shadow"
+        >
+          Stop & Upload
+        </button>
+      )}
     </div>
+  </div>
+
+  <div>
+    <button
+      onClick={autoGenerateAudio}
+      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3 py-1.5 rounded shadow transition"
+    >
+      Auto Generate Audio
+    </button>
+  </div>
+</div>
+
   );
 };
 
