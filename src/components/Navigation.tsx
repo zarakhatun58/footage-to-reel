@@ -110,7 +110,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                 );
               })}
               {user ? (
-                <ProfileDropdown user={user} onLogout={handleLogout} />
+                <ProfileDropdown/>
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)}>
                   Sign In

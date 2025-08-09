@@ -132,6 +132,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
         });
 
         navigate('/');
+        onClose();
       } else {
         console.error('Login failed:', data.error);
       }
