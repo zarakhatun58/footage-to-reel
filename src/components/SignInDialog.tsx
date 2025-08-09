@@ -291,7 +291,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                     <div
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 
                                         cursor-pointer hover:shadow-sm flex items-center justify-center gap-2" >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} useOneTap>
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} >
                                         </GoogleLogin>
                                     </div>
                                 </CardContent>
@@ -343,7 +343,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 cursor-pointer hover:shadow-sm flex items-center justify-center gap-2 mt-2"
 
                                     >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} useOneTap />
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError}/>
                                     </div>
                                 </CardContent>
                             </Card>
