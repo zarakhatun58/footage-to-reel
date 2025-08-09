@@ -22,9 +22,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadUser = async () => {
       const token = localStorage.getItem('authToken');
       if (!token) {
+        setUser(null);
         setLoading(false);
         return;
       }
@@ -34,23 +37,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
-        const userData = res.data.user;
-        setUser({
-          id: userData.id,
-          email: userData.email,
-          username: userData.username,
-          profilePic: userData.profilePic,
-        });
+
+        if (isMounted) {
+          const userData = res.data.user;
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            username: userData.username,
+            profilePic: userData.profilePic,
+          });
+        }
       } catch (error) {
         console.error('Failed to load user:', error);
         localStorage.removeItem('authToken');
-        setUser(null);
+        if (isMounted) setUser(null);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadUser();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

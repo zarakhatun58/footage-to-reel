@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Video, Search, Sparkles, Upload, Menu, X, User } from "lucide-react";
-
-import { ProfileDropdown } from "./ProfileDropdown";
+import { Video, Search, Sparkles, Upload, Menu, X, User, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from "./ui/dropdown-menu";
 import { googleLogout } from '@react-oauth/google';
 import { useNavigate } from "react-router-dom";
 import SignInDialog from "./SignInDialog";
@@ -24,29 +30,22 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
   const navigate = useNavigate();
 
   // Load user on mount
-  useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        setUser(null);
-        return;
-      }
-
-      try {
-        const res = await axios.get(`${BASE_URL}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        });
-        setUser(res.data.user);
-      } catch (err) {
-        console.error("Failed to load user", err);
-        localStorage.removeItem("authToken");
-        setUser(null);
-      }
-    };
-
-    loadUser();
-  }, []);
+// useEffect(() => {
+//   const token = localStorage.getItem("authToken");
+//   if (!token) {
+//     setUser(null);
+//     return;
+//   }
+//   axios.get(`${BASE_URL}/api/auth/me`, {
+//     headers: { Authorization: `Bearer ${token}` },
+//     withCredentials: true,
+//   })
+//   .then((res) => setUser(res.data.user))
+//   .catch(() => {
+//     localStorage.removeItem("authToken");
+//     setUser(null);
+//   });
+// }, []); 
 
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Video },
@@ -59,22 +58,21 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleLogout = async () => {
+ const handleLogout = async () => {
     localStorage.removeItem('authToken');
     setUser(null);
     navigate("/");
     googleLogout();
   };
 
-  // Custom handler for protected routes
   const handleSectionChange = (section: string) => {
-    // Only logged-in users can access upload, search, stories
     if (["upload", "search", "stories"].includes(section) && !user) {
       setShowAuthDialog(true);
       return;
     }
     onSectionChange(section);
   };
+
 
   return (
     <>
@@ -110,7 +108,32 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                 );
               })}
               {user ? (
-                <ProfileDropdown/>
+                <>
+                 <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          <User className="w-4 h-4" />
+                          Profile
+                        </Button>
+                      </DropdownMenuTrigger>
+                
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="text-sm">
+                          {user.username || "Profile"}
+                        </DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">
+                          {user?.email || "No email"}
+                        </DropdownMenuLabel>
+                
+                        <DropdownMenuSeparator />
+                
+                        <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </>
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)}>
                   Sign In

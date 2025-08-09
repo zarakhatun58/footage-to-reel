@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { BASE_URL } from "@/services/apis";
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { googleLogout } from "@react-oauth/google";
+import { useAuth } from "@/context/AuthContext";
 
 type SignInDialogProps = {
     open: boolean;
@@ -37,7 +38,8 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [signUpName, setSignUpName] = useState("");
     const [signUpEmail, setSignUpEmail] = useState("");
     const [signUpPassword, setSignUpPassword] = useState("");
-    const [user, setUser] = useState(null);
+    const { user,setUser } = useAuth();
+     const [error, setError] = useState<string | null>(null);
     const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
     const [forgotEmail, setForgotEmail] = useState("");
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
@@ -45,6 +47,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [resetToken, setResetToken] = useState("");
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+      const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const token = searchParams.get("token");
@@ -56,29 +59,34 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
 
 
-    const handleSubmit = async (e: any) => {
-        e.preventDefault();
-        try {
-            if (!email || !password) {
-                alert("Email and password are required.");
-                return;
-            }
-            const res = await axios.post(
-                `${BASE_URL}/api/auth/login`,
-                { email, password },
-                { withCredentials: true }
-            );
-            const { id, name, email: userEmail } = res.data;
-            const user = { id, name, email: userEmail };
-            alert("Login successful!");
-            navigate("/");
-        } catch (err: any) {
-            console.error("Login error:", err);
-            alert(err?.response?.data?.message || err?.message || "Login failed. Please try again.");
-        } finally {
-            onClose();
-        }
-    };
+    // const handleSubmit = async (e: any) => {
+    //     e.preventDefault();
+    //     try {
+    //         if (!email || !password) {
+    //             alert("Email and password are required.");
+    //             return;
+    //         }
+    //         const res = await axios.post(
+    //             `${BASE_URL}/api/auth/login`,
+    //             { email, password },
+    //             { withCredentials: true }
+    //         );
+    //         const { id, name, email: userEmail } = res.data;
+    //         setUser({
+    //             id,
+    //             email: userEmail,
+    //             username: name,
+    //         });
+    //         alert("Login successful!");
+    //         navigate("/");
+    //     } catch (err: any) {
+    //         console.error("Login error:", err);
+    //         alert(err?.response?.data?.message || err?.message || "Login failed. Please try again.");
+    //     } finally {
+    //         onClose();
+    //     }
+    // };
+    
     const handleSignUp = async (e: any) => {
         e.preventDefault();
         try {
@@ -103,41 +111,43 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             onClose();
         }
     };
-
-  const handleSuccess = async (credentialResponse: CredentialResponse) => {
-    const token = credentialResponse.credential;
-    if (!token) {
-      console.error('No credential received');
-      return;
-    }
+ // Email/password login
+  const handleSubmit = async () => {
+    setLoading(true);
 
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/googleLogin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+      // Example credentials — replace with form or OAuth flow
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
+        email: "test@example.com",
+        password: "password123",
       });
 
-      const data = await res.json();
+      localStorage.setItem("authToken", res.data.token);
 
-      if (res.ok) {
-        localStorage.setItem('authToken', data.token);
+      // ✅ Directly set user in context (no extra /me call)
+      setUser(res.data.user);
 
-        // Set user in context here
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          username: data.user.username,
-          profilePic: data.user.profilePic,
-        });
+      onClose(); // ✅ Close modal instantly after login
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        navigate('/');
-        onClose();
-      } else {
-        console.error('Login failed:', data.error);
-      }
-    } catch (error) {
-      console.error('Error during login:', error);
+
+  // Google login
+  const handleSuccess = async (credentialResponse: any) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/auth/google`, {
+        credential: credentialResponse.credential,
+      });
+      localStorage.setItem("authToken", res.data.token);
+      setUser(res.data.user); // ✅ Update AuthContext
+      onClose();
+      navigate("/");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -257,7 +267,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                             </button>
                                         </div>
                                         <Button type="submit" className="w-full">
-                                            Sign In
+                                           {loading ? "Signing in..." : "Sign In"}
                                         </Button>
                                     </form>
 
