@@ -531,19 +531,7 @@ export const VideoUploadArea = () => {
     setUploadedMedia((prev) => prev.filter((media) => media.id !== id));
   };
 
-  useEffect(() => {
-    const savedMedia = localStorage.getItem('uploadedMedia');
-    if (savedMedia) {
-      setUploadedMedia(JSON.parse(savedMedia));
-    }
-  }, []);
-
-  // Save to localStorage whenever uploadedMedia changes
-  useEffect(() => {
-    if (uploadedMedia.length > 0) {
-      localStorage.setItem('uploadedMedia', JSON.stringify(uploadedMedia));
-    }
-  }, [uploadedMedia]);
+  
 
   const extractYouTubeID = (url: any) => {
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
