@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Video, Music, Scissors, Download, Play } from "lucide-react";
+import axios from "axios";
+import { BASE_URL } from "@/services/apis";
 
 interface StoryClip {
   id: string;
@@ -23,6 +25,7 @@ interface GeneratedStory {
   duration: string;
   music?: string;
   status: 'generating' | 'ready' | 'error';
+   storyUrl?: string;
 }
 
 const storyTemplates = [
@@ -41,6 +44,8 @@ export const StoryGenerator = () => {
   const [generatedStory, setGeneratedStory] = useState<GeneratedStory | null>(null);
   const { toast } = useToast();
 
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const handleGenerateStory = async () => {
     if (!prompt.trim()) {
       toast({
@@ -54,62 +59,52 @@ export const StoryGenerator = () => {
     setIsGenerating(true);
     setGenerationProgress(0);
 
-    // Simulate AI story generation process
-    const steps = [
-      { message: "Analyzing your prompt...", progress: 15 },
-      { message: "Searching through your videos...", progress: 30 },
-      { message: "Identifying relevant clips...", progress: 50 },
-      { message: "Organizing story structure...", progress: 70 },
-      { message: "Adding transitions and music...", progress: 90 },
-      { message: "Finalizing your story...", progress: 100 }
-    ];
+    try {
+      // Optionally, provide a transcript or use empty string if you don't have one
+      const transcript = "Sample transcript or actual transcript from videos";
 
-    for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setGenerationProgress(step.progress);
+      // Start progress at some value
+      setGenerationProgress(10);
+
+      const response = await axios.post(`${BASE_URL}/api/generate`, {
+        prompt,
+        transcript,
+        filename: 'user_prompt_input.mp4',
+        mediaType: 'video',
+      });
+
+      setGenerationProgress(100);
+
+      if (response.data && response.data.story) {
+        const apiStory: GeneratedStory = {
+          id: response.data.id,
+          title: prompt.charAt(0).toUpperCase() + prompt.slice(1),
+          description: response.data.story,
+          clips: [], // You might enhance this if API returns clips
+          duration: 'Unknown',
+          music: undefined,
+          status: 'ready',
+        };
+
+        setGeneratedStory(apiStory);
+        toast({
+          title: "Story Generated!",
+          description: "Your AI-powered story is ready to view and share",
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error?.response?.data?.error || error.message || "Failed to generate story",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
-
-    // Generate mock story
-    const mockStory: GeneratedStory = {
-      id: `story-${Date.now()}`,
-      title: prompt.charAt(0).toUpperCase() + prompt.slice(1),
-      description: "AI-generated story based on your prompt and video content",
-      clips: [
-        {
-          id: '1',
-          videoName: 'Birthday_Party_2023.mp4',
-          startTime: '02:15',
-          endTime: '03:00',
-          description: 'Birthday celebration scene with cake and candles'
-        },
-        {
-          id: '2',
-          videoName: 'Family_Dinner.mp4',
-          startTime: '01:45',
-          endTime: '02:15',
-          description: 'Family gathering and laughter'
-        },
-        {
-          id: '3',
-          videoName: 'Beach_Vacation.mp4',
-          startTime: '05:30',
-          endTime: '06:50',
-          description: 'Sunset beach walk finale'
-        }
-      ],
-      duration: '02:30',
-      music: 'Upbeat celebration theme',
-      status: 'ready'
-    };
-
-    setGeneratedStory(mockStory);
-    setIsGenerating(false);
-    
-    toast({
-      title: "Story Generated!",
-      description: "Your AI-powered story is ready to view and share",
-    });
   };
+
 
   const useTemplate = (template: string) => {
     setPrompt(template);
@@ -140,9 +135,9 @@ export const StoryGenerator = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button 
-              variant="story" 
-              size="lg" 
+            <Button
+              variant="story"
+              size="lg"
               onClick={handleGenerateStory}
               disabled={isGenerating || !prompt.trim()}
               className="flex-1"
@@ -150,7 +145,7 @@ export const StoryGenerator = () => {
               <Sparkles className="w-5 h-5 mr-2" />
               {isGenerating ? "Generating Story..." : "Generate Story"}
             </Button>
-            
+
             {generatedStory && (
               <Button variant="outline" size="lg">
                 <Video className="w-5 h-5 mr-2" />
@@ -191,7 +186,7 @@ export const StoryGenerator = () => {
               <h3 className="text-xl font-semibold">Creating Your Story</h3>
               <p className="text-muted-foreground">AI is working its magic...</p>
             </div>
-            
+
             <div className="max-w-md mx-auto">
               <Progress value={generationProgress} className="h-3 mb-2" />
               <p className="text-sm text-muted-foreground">{generationProgress}% complete</p>
@@ -227,7 +222,7 @@ export const StoryGenerator = () => {
                   <div className="w-8 h-8 bg-video-primary text-white rounded-full flex items-center justify-center text-sm font-semibold">
                     {index + 1}
                   </div>
-                  
+
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{clip.videoName}</p>
                     <p className="text-sm text-muted-foreground">{clip.description}</p>
@@ -235,7 +230,7 @@ export const StoryGenerator = () => {
                       {clip.startTime} - {clip.endTime}
                     </p>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
                       <Scissors className="w-4 h-4 mr-1" />
@@ -249,10 +244,11 @@ export const StoryGenerator = () => {
 
           {/* Story Actions */}
           <div className="flex flex-wrap gap-3 pt-4 border-t">
-            <Button variant="ai" size="lg">
+            <Button variant="ai" size="lg" onClick={() => setIsPlaying(true)}>
               <Play className="w-5 h-5 mr-2" />
               Play Story
             </Button>
+
             <Button variant="outline">
               <Music className="w-4 h-4 mr-2" />
               Change Music
@@ -261,12 +257,40 @@ export const StoryGenerator = () => {
               <Scissors className="w-4 h-4 mr-2" />
               Edit Clips
             </Button>
-            <Button variant="story">
+            <Button variant="story" onClick={() => {
+              if (generatedStory.storyUrl) {
+                window.open(generatedStory.storyUrl, '_blank');
+              } else {
+                toast({
+                  title: 'No video available',
+                  description: 'Please generate the story video first.',
+                  variant: 'destructive',
+                });
+              }
+            }}>
               <Download className="w-4 h-4 mr-2" />
               Download
             </Button>
           </div>
         </Card>
+      )}
+
+      {isPlaying && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <video
+            src={generatedStory.storyUrl} // You need to populate this from API response
+            controls
+            autoPlay
+            className="max-w-full max-h-full rounded-lg"
+            onEnded={() => setIsPlaying(false)}
+          />
+          <button
+            onClick={() => setIsPlaying(false)}
+            className="absolute top-4 right-4 text-white text-2xl font-bold"
+          >
+            ×
+          </button>
+        </div>
       )}
     </div>
   );

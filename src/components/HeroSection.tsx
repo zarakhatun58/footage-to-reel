@@ -5,15 +5,37 @@ import heroImage from "@/assets/hero-video-ai.jpg";
 import { EmotionDetector } from "./EmotionDetector";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { BASE_URL } from "@/services/apis";
+
+type VideoType = {
+  _id: string;
+  filename: string;
+  transcript?: string;
+  story?: string;
+  tags?: string[];
+  rankScore: number;
+  storyUrl?: string; // URL to play video
+};
+
 
 export const HeroSection = () => {
-  const [videos, setVideos] = useState([]);
+ const [videos, setVideos] = useState<VideoType[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // useEffect(() => {
-  //   axios.get('http://localhost:5000/api/videos')
-  //     .then(res => setVideos(res.data.videos))
-  //     .catch(err => console.error(err));
-  // }, []);
+   useEffect(() => {
+    axios
+      .get(`${BASE_URL}/api/videos`)
+      .then((res) => {
+        const sortedVideos = res.data.videos.sort(
+          (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
+        );
+        setVideos(sortedVideos);
+      })
+      .catch((err) => console.error("Failed to fetch videos:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const top3Videos = videos.slice(0, 3);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -60,7 +82,7 @@ export const HeroSection = () => {
           </div>
 
           {/* Feature Preview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 ">
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 ">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
               <Upload className="w-12 h-12 text-story-warm mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-purple-400 mb-2">Smart Upload</h3>
@@ -77,16 +99,29 @@ export const HeroSection = () => {
               <h3 className="text-xl font-semibold text-purple-400 mb-2">Story Magic</h3>
               <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
             </div>
-          </div>
-          {/* <EmotionDetector/> */}
-          {/* {videos.map(video => (
-            <div key={video.filename} className="border p-4 rounded-md shadow">
-              <h3 className="text-lg font-semibold">{video.filename}</h3>
-              <p><strong>Transcript:</strong> {video.transcript?.slice(0, 100)}...</p>
-              <p><strong>Story:</strong> {video.story?.slice(0, 100)}...</p>
-              <p><strong>Tags:</strong> {video.tags || 'N/A'}</p>
+          </div> */}
+           {loading ? (
+            <p className="text-white">Loading videos...</p>
+          ) : top3Videos.length === 0 ? (
+            <p className="text-white">No videos available yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {top3Videos.map((video) => (
+                <div
+                  key={video._id}
+                  className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
+                  onClick={() => window.open(video.storyUrl, "_blank")}
+                >
+                  <h3 className="text-lg font-semibold text-purple-400 mb-2">
+                    {video.filename}
+                  </h3>
+                  <p className="text-gray-300 text-sm line-clamp-3">
+                    {video.story || "No story available."}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))} */}
+          )}
         </div>
       </div>
     </section>

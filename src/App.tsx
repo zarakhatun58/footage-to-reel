@@ -10,16 +10,20 @@ import { StoryGenerator } from "./components/StoryGenerator";
 import { SearchInterface } from "./components/SearchInterface";
 import SavedEntries from "./components/SavedEntries";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
 const GOOGLE_CLIENT_ID = '584714840164-ld1ksgrg4usa5975f5gmng6dtqn4ubih.apps.googleusercontent.com';
-const App = () => (
-  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+
+const AppWrapper = () => {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>; // Or a spinner
+  }
+
+  return (
+     <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -29,8 +33,20 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+  );
+};
+
+const App = () => (
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppWrapper />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AuthProvider>
   </GoogleOAuthProvider>
 );
 

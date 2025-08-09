@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 
 import {
@@ -40,9 +40,22 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [user, setUser] = useState(null);
     const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
     const [forgotEmail, setForgotEmail] = useState("");
-
-
+    const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState("");
+    const [resetToken, setResetToken] = useState("");
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = searchParams.get("token");
+        if (token) {
+            setResetToken(token);
+            setResetPasswordOpen(true);
+        }
+    }, [searchParams]);
+
+
+
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
@@ -91,36 +104,41 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
         }
     };
 
-    const handleSuccess = async (credentialResponse: CredentialResponse) => {
-        const token = credentialResponse.credential;
-        if (!token) {
-            console.error('No credential received');
-            return;
-        }
+  const handleSuccess = async (credentialResponse: CredentialResponse) => {
+    const token = credentialResponse.credential;
+    if (!token) {
+      console.error('No credential received');
+      return;
+    }
 
-        try {
-            const res = await fetch(`${BASE_URL}/api/auth/googleLogin`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token }),
-            });
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/googleLogin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
 
-            const data = await res.json();
+      const data = await res.json();
 
-            if (res.ok) {
-                // Save JWT or session token
-                localStorage.setItem('authToken', data.token);
-                console.log('Logged in:', data.user);
+      if (res.ok) {
+        localStorage.setItem('authToken', data.token);
 
-                // Redirect to home or dashboard
-                navigate('/');
-            } else {
-                console.error('Login failed:', data.error);
-            }
-        } catch (error) {
-            console.error('Error during login:', error);
-        }
-    };
+        // Set user in context here
+        setUser({
+          id: data.user.id,
+          email: data.user.email,
+          username: data.user.username,
+          profilePic: data.user.profilePic,
+        });
+
+        navigate('/');
+      } else {
+        console.error('Login failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+    }
+  };
 
     const handleError = () => {
         console.error('Google login failed');
@@ -146,7 +164,28 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             alert("Failed to send reset email.");
         }
     };
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newPassword) return alert("Please enter a new password");
 
+        try {
+            const res = await axios.post(`${BASE_URL}/api/auth/reset-password`, {
+                token: resetToken,
+                newPassword,
+            });
+
+            alert("✅ Password reset successfully! Please login with your new password.");
+            setResetPasswordOpen(false);
+            setNewPassword("");
+            setResetToken("");
+
+            // Optionally redirect to home or login page
+            navigate("/");
+        } catch (err: any) {
+            console.error("Reset password error:", err);
+            alert(err?.response?.data?.error || "Failed to reset password.");
+        }
+    };
 
 
     return (
@@ -282,9 +321,10 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                             </Card>
                         </TabsContent>
                     </Tabs>
-                   
+
                 </DialogContent>
             </Dialog>
+            {/* Forgot Password Dialog */}
             <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
@@ -307,6 +347,35 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                         <DialogFooter>
                             <Button type="submit" className="w-full">
                                 Send Reset Link
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reset Password Dialog */}
+            <Dialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Set New Password</DialogTitle>
+                        <DialogDescription>
+                            Enter your new password below to reset your account password.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reset-password">New Password</Label>
+                            <Input
+                                id="reset-password"
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full">
+                                Reset Password
                             </Button>
                         </DialogFooter>
                     </form>

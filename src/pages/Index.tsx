@@ -22,15 +22,7 @@ const Index = () => {
         return <HeroSection />;
     }
   };
-// const [currentView, setCurrentView] = useState<ViewType>('home');
 
-//   if (currentView === 'search') {
-//     return <SearchMemories onBack={() => setCurrentView('home')} />;
-//   }
-
-//   if (currentView === 'story') {
-//     return <StoryCreator onBack={() => setCurrentView('home')} />;
-//   }
   return (
     <div className="min-h-screen">
       <Navigation 

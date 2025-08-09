@@ -1,23 +1,53 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Video, Search, Sparkles, Upload, Menu, X, User, LogOut } from "lucide-react";
+import { Video, Search, Sparkles, Upload, Menu, X, User } from "lucide-react";
 
 import { ProfileDropdown } from "./ProfileDropdown";
 import { googleLogout } from '@react-oauth/google';
 import { useNavigate } from "react-router-dom";
 import SignInDialog from "./SignInDialog";
+import axios from "axios";
+import { BASE_URL } from "@/services/apis";
+import { useAuth } from "@/context/AuthContext";
 
 interface NavigationProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
 }
 
+
+
 export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
-  const [user, setUser] = useState(null);
-const navigate = useNavigate();
+ const { user, setUser } = useAuth();
+  const navigate = useNavigate();
+
+  // Load user on mount
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`${BASE_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        });
+        setUser(res.data.user);
+      } catch (err) {
+        console.error("Failed to load user", err);
+        localStorage.removeItem("authToken");
+        setUser(null);
+      }
+    };
+
+    loadUser();
+  }, []);
+
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Video },
     { id: 'upload', label: 'Upload', icon: Upload },
@@ -29,19 +59,21 @@ const navigate = useNavigate();
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
- const handleLogout = async () => {
-        localStorage.removeItem('authToken');
-        navigate("/");
-        googleLogout();
-    };
+  const handleLogout = async () => {
+    localStorage.removeItem('authToken');
+    setUser(null);
+    navigate("/");
+    googleLogout();
+  };
 
-
-  const handleUploadClick = () => {
-    if (!user) {
+  // Custom handler for protected routes
+  const handleSectionChange = (section: string) => {
+    // Only logged-in users can access upload, search, stories
+    if (["upload", "search", "stories"].includes(section) && !user) {
       setShowAuthDialog(true);
-    } else {
-      onSectionChange("upload");
+      return;
     }
+    onSectionChange(section);
   };
 
   return (
@@ -69,7 +101,7 @@ const navigate = useNavigate();
                     key={item.id}
                     variant={isActive ? "ai" : "ghost"}
                     size="sm"
-                    onClick={() => onSectionChange(item.id)}
+                    onClick={() => handleSectionChange(item.id)}
                     className={`gap-2 ${isActive ? 'shadow-ai' : ''}`}
                   >
                     <IconComponent className="w-4 h-4" />
@@ -79,9 +111,11 @@ const navigate = useNavigate();
               })}
               {user ? (
                 <ProfileDropdown user={user} onLogout={handleLogout} />
-              ) : <Button variant="ghost" size="sm" onClick={() => {
-                setShowAuthDialog(true);
-              }}> Sign In</Button>}
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)}>
+                  Sign In
+                </Button>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -110,7 +144,7 @@ const navigate = useNavigate();
                     variant={isActive ? "ai" : "ghost"}
                     size="sm"
                     onClick={() => {
-                      onSectionChange(item.id);
+                      handleSectionChange(item.id);
                       setIsMobileMenuOpen(false);
                     }}
                     className={`w-full justify-start gap-3 ${isActive ? 'shadow-ai' : ''}`}
@@ -126,22 +160,26 @@ const navigate = useNavigate();
                     <User className="w-4 h-4 mr-1" /> Profile
                   </Button>
                 </>
-              ) : <Button variant="ghost" size="sm" onClick={() => {
-                setShowAuthDialog(true);
-                setIsMobileMenuOpen(false);
-              }}> Sign In</Button>}
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowAuthDialog(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  Sign In
+                </Button>
+              )}
             </div>
           </div>
         )}
       </nav>
 
       {showAuthDialog && (
-        <SignInDialog
-          open={true}
-          onClose={() => setShowAuthDialog(false)}
-        />
+        <SignInDialog open={true} onClose={() => setShowAuthDialog(false)} />
       )}
-
     </>
   );
 };
