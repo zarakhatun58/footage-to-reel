@@ -1,30 +1,17 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  FileVideo,
-  Mic,
-  ImageIcon,
-  File,
-  Film,
-  FileCheck,
-  Loader2,
   Upload,
-  Share2,
-  Edit2,
-  PlayCircle,
-  ThumbsUp
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ProgressBar from "@ramonak/react-progress-bar";
 import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import ReactPlayer from 'react-player';
 import { BASE_URL } from '@/services/apis';
-import { RenderProgress } from './RenderProgress ';
 import { MediaStatsBar } from './MediaStatsBar';
-import UploadedMediaCard from './UploadedMediaCard';
 import AudioUpload from './AudioUpload';
+import getYouTubeID from 'get-youtube-id';
+
 
 export type UploadedMedia = {
   id: string;
@@ -58,7 +45,7 @@ export const VideoUploadArea = () => {
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const { toast } = useToast();
-  const [videoStatus, setVideoStatus] = useState<string | number>('');
+  const [videos, setVideos] = useState([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -417,70 +404,87 @@ export const VideoUploadArea = () => {
   // };
 
 
-const generateVideoClip = async () => {
-  // Find the uploaded media record
-  const media = uploadedMedia.find((m) => m.id === mediaId);
-  if (!media) {
-    alert("Media not found.");
-    return;
-  }
-
-  // Extract all image filenames
-  const imageNames = Array.isArray(media.images)
-    ? media.images.map((imgUrl) => imgUrl.split("/").pop()).filter(Boolean)
-    : [];
-
-  // Extract audio filename
-  const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
-
-  if (imageNames.length === 0 || !audioName) {
-    alert("Missing required image(s) or audio.");
-    return;
-  }
-
-  setLoadingVideo(true);
-  const stop = simulateProgress(setVideoProgress);
-
-  try {
-    const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-       imageNames, 
-        audioName,           
-        mediaId,           
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!data.success) {
-      throw new Error(data.error || "Video generation failed.");
+  const generateVideoClip = async () => {
+    // Find the uploaded media record
+    const userId = localStorage.getItem('userId');
+    const media = uploadedMedia.find((m) => m.id === mediaId);
+    if (!media) {
+      alert("Media not found.");
+      return;
     }
 
-    setUploadedMedia((prev) =>
-      prev.map((m) =>
-        m.id === mediaId
-          ? {
+    // Extract all image filenames
+    const imageNames = Array.isArray(media.images)
+      ? media.images.map((imgUrl) => imgUrl.split("/").pop()).filter(Boolean)
+      : [];
+
+    // Extract audio filename
+    const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
+
+    if (imageNames.length === 0 || !audioName) {
+      alert("Missing required image(s) or audio.");
+      return;
+    }
+
+    setLoadingVideo(true);
+    const stop = simulateProgress(setVideoProgress);
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageNames,
+          audioName,
+          mediaId,
+          userId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Video generation failed.");
+      }
+
+      setUploadedMedia((prev) =>
+        prev.map((m) =>
+          m.id === mediaId
+            ? {
               ...m,
               type: "video",
               storyUrl: data.playbackUrl,
               transcriptionStatus: "completed",
             }
-          : m
-      )
-    );
+            : m
+        )
+      );
 
-    alert("✅ Video generated successfully!");
-  } catch (error) {
-    console.error("❌ Video generation error:", error);
-    alert("❌ Video generation failed. Please try again.");
-  } finally {
-    stop();
-    setLoadingVideo(false);
-  }
-};
+      alert("✅ Video generated successfully!");
+    } catch (error) {
+      console.error("❌ Video generation error:", error);
+      alert("❌ Video generation failed. Please try again.");
+    } finally {
+      stop();
+      setLoadingVideo(false);
+    }
+  };
 
+
+  useEffect(() => {
+    const savedVideos = localStorage.getItem('videos');
+    if (savedVideos) {
+      setVideos(JSON.parse(savedVideos));
+    } else {
+      fetch(`${process.env.BASE_URL}/api/videos`)
+        .then(res => res.json())
+        .then(data => {
+          setVideos(data);
+          localStorage.setItem('videos', JSON.stringify(data));
+        })
+        .catch(console.error);
+    }
+  }, []);
 
 
 
@@ -520,8 +524,35 @@ const generateVideoClip = async () => {
     window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
   };
 
+  const handleDeleteVideo = (id: any) => {
+    // Confirm before delete (optional)
+    if (!window.confirm('Are you sure you want to delete this video?')) return;
 
+    // Update state to remove the video
+    setUploadedMedia((prev) => prev.filter((media) => media.id !== id));
+  };
 
+  useEffect(() => {
+    const savedMedia = localStorage.getItem('uploadedMedia');
+    if (savedMedia) {
+      setUploadedMedia(JSON.parse(savedMedia));
+    }
+  }, []);
+
+  // Save to localStorage whenever uploadedMedia changes
+  useEffect(() => {
+    if (uploadedMedia.length > 0) {
+      localStorage.setItem('uploadedMedia', JSON.stringify(uploadedMedia));
+    }
+  }, [uploadedMedia]);
+
+  const extractYouTubeID = (url: any) => {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+  }
+  const videoId = getYouTubeID('https://youtu.be/abc123XYZ');
+  console.log(videoId);
   const totalRankScore = uploadedMedia.reduce((acc, media) => acc + (media.rankScore || 0), 0);
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -705,12 +736,27 @@ const generateVideoClip = async () => {
           <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
           {media.storyUrl && media.type === 'video' && (
             <div className='border p-3 mt-4 rounded'>
-              <video controls className="w-64 mt-2 rounded">
+              {/* <video controls className="w-64 mt-2 rounded">
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
-              </video>
-              
+              </video> */}
+              <iframe
+                width="320"
+                height="180"
+                src={`https://www.youtube.com/embed/${extractYouTubeID(media.storyUrl)}`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+
               <MediaStatsBar media={media} BASE_URL="https://footage-flow-server.onrender.com" />
+              <button
+                onClick={() => handleDeleteVideo(media.id)}
+                className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
             </div>
           )}
         </div>

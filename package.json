@@ -51,6 +51,8 @@
     "embla-carousel-react": "^8.3.0",
     "face-api.js": "^0.22.2",
     "fill-range": "^7.1.1",
+    "get-youtube-id": "^1.0.1",
+    "google-auth-library": "^10.2.1",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
