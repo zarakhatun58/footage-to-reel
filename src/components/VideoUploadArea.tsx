@@ -406,7 +406,7 @@ export const VideoUploadArea = () => {
 
   const generateVideoClip = async () => {
     // Find the uploaded media record
-    const userId = localStorage.getItem('userId');
+   
     const media = uploadedMedia.find((m) => m.id === mediaId);
     if (!media) {
       alert("Media not found.");
@@ -437,7 +437,6 @@ export const VideoUploadArea = () => {
           imageNames,
           audioName,
           mediaId,
-          userId,
         }),
       });
 
