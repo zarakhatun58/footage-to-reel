@@ -9,6 +9,32 @@ import { Sparkles, Video, Music, Scissors, Download, Play } from "lucide-react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
 
+
+export type UploadedMedia = {
+  id: string;
+  name: string;
+  size: number;
+  type: 'video' | 'audio' | 'image' | 'unknown';
+  duration?: number;
+  emotions?: string;
+  title?: string;
+  description?: string;
+  story?: string;
+  thumbnail?: string;
+  transcriptionStatus: 'pending' | 'processing' | 'completed' | 'error';
+  transcript?: string;
+  visionLabels?: string[];
+  tags?: string[];
+  storyUrl?: string;
+  rankScore?: number;
+  images?: string[];
+  voiceUrl?: string;
+  renderId?: string; // ✅ add this
+  views?: number;    // ✅ for stats
+  likes?: number;
+  shares?: number;
+};
+
 interface StoryClip {
   id: string;
   videoName: string;
@@ -25,7 +51,7 @@ interface GeneratedStory {
   duration: string;
   music?: string;
   status: 'generating' | 'ready' | 'error';
-   storyUrl?: string;
+  storyUrl?: string;
 }
 
 const storyTemplates = [
@@ -43,8 +69,10 @@ export const StoryGenerator = () => {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generatedStory, setGeneratedStory] = useState<GeneratedStory | null>(null);
   const { toast } = useToast();
-
+  const [mediaList, setMediaList] = useState<UploadedMedia[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<UploadedMedia | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [loadingVideo, setLoadingVideo] = useState(false);
 
   const handleGenerateStory = async () => {
     if (!prompt.trim()) {
@@ -104,8 +132,105 @@ export const StoryGenerator = () => {
       setIsGenerating(false);
     }
   };
+  const autoGenerateAudio = async () => {
+    if (!selectedMedia) {
+      alert('No media selected');
+      return;
+    }
+    if (!selectedMedia.story) {
+      alert('No story text to generate audio from');
+      return;
+    }
 
+    try {
+      const res = await fetch(`${BASE_URL}/api/audio/generate-audio/${selectedMedia.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: selectedMedia.story }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMediaList(prev =>
+          prev.map(m => (m.id === selectedMedia.id ? { ...m, voiceUrl: data.audioUrl } : m))
+        );
+        alert('🎤 Audio auto-generated successfully!');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      alert('❌ Failed to auto-generate audio');
+      console.error(err);
+    }
+  };
 
+  const autoGenerateVideo = async (mediaId: string) => {
+    // Find the media item from list
+    const media = mediaList.find(m => m.id === mediaId);
+
+    if (!media) {
+      alert("Media not found.");
+      return;
+    }
+
+    // Extract images and audio filenames
+    const imageNames = Array.isArray(media.images)
+      ? media.images.map(url => url.split('/').pop()).filter(Boolean)
+      : [];
+
+    const audioName = media.voiceUrl ? media.voiceUrl.split('/').pop() : null;
+
+    if (imageNames.length === 0) {
+      alert("No images available for video.");
+      return;
+    }
+
+    if (!audioName) {
+      alert("No audio available for video.");
+      return;
+    }
+
+    setLoadingVideo(true);
+
+    try {
+      // Call backend API to generate video
+      const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mediaId,
+          imageNames,
+          audioName,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Video generation failed");
+      }
+
+      // Update media list with new video info
+      setMediaList(prev =>
+        prev.map(m =>
+          m.id === mediaId
+            ? {
+              ...m,
+              type: 'video',
+              storyUrl: data.playbackUrl,
+              transcriptionStatus: 'completed',
+            }
+            : m
+        )
+      );
+
+      alert("✅ Video generated successfully!");
+    } catch (error) {
+      console.error("Video generation error:", error);
+      alert("❌ Video generation failed. Please try again.");
+    } finally {
+      setLoadingVideo(false);
+    }
+  };
   const useTemplate = (template: string) => {
     setPrompt(template);
   };
@@ -241,15 +366,33 @@ export const StoryGenerator = () => {
               ))}
             </div>
           </div>
-
+          {mediaList.map((media) => (
+            <div
+              key={media.id}
+              onClick={() => setSelectedMedia(media)}
+              style={{
+                border: selectedMedia?.id === media.id ? '2px solid blue' : '1px solid gray',
+                padding: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              {media.name}
+            </div>
+          ))}
           {/* Story Actions */}
           <div className="flex flex-wrap gap-3 pt-4 border-t">
-            <Button variant="ai" size="lg" onClick={() => setIsPlaying(true)}>
+            <Button variant="ai" size="lg" onClick={() => {
+              if (selectedMedia?.id) {
+                autoGenerateVideo(selectedMedia.id);
+              } else {
+                alert("No media selected");
+              }
+            }}>
               <Play className="w-5 h-5 mr-2" />
               Play Story
             </Button>
 
-            <Button variant="outline">
+            <Button variant="outline" onClick={autoGenerateAudio}>
               <Music className="w-4 h-4 mr-2" />
               Change Music
             </Button>

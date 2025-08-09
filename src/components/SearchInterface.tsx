@@ -1,129 +1,178 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Clock, MapPin, Users, Heart } from "lucide-react";
+import { BASE_URL } from "@/services/apis";
 
 interface SearchResult {
   id: string;
   videoName: string;
-  timestamp: string;
-  duration: string;
+  timestamp: string; // format "HH:MM:SS"
+  duration: string; // format "HH:MM:SS"
   transcript: string;
   tags: string[];
-  thumbnail?: string;
   confidence: number;
 }
 
-const mockSearchResults: SearchResult[] = [
-  {
-    id: '1',
-    videoName: 'Birthday_Party_2023.mp4',
-    timestamp: '02:15',
-    duration: '00:45',
-    transcript: 'Everyone singing happy birthday around the table with candles glowing on the cake',
-    tags: ['birthday', 'celebration', 'family', 'cake'],
-    confidence: 95
-  },
-  {
-    id: '2',
-    videoName: 'Beach_Vacation.mp4',
-    timestamp: '05:30',
-    duration: '01:20',
-    transcript: 'Walking along the beach at sunset, waves crashing against the shore',
-    tags: ['vacation', 'beach', 'sunset', 'travel'],
-    confidence: 88
-  },
-  {
-    id: '3',
-    videoName: 'Family_Dinner.mp4',
-    timestamp: '01:45',
-    duration: '00:30',
-    transcript: 'Laughing together over dinner, sharing stories about the day',
-    tags: ['family', 'dinner', 'laughter', 'home'],
-    confidence: 92
-  }
-];
+interface SuggestedSearch {
+  text: string;
+  icon: React.ElementType;
+}
 
-const suggestedSearches = [
-  { text: "birthday celebrations", icon: Heart },
-  { text: "family gatherings", icon: Users },
-  { text: "vacation memories", icon: MapPin },
-  { text: "recent moments", icon: Clock },
-];
+const iconMap: Record<string, React.ElementType> = {
+  celebration: Heart,
+  family: Users,
+  travel: MapPin,
+  recent: Clock,
+};
 
 export const SearchInterface = () => {
+  const [currentStoryId, setCurrentStoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [suggestedSearches, setSuggestedSearches] = useState<SuggestedSearch[]>([]);
 
-  // const handleSearch = async () => {
-  //   if (!searchQuery.trim()) return;
-    
-  //   setIsSearching(true);
-    
-  //   // Simulate API call
-  //   setTimeout(() => {
-  //     const filtered = mockSearchResults.filter(result => 
-  //       result.transcript.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //       result.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  //     );
-  //     setSearchResults(filtered);
-  //     setIsSearching(false);
-  //   }, 1000);
-  // };
+  // Fetch dynamic suggested searches from backend on mount
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/search-suggestions`);
+        const data = await res.json();
+        if (data.suggestions?.length) {
+          setSuggestedSearches(
+            data.suggestions.map((s: any) => ({
+              text: s.text,
+              icon: iconMap[s.type] || Heart,
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch suggested searches", error);
+      }
+    };
+    fetchSuggestions();
+  }, []);
 
-const handleSearch = async () => {
-  if (!searchQuery.trim()) return;
-
-  setIsSearching(true);
-
-  try {
-    const res = await fetch(`/api/search-videos?search=${encodeURIComponent(searchQuery)}`);
-    const data = await res.json();
-
-    if (data?.videos) {
-      setSearchResults(
-        data.videos.map((video) => ({
-          id: video._id,
-          videoName: video.title || 'Untitled Video',
-          timestamp: video.timestamp || '00:00', // optional
-          duration: video.duration || '00:30',    // optional
-          transcript: video.transcript || '',
-          tags: video.tags || [],
-          confidence: 100 // or derive from match score if available
-        }))
-      );
-    } else {
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const res = await fetch(`${BASE_URL}/search-videos?search=${encodeURIComponent(searchQuery.trim())}`);
+      const data = await res.json();
+      if (data?.videos) {
+        setSearchResults(
+          data.videos.map((video: any) => ({
+            id: video._id,
+            videoName: video.title || "Untitled Video",
+            timestamp: video.timestamp || "00:00:00",
+            duration: video.duration || "00:00:30",
+            transcript: video.transcript || "",
+            tags: video.tags || [],
+            confidence: video.confidence || 0,
+          }))
+        );
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error("❌ Search API failed:", error);
       setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
-  } catch (err) {
-    console.error("❌ Search API failed:", err);
-    setSearchResults([]);
-  } finally {
-    setIsSearching(false);
-  }
-};
-const handleSuggestedSearch = (query: string) => {
-  setSearchQuery(query);
-  setTimeout(() => {
-    handleSearch();
-  }, 100);
-};
+  };
 
+  const handleSuggestedSearch = (query: string) => {
+    setSearchQuery(query);
+    setTimeout(() => {
+      handleSearch();
+    }, 100);
+  };
 
-  // const handleSuggestedSearch = (query: string) => {
-  //   setSearchQuery(query);
-  //   // Auto-trigger search
-  //   setTimeout(() => {
-  //     setIsSearching(true);
-  //     setTimeout(() => {
-  //       setSearchResults(mockSearchResults);
-  //       setIsSearching(false);
-  //     }, 800);
-  //   }, 100);
-  // };
+  // Create new story on backend and save its ID
+  const createStory = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/newStory`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data._id) {
+        setCurrentStoryId(data._id);
+        return data._id;
+      } else {
+        alert("Failed to create story");
+        return null;
+      }
+    } catch {
+      alert("Error creating story");
+      return null;
+    }
+  };
+
+  // Add clip to story
+  const handleUseInStory = async (result: SearchResult) => {
+    try {
+      let storyId = currentStoryId;
+      if (!storyId) {
+        storyId = await createStory();
+        if (!storyId) return;
+      }
+
+      const payload = {
+        videoId: result.id,
+        timestamp: result.timestamp,
+        duration: result.duration,
+        transcript: result.transcript,
+        tags: result.tags,
+      };
+
+      const res = await fetch(`${BASE_URL}/${storyId}/add-clip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) alert("Clip added to your story!");
+      else alert("Failed to add clip");
+    } catch {
+      alert("Error adding clip");
+    }
+  };
+
+  // Open video clip URL with start and duration params
+  const handleViewClip = async (result: SearchResult) => {
+    try {
+      // Fetch clip info from backend
+      const startParam = result.timestamp || "00:00:00";
+      const durationParam = parseDurationToSeconds(result.duration) || 30;
+
+      const res = await fetch(
+        `${BASE_URL}/videos/${result.id}/clip?start=${startParam}&duration=${durationParam}`
+      );
+      const data = await res.json();
+      if (res.ok && data.clipUrl) {
+        // Open video URL with start time and duration info
+        // For demo just open clipUrl in new tab (frontend player can seek)
+        window.open(`${data.clipUrl}#t=${data.startSeconds}`, "_blank");
+      } else {
+        alert("Failed to fetch clip");
+      }
+    } catch {
+      alert("Error loading clip");
+    }
+  };
+
+  // Helper: convert "HH:MM:SS" or "MM:SS" to seconds number
+  const parseDurationToSeconds = (durationStr: string) => {
+    const parts = durationStr.split(":").map(Number);
+    let seconds = 0;
+    for (let i = 0; i < parts.length; i++) {
+      seconds = seconds * 60 + parts[i];
+    }
+    return seconds;
+  };
+
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -143,6 +192,7 @@ const handleSuggestedSearch = (query: string) => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               className="pl-10 text-lg h-12"
+                autoFocus
             />
           </div>
           <Button 
@@ -242,10 +292,10 @@ const handleSuggestedSearch = (query: string) => {
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    <Button variant="ai" size="sm">
+                    <Button variant="ai" size="sm" onClick={() => handleUseInStory(result)}>
                       Use in Story
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleViewClip(result)}>
                       View Clip
                     </Button>
                   </div>

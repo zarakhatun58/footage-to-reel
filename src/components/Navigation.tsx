@@ -29,23 +29,6 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
-  // Load user on mount
-// useEffect(() => {
-//   const token = localStorage.getItem("authToken");
-//   if (!token) {
-//     setUser(null);
-//     return;
-//   }
-//   axios.get(`${BASE_URL}/api/auth/me`, {
-//     headers: { Authorization: `Bearer ${token}` },
-//     withCredentials: true,
-//   })
-//   .then((res) => setUser(res.data.user))
-//   .catch(() => {
-//     localStorage.removeItem("authToken");
-//     setUser(null);
-//   });
-// }, []); 
 
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Video },
@@ -113,7 +96,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-2">
                           <User className="w-4 h-4" />
-                          Profile
+                          Profile {user.username}
                         </Button>
                       </DropdownMenuTrigger>
                 

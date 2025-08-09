@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 
 import {
@@ -38,8 +38,8 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [signUpName, setSignUpName] = useState("");
     const [signUpEmail, setSignUpEmail] = useState("");
     const [signUpPassword, setSignUpPassword] = useState("");
-    const { user,setUser } = useAuth();
-     const [error, setError] = useState<string | null>(null);
+    const { user, setUser } = useAuth();
+    const [error, setError] = useState<string | null>(null);
     const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
     const [forgotEmail, setForgotEmail] = useState("");
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
@@ -47,7 +47,8 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [resetToken, setResetToken] = useState("");
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-      const [loading, setLoading] = useState(false);
+    const { token } = useParams(); 
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const token = searchParams.get("token");
@@ -58,43 +59,18 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     }, [searchParams]);
 
 
-
-    // const handleSubmit = async (e: any) => {
-    //     e.preventDefault();
-    //     try {
-    //         if (!email || !password) {
-    //             alert("Email and password are required.");
-    //             return;
-    //         }
-    //         const res = await axios.post(
-    //             `${BASE_URL}/api/auth/login`,
-    //             { email, password },
-    //             { withCredentials: true }
-    //         );
-    //         const { id, name, email: userEmail } = res.data;
-    //         setUser({
-    //             id,
-    //             email: userEmail,
-    //             username: name,
-    //         });
-    //         alert("Login successful!");
-    //         navigate("/");
-    //     } catch (err: any) {
-    //         console.error("Login error:", err);
-    //         alert(err?.response?.data?.message || err?.message || "Login failed. Please try again.");
-    //     } finally {
-    //         onClose();
-    //     }
-    // };
-    
     const handleSignUp = async (e: any) => {
         e.preventDefault();
         try {
-            const registerRes = await axios.post(`${BASE_URL}/api/auth/register`, {
-                name: signUpName,
-                email: signUpEmail,
-                password: signUpPassword,
-            }, { withCredentials: true });
+            const registerRes = await axios.post(
+                `${BASE_URL}/api/auth/register`,
+                {
+                    username: signUpName,  // ✅ match backend
+                    email: signUpEmail,
+                    password: signUpPassword,
+                },
+                { withCredentials: true }
+            );
 
             console.log("✅ Register response:", registerRes.data);
 
@@ -103,56 +79,84 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             if (!user?.id && !user?._id) {
                 throw new Error("Signup succeeded but user ID is missing.");
             }
+
+            // ✅ Store token and update UI instantly
+            localStorage.setItem("authToken", token);
+            setUser(user);
+
             alert("✅ Sign up successful!");
+            onClose();
             navigate("/");
         } catch (err: any) {
             console.error("Signup failed:", err);
-        } finally {
-            onClose();
+            alert(err.response?.data?.message || "Signup failed");
         }
     };
- // Email/password login
-  const handleSubmit = async () => {
-    setLoading(true);
-
-    try {
-      // Example credentials — replace with form or OAuth flow
-      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
-        email: "test@example.com",
-        password: "password123",
-      });
-
-      localStorage.setItem("authToken", res.data.token);
-
-      // ✅ Directly set user in context (no extra /me call)
-      setUser(res.data.user);
-
-      onClose(); // ✅ Close modal instantly after login
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
-  // Google login
-  const handleSuccess = async (credentialResponse: any) => {
-    try {
-      const res = await axios.post(`${BASE_URL}/api/auth/google`, {
-        credential: credentialResponse.credential,
-      });
-      localStorage.setItem("authToken", res.data.token);
-      setUser(res.data.user); // ✅ Update AuthContext
-      onClose();
-      navigate("/");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    // 🔹 Email/password login
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault(); // stop form from closing / page reloading
+
+        setLoading(true);
+        try {
+            const res = await axios.post(`${BASE_URL}/api/auth/login`, {
+                email,
+                password,
+            });
+
+            console.log("📦 Full login response:", res.data);
+
+            const { token, user } = res.data;
+
+            if (!token || !user) {
+                console.error("❌ Login succeeded but user/token is missing:", res.data);
+                alert("Login failed: Missing user info from server");
+                return;
+            }
+
+            localStorage.setItem("authToken", token);
+            setUser(user);
+
+            alert(`✅ Login successful! Welcome ${user.username || user.email}`);
+            console.log("👤 Logged in user set in AuthContext:", user);
+
+            onClose();
+            navigate("/");
+        } catch (err: any) {
+            console.error("❌ Login failed:", err);
+            setError(err.response?.data?.error || "Login failed");
+            alert(err.response?.data?.error || "Login failed");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    // 🔹 Google login
+    const handleSuccess = async (credentialResponse: any) => {
+        try {
+            const res = await axios.post(
+                `${import.meta.env.VITE_BASE_URL}/api/auth/googleLogin`,
+                {
+                    token: credentialResponse.credential, // ✅ backend expects "token"
+                }
+            );
+
+            const { token, user } = res.data;
+            localStorage.setItem("authToken", token);
+            setUser(user);
+            onClose();
+            navigate("/");
+        } catch (err) {
+            console.error("Google login failed:", err);
+            alert("Google login failed");
+        }
+    };
 
     const handleError = () => {
-        console.error('Google login failed');
+        console.error("Google Sign-In failed");
+        alert("Google Sign-In failed");
     };
 
     const handleLogout = async () => {
@@ -160,44 +164,57 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
         navigate("/");
         googleLogout();
     };
+
     const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!forgotEmail) return alert("Please enter your email");
+
+        if (!forgotEmail.trim()) {
+            alert("Please enter your email");
+            return;
+        }
 
         try {
             const res = await axios.post(`${BASE_URL}/api/auth/forgot-password`, {
                 email: forgotEmail,
             });
-            alert("📨 Reset email sent if account exists!");
+
+            console.log("📩 Forgot password response:", res.data);
+            alert("📨 Reset email sent if the account exists!");
             setForgotPasswordOpen(false);
+            setForgotEmail("");
         } catch (err: any) {
-            console.error("Forgot password error:", err);
-            alert("Failed to send reset email.");
+            console.error("❌ Forgot password error:", err);
+            alert(err.response?.data?.error || "Failed to send reset email.");
         }
     };
+
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newPassword) return alert("Please enter a new password");
+
+        if (!newPassword.trim()) {
+            alert("Please enter a new password");
+            return;
+        }
+
+        setLoading(true);
 
         try {
             const res = await axios.post(`${BASE_URL}/api/auth/reset-password`, {
-                token: resetToken,
+                token,
                 newPassword,
             });
 
+            console.log("🔑 Reset password success:", res.data);
             alert("✅ Password reset successfully! Please login with your new password.");
-            setResetPasswordOpen(false);
-            setNewPassword("");
-            setResetToken("");
 
-            // Optionally redirect to home or login page
-            navigate("/");
+            navigate("/"); // Redirect to login/home
         } catch (err: any) {
-            console.error("Reset password error:", err);
-            alert(err?.response?.data?.error || "Failed to reset password.");
+            console.error("❌ Reset password error:", err);
+            alert(err.response?.data?.error || "Failed to reset password.");
+        } finally {
+            setLoading(false);
         }
     };
-
 
     return (
         <div>
@@ -267,14 +284,14 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                             </button>
                                         </div>
                                         <Button type="submit" className="w-full">
-                                           {loading ? "Signing in..." : "Sign In"}
+                                            {loading ? "Signing in..." : "Sign In"}
                                         </Button>
                                     </form>
 
                                     <div
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 
                                         cursor-pointer hover:shadow-sm flex items-center justify-center gap-2" >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} >
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} useOneTap>
                                         </GoogleLogin>
                                     </div>
                                 </CardContent>
@@ -326,7 +343,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 cursor-pointer hover:shadow-sm flex items-center justify-center gap-2 mt-2"
 
                                     >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} useOneTap />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -344,7 +361,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                             Enter your email to receive a password reset link.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <form onSubmit={handleForgotPassword} className="space-y-4 bg-background">
                         <div className="space-y-2">
                             <Label htmlFor="forgot-email">Email</Label>
                             <Input
@@ -373,7 +390,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                             Enter your new password below to reset your account password.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleResetPassword} className="space-y-4">
+                    <form onSubmit={handleResetPassword} className="space-y-4 bg-background">
                         <div className="space-y-2">
                             <Label htmlFor="reset-password">New Password</Label>
                             <Input

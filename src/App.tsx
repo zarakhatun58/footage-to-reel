@@ -13,7 +13,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
-const GOOGLE_CLIENT_ID = '584714840164-ld1ksgrg4usa5975f5gmng6dtqn4ubih.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '584714840164-0ebm888scgf8vj8rhtvsfg32i80o2b3m.apps.googleusercontent.com';
 
 const AppWrapper = () => {
   const { loading } = useAuth();

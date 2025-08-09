@@ -617,51 +617,6 @@ const generateVideoClip = async () => {
         </div>
       )}
 
-
-      {/* {uploadedMedia.length > 0 && uploadedMedia.map(media => (
-        <div key={media.id} className="border rounded-lg p-4 shadow space-y-4 bg-white">
-          <div className="flex flex-col md:flex-row gap-4">
-            {uploadedMedia[0].thumbnail && (
-              <img
-                src={`${BASE_URL}/uploads/${uploadedMedia[0].thumbnail}`}
-                alt="Thumbnail"
-                className="w-60 h-64 object-cover rounded shadow"
-              />
-            )}
-
-            <div className="flex-1 space-y-2">
-              <p><strong>Transcript:</strong> {media.transcript || 'Not available'}</p>
-              <p><strong>Tags:</strong> {media.tags?.join(', ') || 'Not generated'}</p>
-              <p><strong>Emotions:</strong> {media.emotions || 'Not detected'}</p>
-
-              <Textarea
-                value={media.story || ''}
-                onChange={e =>
-                  setUploadedMedia(prev =>
-                    prev.map(m =>
-                      m.id === media.id ? { ...m, story: e.target.value } : m
-                    )
-                  )
-                }
-                rows={4}
-                placeholder="Story will appear here..."
-              />
-
-              <div className="flex gap-3">
-                <Button onClick={generateStory}>Generate Story</Button>
-
-                <Button
-                  onClick={generateVideoClip}
-                  disabled={!media.story || loadingVideo}
-                >
-                  {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))} */}
-
       {uploadedMedia.length > 0 && (
         <div className="mt-6">
           <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
