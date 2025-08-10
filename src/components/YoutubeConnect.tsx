@@ -119,9 +119,9 @@ const YoutubeConnect: React.FC = () => {
           style={{ width: `${uploadProgress}%`, transition: 'width 0.3s ease-in-out' }}
         />
       </div>
-      {!isSignedIn ? (
+      {/* {!isSignedIn ? ( */}
         <button onClick={handleLogin}>Login with Google</button>
-      ) : (
+      {/* ) : ( */}
         <div>
           <p>Signed in</p>
           <input
@@ -145,7 +145,7 @@ const YoutubeConnect: React.FC = () => {
             </p>
           )}
         </div>
-      )}
+      {/* )} */}
     </div>
   );
 };
