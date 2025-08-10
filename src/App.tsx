@@ -11,12 +11,25 @@ import { SearchInterface } from "./components/SearchInterface";
 import SavedEntries from "./components/SavedEntries";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { useEffect } from "react";
+import { gapi } from "gapi-script";
 
 const queryClient = new QueryClient();
-const GOOGLE_CLIENT_ID = '584714840164-0ebm888scgf8vj8rhtvsfg32i80o2b3m.apps.googleusercontent.com';
-
+export const GOOGLE_CLIENT_ID = '584714840164-0ebm888scgf8vj8rhtvsfg32i80o2b3m.apps.googleusercontent.com';
+export const API_KEY='AIzaSyBe3IGg5GRojvvuWGjuL8jYa8M9JhGLlWM'
 const AppWrapper = () => {
   const { loading } = useAuth();
+
+    useEffect(() => {
+    const initializeGapi = () => {
+      gapi.client.init({
+        clientId: GOOGLE_CLIENT_ID ,
+        scope: '',
+      });
+    };
+
+    gapi.load('client:auth2', initializeGapi);
+  }, []);
 
   if (loading) {
     return <div>Loading...</div>; // Or a spinner

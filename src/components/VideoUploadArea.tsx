@@ -12,6 +12,7 @@ import { MediaStatsBar } from './MediaStatsBar';
 import AudioUpload from './AudioUpload';
 import getYouTubeID from 'get-youtube-id';
 import axios from 'axios';
+import YoutubeConnect from './YoutubeConnect';
 
 
 export type UploadedMedia = {
@@ -746,6 +747,7 @@ export const VideoUploadArea = () => {
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
+              <YoutubeConnect/>
               {/* <iframe
                 width="320"
                 height="180"
@@ -757,6 +759,7 @@ export const VideoUploadArea = () => {
               ></iframe> */}
 
               <MediaStatsBar media={media} BASE_URL="https://footage-flow-server.onrender.com" />
+
               <button
                 onClick={() => handleDeleteVideo(media.id)}
                 className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
