@@ -6,8 +6,6 @@ import { EmotionDetector } from "./EmotionDetector";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
-import { MediaStatsBar } from "./MediaStatsBar";
-import { UploadedMedia } from "./VideoUploadArea";
 
 export type VideoType = {
   _id: string;
@@ -25,41 +23,25 @@ export type VideoType = {
 };
 
 
+
 export const HeroSection = () => {
-  const [videos, setVideos] = useState<VideoType[]>([]);
+ const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const savedVideos = localStorage.getItem("videos");
-        if (savedVideos) {
-          const parsed = JSON.parse(savedVideos);
-          setVideos(Array.isArray(parsed) ? parsed : []);
-        } else {
-          const res = await axios.get<VideoType[]>(`${BASE_URL}/api/videos`);
-          const data = Array.isArray(res.data) ? res.data : [];
-          setVideos(data);
-          localStorage.setItem("videos", JSON.stringify(data));
-        }
-      } catch (err) {
-        console.error("Error fetching videos:", err);
-        setVideos([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchVideos();
+   useEffect(() => {
+    axios
+      .get(`${BASE_URL}/api/videos`)
+      .then((res) => {
+        const sortedVideos = res.data.videos.sort(
+          (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
+        );
+        setVideos(sortedVideos);
+      })
+      .catch((err) => console.error("Failed to fetch videos:", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const top3Videos = videos
-    .filter((v) => v.status === "generated")
-    .sort((a, b) => (b.likes || 0) - (a.likes || 0))
-    .slice(0, 3);
-
-  if (loading) return <p className="text-white">Loading videos...</p>;
-  if (top3Videos.length === 0)
-    return <p className="text-white">No fully generated videos available.</p>;
+  const top3Videos = videos.slice(0, 3);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -124,29 +106,28 @@ useEffect(() => {
               <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
             </div>
           </div> */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {top3Videos.map((video) => (
-            <div
-              key={video._id}
-              className="border rounded shadow hover:shadow-lg transition-shadow relative"
-            >
-              {video.storyUrl && (
-                <video
-                  controls
-                  className="w-full h-48 object-cover rounded-t"
-                  src={video.storyUrl}
-                  preload="metadata"
+           {loading ? (
+            <p className="text-white">Loading videos...</p>
+          ) : top3Videos.length === 0 ? (
+            <p className="text-white">No videos available yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {top3Videos.map((video) => (
+                <div
+                  key={video._id}
+                  className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
+                  onClick={() => window.open(video.storyUrl, "_blank")}
                 >
-                  Your browser does not support the video tag.
-                </video>
-              )}
-              <div className="p-3">
-                <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-                <MediaStatsBar media={video} BASE_URL={BASE_URL} />
-              </div>
+                  <h3 className="text-lg font-semibold text-purple-400 mb-2">
+                    {video.filename}
+                  </h3>
+                  <p className="text-gray-300 text-sm line-clamp-3">
+                    {video.story || "No story available."}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
         </div>
       </div>
     </section>

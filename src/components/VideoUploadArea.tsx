@@ -671,12 +671,13 @@ export const VideoUploadArea = () => {
                     alt="Uploaded Image"
                     className="rounded-md w-64 object-cover"
                   />
-                  <p
+                  {/* <button
                     onClick={() => removeMedia('image')}
                     className="absolute top-1 right-1 bg-red-500 text-white px-2 py-1 rounded cursor-pointer"
                   >
                     clear
-                  </p> </>
+                  </button>  */}
+                  </>
               )}
 
               {uploadedMedia.find(m => m.type === 'video')?.storyUrl && (
