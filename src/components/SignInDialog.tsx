@@ -47,7 +47,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [resetToken, setResetToken] = useState("");
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { token } = useParams(); 
+    const { token } = useParams();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -137,10 +137,8 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const handleSuccess = async (credentialResponse: any) => {
         try {
             const res = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}/api/auth/googleLogin`,
-                {
-                    token: credentialResponse.credential, // ✅ backend expects "token"
-                }
+                `${BASE_URL}/api/auth/googleLogin`,
+                { token: credentialResponse.credential }
             );
 
             const { token, user } = res.data;
@@ -159,11 +157,25 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
         alert("Google Sign-In failed");
     };
 
-    const handleLogout = async () => {
-        localStorage.removeItem('authToken');
-        navigate("/");
+const handleLogout = () => {
+    try {
+        // Log out from Google if user is logged in via Google
         googleLogout();
-    };
+
+        // Clear local auth token
+        localStorage.removeItem('authToken');
+
+        // Reset user in context if needed
+        setUser(null);
+
+        // Redirect to homepage
+        navigate("/");
+    } catch (err) {
+        console.error("Logout failed:", err);
+        alert("Logout failed, please try again.");
+    }
+};
+
 
     const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -190,24 +202,16 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!newPassword.trim()) {
-            alert("Please enter a new password");
-            return;
-        }
+        if (!newPassword.trim()) return alert("Please enter a new password");
 
         setLoading(true);
-
         try {
             const res = await axios.post(`${BASE_URL}/api/auth/reset-password`, {
-                token,
+                token: resetToken, // use the state variable
                 newPassword,
             });
-
-            console.log("🔑 Reset password success:", res.data);
-            alert("✅ Password reset successfully! Please login with your new password.");
-
-            navigate("/"); // Redirect to login/home
+            alert("✅ Password reset successfully!");
+            navigate("/");
         } catch (err: any) {
             console.error("❌ Reset password error:", err);
             alert(err.response?.data?.error || "Failed to reset password.");
@@ -215,6 +219,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             setLoading(false);
         }
     };
+
 
     return (
         <div>
@@ -343,7 +348,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 cursor-pointer hover:shadow-sm flex items-center justify-center gap-2 mt-2"
 
                                     >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError}/>
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
                                     </div>
                                 </CardContent>
                             </Card>

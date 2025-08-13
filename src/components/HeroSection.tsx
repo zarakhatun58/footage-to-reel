@@ -14,28 +14,42 @@ type VideoType = {
   story?: string;
   tags?: string[];
   rankScore: number;
-  storyUrl?: string; // URL to play video
+  storyUrl?: string;
+  likes: number;
+  views: number;
+  shares: number;
+  status: "generated" | "pending" | string;
 };
 
 
 export const HeroSection = () => {
- const [videos, setVideos] = useState<VideoType[]>([]);
+  const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
-    axios
-      .get(`${BASE_URL}/api/videos`)
-      .then((res) => {
-        const sortedVideos = res.data.videos.sort(
-          (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
-        );
-        setVideos(sortedVideos);
-      })
-      .catch((err) => console.error("Failed to fetch videos:", err))
-      .finally(() => setLoading(false));
+  useEffect(() => {
+    const savedVideos = localStorage.getItem("videos");
+    if (savedVideos) {
+      setVideos(JSON.parse(savedVideos));
+      setLoading(false);
+    } else {
+      fetch(`${BASE_URL}/api/videos`)
+        .then((res) => res.json())
+        .then((data: VideoType[]) => {
+          setVideos(data);
+          localStorage.setItem("videos", JSON.stringify(data));
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
   }, []);
 
-  const top3Videos = videos.slice(0, 3);
+  // Filter only fully generated videos
+  const generatedVideos = videos.filter((v) => v.status === "generated");
+
+  // Sort by likes descending
+  const top3Videos = generatedVideos
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 3);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -100,10 +114,10 @@ export const HeroSection = () => {
               <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
             </div>
           </div> */}
-           {loading ? (
+          {loading ? (
             <p className="text-white">Loading videos...</p>
           ) : top3Videos.length === 0 ? (
-            <p className="text-white">No videos available yet.</p>
+            <p className="text-white">No fully generated videos available yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {top3Videos.map((video) => (
@@ -118,6 +132,11 @@ export const HeroSection = () => {
                   <p className="text-gray-300 text-sm line-clamp-3">
                     {video.story || "No story available."}
                   </p>
+                  <div className="mt-3 flex justify-between text-xs text-gray-300">
+                    <span>👍 {video.likes}</span>
+                    <span>👁️ {video.views}</span>
+                    <span>🔗 {video.shares}</span>
+                  </div>
                 </div>
               ))}
             </div>

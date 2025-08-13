@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Clock, MapPin, Users, Heart } from "lucide-react";
 import { BASE_URL } from "@/services/apis";
 
+
 interface SearchResult {
   id: string;
   videoName: string;

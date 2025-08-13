@@ -26,7 +26,7 @@ interface NavigationProps {
 export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
- const { user, setUser } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
 
@@ -41,11 +41,15 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
- const handleLogout = async () => {
-    localStorage.removeItem('authToken');
-    setUser(null);
-    navigate("/");
-    googleLogout();
+  const handleLogout = () => {
+    try {
+      googleLogout();
+      localStorage.removeItem('authToken');
+      setUser(null);
+      navigate("/");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   const handleSectionChange = (section: string) => {
@@ -92,30 +96,42 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
               })}
               {user ? (
                 <>
-                 <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <User className="w-4 h-4" />
-                          Profile {user.username}
-                        </Button>
-                      </DropdownMenuTrigger>
-                
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel className="text-sm">
-                          {user.username || "Profile"}
-                        </DropdownMenuLabel>
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">
-                          {user?.email || "No email"}
-                        </DropdownMenuLabel>
-                
-                        <DropdownMenuSeparator />
-                
-                        <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-2">
+                        <User className="w-4 h-4" />
+                        {user.profilePic && (
+                          <img
+                            src={user.profilePic}
+                            alt={user.username}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                        )}{user.username}
+                      </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel className="text-sm">
+                        {user.profilePic && (
+                          <img
+                            src={user.profilePic}
+                            alt={user.username}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                        )}{user.username || "Profile"}
+                      </DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        {user?.email || "No email"}
+                      </DropdownMenuLabel>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)}>
@@ -163,7 +179,22 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
               {user ? (
                 <>
                   <Button variant="ghost" size="sm" onClick={() => onSectionChange("profile")}>
-                    <User className="w-4 h-4 mr-1" /> Profile
+                    <User className="w-4 h-4 mr-1" />  {user.profilePic && (
+                      <img
+                        src={user.profilePic}
+                        alt={user.username}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    )}{user.username}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
                   </Button>
                 </>
               ) : (

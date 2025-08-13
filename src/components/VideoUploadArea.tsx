@@ -12,7 +12,6 @@ import { MediaStatsBar } from './MediaStatsBar';
 import AudioUpload from './AudioUpload';
 import getYouTubeID from 'get-youtube-id';
 import axios from 'axios';
-import YoutubeConnect from './YoutubeConnect';
 
 
 export type UploadedMedia = {
@@ -461,7 +460,21 @@ export const VideoUploadArea = () => {
         )
       );
 
-      alert("✅ Video generated successfully!");
+      // 2️⃣ Upload final video to backend
+    const uploadRes = await fetch(`${BASE_URL}/api/upload-final`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mediaId,
+        videoUrl: data.playbackUrl, 
+        title: media.title,
+        userId: media.id, 
+      }),
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
+
+    alert("✅ Video generated and uploaded successfully!");
     } catch (error) {
       console.error("❌ Video generation error:", error);
       alert("❌ Video generation failed. Please try again.");
@@ -471,23 +484,34 @@ export const VideoUploadArea = () => {
     }
   };
 
+// Fetch all public/global videos
 
+useEffect(() => {
+  const savedVideos = localStorage.getItem('videos');
+  if (savedVideos) {
+    setVideos(JSON.parse(savedVideos));
+  } else {
+    fetch(`${BASE_URL}/api/videos`)
+      .then(res => res.json())
+      .then(data => {
+        setVideos(data);
+        localStorage.setItem('videos', JSON.stringify(data));
+      })
+      .catch(console.error);
+  }
+}, []);
+
+// Top 3 ranked videos from all videos (uploaded + global)
+const allVideosCombined = [...uploadedMedia, ...videos];
+const topRankedVideos = allVideosCombined
+  .sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0))
+  .slice(0, 3);
+  // Whenever videos change, update localStorage
   useEffect(() => {
-    const savedVideos = localStorage.getItem('videos');
-    if (savedVideos) {
-      setVideos(JSON.parse(savedVideos));
-    } else {
-      fetch(`${process.env.BASE_URL}/api/videos`)
-        .then(res => res.json())
-        .then(data => {
-          setVideos(data);
-          localStorage.setItem('videos', JSON.stringify(data));
-        })
-        .catch(console.error);
-    }
-  }, []);
+    localStorage.setItem('videos', JSON.stringify(videos));
+  }, [videos]);
 
-
+  
 
   const simulateProgress = (setter: (v: number) => void, duration = 3000) => {
     setter(0);
@@ -503,27 +527,7 @@ export const VideoUploadArea = () => {
     };
   };
 
-  const handleLike = async (id: string) => {
-    await fetch(`${BASE_URL}/api/media/${id}/like`, { method: 'POST' });
-  };
-
-  const handleShare = async (id: string) => {
-    await fetch(`${BASE_URL}/api/media/${id}/share`, { method: 'POST' });
-  };
-
-  const downloadVideo = (url: any) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'my-video.mp4';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  const shareToX = (media: any) => {
-    const tweet = encodeURIComponent(`Check out my story video! ${media.storyUrl}`);
-    window.open(`https://twitter.com/intent/tweet?text=${tweet}`, '_blank');
-  };
+ 
 
   const handleDeleteVideo = (id: any) => {
     // Confirm before delete (optional)
@@ -533,31 +537,30 @@ export const VideoUploadArea = () => {
     setUploadedMedia((prev) => prev.filter((media) => media.id !== id));
   };
 
-  const getAllVideos = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
-      if (res.data.success) {
-        setUploadedMedia(res.data.videos);
-      }
-    } catch (err) {
-      console.error('Error fetching videos:', err);
-    } finally {
-      setLoadingVideo(false);
+
+const getAllVideos = async () => {
+  try {
+    const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
+    if (res.data.success) {
+      setUploadedMedia(res.data.videos);
+      // Also persist in localStorage if needed
+      localStorage.setItem('uploadedMedia', JSON.stringify(res.data.videos));
     }
-  };
-
-  useEffect(() => {
-    getAllVideos();
-  }, []);
-
-  const extractYouTubeID = (url: any) => {
-    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[7].length === 11) ? match[7] : null;
+  } catch (err) {
+    console.error('Error fetching videos:', err);
+  } finally {
+    setLoadingVideo(false);
   }
+};
+
+useEffect(() => {
+  getAllVideos();
+}, []);
+
   const videoId = getYouTubeID('https://youtu.be/abc123XYZ');
   console.log(videoId);
-  const totalRankScore = uploadedMedia.reduce((acc, media) => acc + (media.rankScore || 0), 0);
+
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
@@ -747,19 +750,7 @@ export const VideoUploadArea = () => {
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
-              <YoutubeConnect/>
-              {/* <iframe
-                width="320"
-                height="180"
-                src={`https://www.youtube.com/embed/${extractYouTubeID(media.storyUrl)}`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe> */}
-
               <MediaStatsBar media={media} BASE_URL="https://footage-flow-server.onrender.com" />
-
               <button
                 onClick={() => handleDeleteVideo(media.id)}
                 className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
@@ -770,7 +761,26 @@ export const VideoUploadArea = () => {
           )}
         </div>
       ))}
-
+      {/* Top 3 Ranked Videos */}
+      <h3 className="text-lg font-semibold mt-4">🔥 Top 3 Trending Videos</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-2">
+        {topRankedVideos.map(video => (
+    <div key={video._id || video.id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
+      <video
+        controls
+        className="w-full h-48 object-cover rounded-t"
+        src={video.storyUrl}
+        preload="metadata"
+      >
+        Your browser does not support the video tag.
+      </video>
+      <div className="p-3">
+        <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
+        <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+      </div>
+    </div>
+  ))}
+      </div>
       {/* all - video  */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {videos.map(video => (
@@ -786,7 +796,7 @@ export const VideoUploadArea = () => {
 
             <div className="p-3">
               <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-              {/* Optionally show some stats or description */}
+              <MediaStatsBar media={video} BASE_URL="https://footage-flow-server.onrender.com" />
             </div>
 
             {/* Optional delete button on top-right */}

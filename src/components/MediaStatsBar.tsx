@@ -1,115 +1,130 @@
 import { Eye, Share2, BarChart3, ThumbsUp, Download, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { BASE_URL } from '../services/apis';
 import { UploadedMedia } from './VideoUploadArea';
 
-
 type MediaStatsBarProps = {
-  media:UploadedMedia;
+  media: UploadedMedia;
   BASE_URL: string;
 };
 
 const SocialShareLinks = {
   facebook: (url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-  twitter: (url: string) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`,
+  twitter: (url: string) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, // X
   linkedin: (url: string) => `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}`,
+  whatsapp: (url: string) => `https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`,
+  youtube: (url: string) => `https://www.youtube.com/watch?v=${encodeURIComponent(url)}`, // for linking a video
 };
 
-export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media}) => {
-   const videoRef = useRef(null);
+export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [stats, setStats] = useState({
     likes: media.likes || 0,
     shares: media.shares || 0,
     views: media.views || 0,
     rank: media.rankScore || 0,
   });
- const [shareOpen, setShareOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [shortUrl, setShortUrl] = useState('');
   const [copySuccess, setCopySuccess] = useState('');
 
-  // const handleStatUpdate = async (type: 'like' | 'share' | 'view') => {
-  //   try {
-  //     const res = await fetch(`${BASE_URL}/api/media/${media.id}/${type}`, { method: 'POST' });
-  //     const data = await res.json();
-  //     if (data.success) {
-  //       setStats(prev => ({
-  //         ...prev,
-  //         [type + 's']: data[type + 's'],
-  //         rank: data.rankScore
-  //       }));
-  //     }
-  //   } catch (err) {
-  //     console.error(`Failed to ${type} media`, err);
-  //   }
-  // };
- 
- 
-    // Update views on play
-  const handleVideoPlay = () => {
-    fetch(`${BASE_URL}/api/media/${media.id}/view`, { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setStats(prev => ({ ...prev, views: data.views, rank: data.rankScore }));
-        }
-      })
-      .catch(console.error);
+  // Helper: update stats in localStorage
+  const updateLocalStorage = (updatedStats: typeof stats) => {
+    const savedVideos = localStorage.getItem('videos');
+    if (savedVideos) {
+      const videos = JSON.parse(savedVideos);
+      const updated = videos.map((v: any) => (v._id === media.id ? { ...v, ...updatedStats } : v));
+      localStorage.setItem('videos', JSON.stringify(updated));
+    }
   };
 
-  // Like handler
-  const handleLike = () => {
-    fetch(`${BASE_URL}/api/media/${media.id}/like`, { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setStats(prev => ({ ...prev, likes: data.likes, rank: data.rankScore }));
-        }
-      })
-      .catch(console.error);
+  // --- Engagement Handlers ---
+  const handleViewCount = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/media/${media.id}/view`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        const updatedStats = { ...stats, views: data.views, rank: data.rankScore };
+        setStats(updatedStats);
+        updateLocalStorage(updatedStats);
+      }
+    } catch (err) {
+      console.error('Failed to count view', err);
+    }
   };
 
-  // Share handler for updating count and opening dropdown
-  const handleShareClick = () => {
-    fetch(`${BASE_URL}/api/media/${media.id}/share`, { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setStats(prev => ({ ...prev, shares: data.shares, rank: data.rankScore }));
-          setShareOpen(true);
-        }
-      })
-      .catch(console.error);
+  const handleLike = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/media/${media.id}/like`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        const updatedStats = { ...stats, likes: data.likes, rank: data.rankScore };
+        setStats(updatedStats);
+        updateLocalStorage(updatedStats);
+      }
+    } catch (err) {
+      console.error('Failed to like', err);
+    }
   };
 
-  // Get short URL for sharing
+  const handleShareClick = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/media/${media.id}/share`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        const updatedStats = { ...stats, shares: data.shares, rank: data.rankScore };
+        setStats(updatedStats);
+        updateLocalStorage(updatedStats);
+        setShareOpen(true);
+      }
+    } catch (err) {
+      console.error('Failed to share', err);
+    }
+  };
+
+  // --- Fetch short URL for sharing ---
   useEffect(() => {
     const fetchShortUrl = async () => {
       try {
         const res = await fetch(`${BASE_URL}/api/media/${media.id}/shorturl`);
         const data = await res.json();
-        if (data.success && data.shortUrl) {
-          setShortUrl(data.shortUrl);
-        } else {
-          setShortUrl(media.storyUrl);
-        }
+        setShortUrl(data.success && data.shortUrl ? data.shortUrl : media.storyUrl);
       } catch {
         setShortUrl(media.storyUrl);
       }
     };
-
     fetchShortUrl();
   }, [media.id, media.storyUrl, BASE_URL]);
 
-  // Share on social
-  const shareOnSocial = (platform) => {
-    if (!shortUrl) return;
+  // --- IntersectionObserver for auto-view tracking ---
+  useEffect(() => {
+    if (!videoRef.current) return;
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            handleViewCount();
+            // Optional: unobserve so we count only once per load
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(videoRef.current);
+    return () => observer.disconnect();
+  }, [videoRef.current]);
+
+  // --- Social Share ---
+  const shareOnSocial = (platform: keyof typeof SocialShareLinks) => {
+    if (!shortUrl) return;
     const shareLink = SocialShareLinks[platform](shortUrl);
     window.open(shareLink, '_blank', 'noopener,noreferrer');
     setShareOpen(false);
   };
 
-  // Copy link to clipboard
+  // --- Copy link ---
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shortUrl);
@@ -122,73 +137,39 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media}) => {
   };
 
   return (
-     <div className="max-w-xl mx-auto p-4 border rounded-md shadow-md bg-white">
+    <div className="max-w-xl mx-auto p-4 border rounded-md shadow-md bg-white">
       <video
         ref={videoRef}
         controls
         src={media.storyUrl}
         className="w-full rounded-md"
-        onPlay={handleVideoPlay}
       />
 
       <div className="flex gap-6 items-center justify-between text-sm mt-4 text-gray-700">
-        <button
-          onClick={handleLike}
-          className="flex items-center gap-1 hover:text-green-600 transition-colors"
-          aria-label="Like video"
-        >
+        <button onClick={handleLike} className="flex items-center gap-1 hover:text-green-600 transition-colors" aria-label="Like video">
           <ThumbsUp className="w-5 h-5" />
           {stats.likes}
         </button>
 
         <div className="relative">
-          <button
-            onClick={handleShareClick}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
-            aria-haspopup="true"
-            aria-expanded={shareOpen}
-          >
+          <button onClick={handleShareClick} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors" aria-haspopup="true" aria-expanded={shareOpen}>
             <Share2 className="w-5 h-5" />
             Share
           </button>
 
           {shareOpen && (
-            <div
-              className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20"
-              role="menu"
-              aria-orientation="vertical"
-              aria-labelledby="share-menu"
-            >
-              <button
-                className="block w-full px-4 py-2 text-left hover:bg-gray-100"
-                onClick={() => shareOnSocial('facebook')}
-              >
-                Facebook
-              </button>
-              <button
-                className="block w-full px-4 py-2 text-left hover:bg-gray-100"
-                onClick={() => shareOnSocial('twitter')}
-              >
-                Twitter
-              </button>
-              <button
-                className="block w-full px-4 py-2 text-left hover:bg-gray-100"
-                onClick={() => shareOnSocial('linkedin')}
-              >
-                LinkedIn
-              </button>
-              <button
-                className="block w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between"
-                onClick={copyToClipboard}
-              >
+            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20" role="menu">
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('facebook')}>Facebook</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('twitter')}>Twitter</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('linkedin')}>LinkedIn</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('whatsapp')}>WhatsApp</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('youtube')}>YouTube</button>
+
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between" onClick={copyToClipboard}>
                 Copy Link
                 <Copy className="w-4 h-4 ml-2" />
               </button>
-              {copySuccess && (
-                <div className="text-xs text-green-600 px-4 py-1">
-                  {copySuccess}
-                </div>
-              )}
+              {copySuccess && <div className="text-xs text-green-600 px-4 py-1">{copySuccess}</div>}
             </div>
           )}
         </div>
@@ -203,12 +184,7 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media}) => {
           Rank: {stats.rank}
         </div>
 
-        <a
-          href={media.storyUrl}
-          download
-          className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors"
-          aria-label="Download video"
-        >
+        <a href={media.storyUrl} download className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors" aria-label="Download video">
           <Download className="w-5 h-5" />
           Download
         </a>
