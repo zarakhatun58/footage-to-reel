@@ -132,235 +132,106 @@ export const VideoUploadArea = () => {
   };
 
 
-  // const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-  //   const formData = new FormData();
-  //   formData.append(
-  //     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-  //     file
-  //   );
-
-  //   // Show preview immediately
-  //   const previewUrl = URL.createObjectURL(file);
-  //   setUploadedMedia((prev: any) => [
-  //     ...prev,
-  //     {
-  //       id: mediaId,
-  //       name: file.name,
-  //       size: file.size,
-  //       type,
-  //       transcriptionStatus: 'processing',
-  //       thumbnail: previewUrl,
-  //       transcript: '',
-  //       tags: [],
-  //       emotions: '',
-  //       story: '',
-  //       images: []
-  //     }
-  //   ]);
-
-  //   try {
-  //     const xhr = new XMLHttpRequest();
-
-  //     xhr.upload.onprogress = (event) => {
-  //       if (event.lengthComputable) {
-  //         const progress = Math.round((event.loaded / event.total) * 100);
-  //         setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
-  //       }
-  //     };
-
-  //     xhr.onload = async () => {
-  //       if (xhr.status >= 200 && xhr.status < 300) {
-  //         const result = JSON.parse(xhr.responseText);
-  //         const uploadedItem = result.uploaded?.[0];
-
-  //         if (!uploadedItem) throw new Error('Upload returned no file');
-
-  //         // ✅ CHANGED: Use actual metadata from backend response
-  //         const newMedia = {
-  //           id: uploadedItem._id || mediaId,
-  //           name: uploadedItem.filename,
-  //           size: file.size,
-  //           type,
-  //           transcriptionStatus: uploadedItem.status || 'completed',
-  //           thumbnail:
-  //             uploadedItem.thumbnail ||
-  //             uploadedItem.images?.[0] ||
-  //             (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-  //               ? uploadedItem.filename
-  //               : previewUrl),
-  //           transcript: uploadedItem.transcript || '',
-  //           tags: uploadedItem.tags || [],
-  //           emotions: uploadedItem.emotions || '',
-  //           story: '',
-  //           storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
-  //           images: uploadedItem.images || []
-  //         };
-
-  //         setUploadedMedia((prev: any) =>
-  //           prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-  //         );
-
-  //         setMediaId(uploadedItem._id);
-  //         setStoryText('');
-
-  //         if (type === 'audio' && uploadedItem.filename) {
-  //           setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-  //         }
-
-  //         // ❌ REMOVED: No need to poll anymore
-  //         // pollMediaStatus(uploadedItem._id || mediaId);
-
-  //       } else {
-  //         throw new Error(`Upload failed with status ${xhr.status}`);
-  //       }
-  //     };
-
-  //     xhr.onerror = () => {
-  //       throw new Error('XHR upload failed');
-  //     };
-
-  //     xhr.open('POST', `${BASE_URL}/api/uploads`);
-  //     xhr.send(formData);
-  //   } catch (error) {
-  //     console.error('Upload failed:', error);
-  //     setUploadedMedia(prev =>
-  //       prev.map(media =>
-  //         media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-  //       )
-  //     );
-  //   }
-  // };
-
-
-const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-  const formData = new FormData();
-  formData.append(
-    type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-    file
-  );
-
-  const previewUrl = URL.createObjectURL(file);
-  setUploadedMedia((prev: any) => [
-    ...prev,
-    {
-      id: mediaId,
-      name: file.name,
-      size: file.size,
-      type,
-      transcriptionStatus: 'processing',
-      thumbnail: previewUrl,
-      transcript: 'Processing...',
-      tags: ['Processing...'],
-      emotions: ['Processing...'],
-      story: '',
-      storyUrl: '',
-      images: []
-    }
-  ]);
-
-  try {
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.onprogress = event => {
-      if (event.lengthComputable) {
-        const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
-      }
-    };
-
-    xhr.onload = async () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const result = JSON.parse(xhr.responseText);
-        const uploadedItem = result.uploaded?.[0];
-
-        if (!uploadedItem) throw new Error('Upload returned no file');
-
-        const newMedia = {
-          id: uploadedItem._id ?? mediaId,
-          name: uploadedItem.filename,
-          size: file.size,
-          type,
-          transcriptionStatus: uploadedItem.status || 'processing',
-          thumbnail: uploadedItem.thumbnail || uploadedItem.images?.[0] || previewUrl,
-          transcript: uploadedItem.transcript || 'Not available',
-          tags: uploadedItem.tags?.length ? uploadedItem.tags : ['Not generated'],
-          emotions: uploadedItem.emotions?.length ? uploadedItem.emotions : ['Not detected'],
-          story: uploadedItem.story || '',
-          storyUrl: uploadedItem.storyUrl || '',
-          images: uploadedItem.images || []
-        };
-
-        setUploadedMedia((prev: any) =>
-          prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-        );
-
-        setMediaId(newMedia.id);
-        setStoryText('');
-
-        // Auto start polling for final status & metadata
-        startVideoPolling(newMedia.id);
-      } else {
-        throw new Error(`Upload failed with status ${xhr.status}`);
-      }
-    };
-
-    xhr.onerror = () => {
-      throw new Error('XHR upload failed');
-    };
-
-    xhr.open('POST', `${BASE_URL}/api/uploads`);
-    xhr.send(formData);
-  } catch (error) {
-    console.error('Upload failed:', error);
-    setUploadedMedia(prev =>
-      prev.map(media =>
-        media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-      )
+  const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+    const formData = new FormData();
+    formData.append(
+      type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+      file
     );
-  }
-};
 
-// Polling helper
-let pollingIntervals: Record<string, NodeJS.Timeout> = {};
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setUploadedMedia((prev: any) => [
+      ...prev,
+      {
+        id: mediaId,
+        name: file.name,
+        size: file.size,
+        type,
+        transcriptionStatus: 'processing',
+        thumbnail: previewUrl,
+        transcript: '',
+        tags: [],
+        emotions: '',
+        story: '',
+        images: []
+      }
+    ]);
 
-const startVideoPolling = (videoId: string) => {
-  if (pollingIntervals[videoId]) clearInterval(pollingIntervals[videoId]);
-
-  pollingIntervals[videoId] = setInterval(async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
-      const data = await res.json();
+      const xhr = new XMLHttpRequest();
 
-      if (!data.success) return;
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
+        }
+      };
 
-      const { playbackUrl, metadata } = data;
+      xhr.onload = async () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const result = JSON.parse(xhr.responseText);
+          const uploadedItem = result.uploaded?.[0];
 
-      setUploadedMedia((prev: any) =>
-        prev.map((media: any) =>
-          media.id === videoId
-            ? {
-                ...media,
-                thumbnail: metadata.thumbnail || media.thumbnail,
-                transcript: metadata.transcript || media.transcript,
-                tags: metadata.tags?.length ? metadata.tags : media.tags,
-                emotions: metadata.emotions?.length ? metadata.emotions : media.emotions,
-                story: metadata.story || media.story,
-                storyUrl: metadata.storyUrl || media.storyUrl,
-                encodingStatus: metadata.encodingStatus || media.encodingStatus,
-                playbackUrl
-              }
-            : media
+          if (!uploadedItem) throw new Error('Upload returned no file');
+
+          // ✅ CHANGED: Use actual metadata from backend response
+          const newMedia = {
+            id: uploadedItem._id || mediaId,
+            name: uploadedItem.filename,
+            size: file.size,
+            type,
+            transcriptionStatus: uploadedItem.status || 'completed',
+            thumbnail:
+              uploadedItem.thumbnail ||
+              uploadedItem.images?.[0] ||
+              (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+                ? uploadedItem.filename
+                : previewUrl),
+            transcript: uploadedItem.transcript || '',
+            tags: uploadedItem.tags || [],
+            emotions: uploadedItem.emotions || '',
+            story: '',
+            storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
+            images: uploadedItem.images || []
+          };
+
+          setUploadedMedia((prev: any) =>
+            prev.map((media: any) => (media.id === mediaId ? newMedia : media))
+          );
+
+          setMediaId(uploadedItem._id);
+          setStoryText('');
+
+          if (type === 'audio' && uploadedItem.filename) {
+            setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+          }
+
+          // ❌ REMOVED: No need to poll anymore
+          // pollMediaStatus(uploadedItem._id || mediaId);
+
+        } else {
+          throw new Error(`Upload failed with status ${xhr.status}`);
+        }
+      };
+
+      xhr.onerror = () => {
+        throw new Error('XHR upload failed');
+      };
+
+      xhr.open('POST', `${BASE_URL}/api/uploads`);
+      xhr.send(formData);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadedMedia(prev =>
+        prev.map(media =>
+          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
         )
       );
-
-      if (metadata.encodingStatus === 'completed') {
-        clearInterval(pollingIntervals[videoId]);
-      }
-    } catch (err) {
-      console.error('Polling error:', err);
     }
-  }, 5000); // poll every 5s
-};
+  };
+
+
 
 
 const pollVideoStatus = async (videoId: string) => {
@@ -393,10 +264,7 @@ const pollVideoStatus = async (videoId: string) => {
       )
     );
 
-    if (metadata.encodingStatus === 'completed') {
-        clearInterval(pollingIntervals[videoId]);
-        delete pollingIntervals[videoId]; // optional cleanup
-      }
+  
   } catch (err) {
     console.error("Polling error:", err);
   }
