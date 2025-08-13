@@ -494,8 +494,9 @@ export const VideoUploadArea = () => {
       fetch(`${BASE_URL}/api/videos`)
         .then(res => res.json())
         .then(data => {
-          setVideos(data);
-          localStorage.setItem('videos', JSON.stringify(data));
+          const videosArray = Array.isArray(data) ? data : data.videos || [];
+          setVideos(videosArray);
+          localStorage.setItem('videos', JSON.stringify(videosArray));
         })
         .catch(console.error);
     }
@@ -542,9 +543,9 @@ export const VideoUploadArea = () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
       if (res.data.success) {
-        setUploadedMedia(res.data.videos);
-        // Also persist in localStorage if needed
-        localStorage.setItem('uploadedMedia', JSON.stringify(res.data.videos));
+        const videosArray = Array.isArray(res.data.videos) ? res.data.videos : [];
+        setUploadedMedia(videosArray);
+        localStorage.setItem('uploadedMedia', JSON.stringify(videosArray));
       }
     } catch (err) {
       console.error('Error fetching videos:', err);
@@ -560,9 +561,9 @@ export const VideoUploadArea = () => {
   const videoId = getYouTubeID('https://youtu.be/abc123XYZ');
   console.log(videoId);
 
-const removeMedia = (type: 'image' | 'video' | 'audio') => {
-  setUploadedMedia(prev => prev.filter(m => m.type !== type));
-};
+  const removeMedia = (type: 'image' | 'video' | 'audio') => {
+    setUploadedMedia(prev => prev.filter(m => m.type !== type));
+  };
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
