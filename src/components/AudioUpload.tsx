@@ -143,7 +143,7 @@ const AudioUpload: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }) => 
 
   <div>
     <label className="block text-gray-700 font-semibold mb-1 text-sm">🎙️ Record Audio</label>
-    <div className="flex gap-3">
+    <div className="flex flex-row gap-3">
       {!isRecording ? (
         <button
           onClick={startRecording}

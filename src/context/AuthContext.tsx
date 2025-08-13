@@ -1,17 +1,22 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '@/services/apis';
+import { gapi } from 'gapi-script';
+import { GOOGLE_CLIENT_ID } from '@/App';
 
 type User = {
-  id: string;
-  email: string;
-  username: string;
+   id?: string;
+  email?: string;
+  username?: string;
   profilePic?: string;
+  token?: string;
 };
 
 type AuthContextType = {
   user: User | null;
-  setUser: (user: User | null) => void;
+   setUser: (user: User | null) => void;
+  login: (token: string, userData: Partial<User>) => void;
+  logout: () => void;
   loading: boolean;
 };
 
@@ -21,31 +26,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load user from localStorage or backend on mount
   useEffect(() => {
     let isMounted = true;
 
-    const loadUser = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        setUser(null);
+    const initializeAuth = async () => {
+      // SSR-safe gapi load
+      if (typeof window !== 'undefined') {
+        gapi.load('auth2', async () => {
+          await gapi.auth2.init({ client_id: GOOGLE_CLIENT_ID });
+        });
+      }
+
+      const savedToken = localStorage.getItem('authToken');
+      if (!savedToken) {
         setLoading(false);
         return;
       }
 
       try {
         const res = await axios.get(`${BASE_URL}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${savedToken}` },
           withCredentials: true,
         });
 
         if (isMounted) {
-          const userData = res.data.user;
-          setUser({
-            id: userData.id,
-            email: userData.email,
-            username: userData.username,
-            profilePic: userData.profilePic,
-          });
+          setUser({ ...res.data.user, token: savedToken });
         }
       } catch (error) {
         console.error('Failed to load user:', error);
@@ -56,14 +62,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    loadUser();
+    initializeAuth();
     return () => {
       isMounted = false;
     };
   }, []);
 
+  const login = (token: string, userData: Partial<User>) => {
+    localStorage.setItem('authToken', token);
+    setUser({ ...userData, token });
+  };
+
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    setUser(null);
+
+    // Sign out from Google if logged in
+    const auth2 = gapi.auth2.getAuthInstance();
+    if (auth2 && auth2.isSignedIn.get()) {
+      auth2.signOut();
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, loading }}>
+    <AuthContext.Provider value={{ user,setUser, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

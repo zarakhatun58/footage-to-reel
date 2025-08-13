@@ -16,24 +16,30 @@ import { gapi } from "gapi-script";
 
 const queryClient = new QueryClient();
 export const GOOGLE_CLIENT_ID = '584714840164-0ebm888scgf8vj8rhtvsfg32i80o2b3m.apps.googleusercontent.com';
-export const API_KEY='AIzaSyBe3IGg5GRojvvuWGjuL8jYa8M9JhGLlWM'
+
 const AppWrapper = () => {
   const { loading } = useAuth();
 
-    useEffect(() => {
-    const initializeGapi = () => {
-      gapi.client.init({
-        clientId: GOOGLE_CLIENT_ID ,
-        scope: '',
+   // SSR-safe gapi initialization
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      gapi.load('client:auth2', () => {
+        gapi.client.init({
+          clientId: GOOGLE_CLIENT_ID,
+          scope: 'profile email',
+        });
       });
-    };
-
-    gapi.load('client:auth2', initializeGapi);
+    }
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner
+    return (
+      <div className="flex items-center justify-center min-h-screen text-orange-400 text-xl">
+        Loading...
+      </div>
+    );
   }
+
 
   return (
      <BrowserRouter>

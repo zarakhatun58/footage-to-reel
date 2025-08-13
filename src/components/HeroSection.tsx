@@ -28,7 +28,8 @@ export type VideoType = {
 export const HeroSection = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+
+useEffect(() => {
     const fetchVideos = async () => {
       try {
         const savedVideos = localStorage.getItem("videos");
@@ -48,28 +49,17 @@ export const HeroSection = () => {
         setLoading(false);
       }
     };
-
     fetchVideos();
   }, []);
 
-  // Filter only fully generated videos
-  const generatedVideos = Array.isArray(videos)
-    ? videos.filter((v) => v.status === "generated")
-    : [];
-
-  // Sort by likes descending and take top 3
-  const top3Videos = generatedVideos
-    .slice()
+  const top3Videos = videos
+    .filter((v) => v.status === "generated")
     .sort((a, b) => (b.likes || 0) - (a.likes || 0))
     .slice(0, 3);
 
-  if (loading) {
-    return <p className="text-white">Loading videos...</p>;
-  }
-
-  if (!generatedVideos.length) {
+  if (loading) return <p className="text-white">Loading videos...</p>;
+  if (top3Videos.length === 0)
     return <p className="text-white">No fully generated videos available.</p>;
-  }
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -134,33 +124,29 @@ export const HeroSection = () => {
               <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
             </div>
           </div> */}
-          {loading ? (
-            <p className="text-white">Loading videos...</p>
-          ) : top3Videos.length === 0 ? (
-            <p className="text-white">No fully generated videos available yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {top3Videos.map((video) => (
-          <div
-            key={video._id || video.id}
-            className="border rounded shadow hover:shadow-lg transition-shadow relative"
-          >
-            <video
-              controls
-              className="w-full h-48 object-cover rounded-t"
-              src={video.storyUrl}
-              preload="metadata"
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {top3Videos.map((video) => (
+            <div
+              key={video._id}
+              className="border rounded shadow hover:shadow-lg transition-shadow relative"
             >
-              Your browser does not support the video tag.
-            </video>
-            <div className="p-3">
-              <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-              <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+              {video.storyUrl && (
+                <video
+                  controls
+                  className="w-full h-48 object-cover rounded-t"
+                  src={video.storyUrl}
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              )}
+              <div className="p-3">
+                <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
+                <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+              </div>
             </div>
-          </div>
-        ))}
-            </div>
-          )}
+          ))}
+        </div>
         </div>
       </div>
     </section>

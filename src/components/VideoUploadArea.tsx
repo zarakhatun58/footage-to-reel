@@ -461,20 +461,20 @@ export const VideoUploadArea = () => {
       );
 
       // 2️⃣ Upload final video to backend
-    const uploadRes = await fetch(`${BASE_URL}/api/upload-final`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mediaId,
-        videoUrl: data.playbackUrl, 
-        title: media.title,
-        userId: media.id, 
-      }),
-    });
-    const uploadData = await uploadRes.json();
-    if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
+      const uploadRes = await fetch(`${BASE_URL}/api/upload-final`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mediaId,
+          videoUrl: data.playbackUrl,
+          title: media.title,
+          userId: media.id,
+        }),
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
 
-    alert("✅ Video generated and uploaded successfully!");
+      alert("✅ Video generated and uploaded successfully!");
     } catch (error) {
       console.error("❌ Video generation error:", error);
       alert("❌ Video generation failed. Please try again.");
@@ -484,34 +484,34 @@ export const VideoUploadArea = () => {
     }
   };
 
-// Fetch all public/global videos
+  // Fetch all public/global videos
 
-useEffect(() => {
-  const savedVideos = localStorage.getItem('videos');
-  if (savedVideos) {
-    setVideos(JSON.parse(savedVideos));
-  } else {
-    fetch(`${BASE_URL}/api/videos`)
-      .then(res => res.json())
-      .then(data => {
-        setVideos(data);
-        localStorage.setItem('videos', JSON.stringify(data));
-      })
-      .catch(console.error);
-  }
-}, []);
+  useEffect(() => {
+    const savedVideos = localStorage.getItem('videos');
+    if (savedVideos) {
+      setVideos(JSON.parse(savedVideos));
+    } else {
+      fetch(`${BASE_URL}/api/videos`)
+        .then(res => res.json())
+        .then(data => {
+          setVideos(data);
+          localStorage.setItem('videos', JSON.stringify(data));
+        })
+        .catch(console.error);
+    }
+  }, []);
 
-// Top 3 ranked videos from all videos (uploaded + global)
-const allVideosCombined = [...uploadedMedia, ...videos];
-const topRankedVideos = allVideosCombined
-  .sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0))
-  .slice(0, 3);
+  // Top 3 ranked videos from all videos (uploaded + global)
+  const allVideosCombined = [...uploadedMedia, ...videos];
+  const topRankedVideos = allVideosCombined
+    .sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0))
+    .slice(0, 3);
   // Whenever videos change, update localStorage
   useEffect(() => {
     localStorage.setItem('videos', JSON.stringify(videos));
   }, [videos]);
 
-  
+
 
   const simulateProgress = (setter: (v: number) => void, duration = 3000) => {
     setter(0);
@@ -527,7 +527,7 @@ const topRankedVideos = allVideosCombined
     };
   };
 
- 
+
 
   const handleDeleteVideo = (id: any) => {
     // Confirm before delete (optional)
@@ -538,29 +538,31 @@ const topRankedVideos = allVideosCombined
   };
 
 
-const getAllVideos = async () => {
-  try {
-    const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
-    if (res.data.success) {
-      setUploadedMedia(res.data.videos);
-      // Also persist in localStorage if needed
-      localStorage.setItem('uploadedMedia', JSON.stringify(res.data.videos));
+  const getAllVideos = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
+      if (res.data.success) {
+        setUploadedMedia(res.data.videos);
+        // Also persist in localStorage if needed
+        localStorage.setItem('uploadedMedia', JSON.stringify(res.data.videos));
+      }
+    } catch (err) {
+      console.error('Error fetching videos:', err);
+    } finally {
+      setLoadingVideo(false);
     }
-  } catch (err) {
-    console.error('Error fetching videos:', err);
-  } finally {
-    setLoadingVideo(false);
-  }
-};
+  };
 
-useEffect(() => {
-  getAllVideos();
-}, []);
+  useEffect(() => {
+    getAllVideos();
+  }, []);
 
   const videoId = getYouTubeID('https://youtu.be/abc123XYZ');
   console.log(videoId);
 
-
+const removeMedia = (type: 'image' | 'video' | 'audio') => {
+  setUploadedMedia(prev => prev.filter(m => m.type !== type));
+};
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center mb-8">
@@ -662,11 +664,18 @@ useEffect(() => {
             {/* Left Side: Media & Info */}
             <div className="flex flex-col gap-3 w-full md:w-[30%]" >
               {uploadedMedia.find(m => m.type === 'image')?.storyUrl && (
-                <img
-                  src={uploadedMedia.find(m => m.type === 'image')?.storyUrl}
-                  alt="Uploaded Image"
-                  className="rounded-md w-64 object-cover"
-                />
+                <>
+                  <img
+                    src={uploadedMedia.find(m => m.type === 'image')?.storyUrl}
+                    alt="Uploaded Image"
+                    className="rounded-md w-64 object-cover"
+                  />
+                  <p
+                    onClick={() => removeMedia('image')}
+                    className="absolute top-1 right-1 bg-red-500 text-white px-2 py-1 rounded cursor-pointer"
+                  >
+                    clear
+                  </p> </>
               )}
 
               {uploadedMedia.find(m => m.type === 'video')?.storyUrl && (
@@ -765,21 +774,21 @@ useEffect(() => {
       <h3 className="text-lg font-semibold mt-4">🔥 Top 3 Trending Videos</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-2">
         {topRankedVideos.map(video => (
-    <div key={video._id || video.id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
-      <video
-        controls
-        className="w-full h-48 object-cover rounded-t"
-        src={video.storyUrl}
-        preload="metadata"
-      >
-        Your browser does not support the video tag.
-      </video>
-      <div className="p-3">
-        <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-        <MediaStatsBar media={video} BASE_URL={BASE_URL} />
-      </div>
-    </div>
-  ))}
+          <div key={video._id || video.id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
+            <video
+              controls
+              className="w-full h-48 object-cover rounded-t"
+              src={video.storyUrl}
+              preload="metadata"
+            >
+              Your browser does not support the video tag.
+            </video>
+            <div className="p-3">
+              <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
+              <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+            </div>
+          </div>
+        ))}
       </div>
       {/* all - video  */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
