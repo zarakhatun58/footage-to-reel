@@ -67,36 +67,26 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
     }
   };
 
-  const handleShareClick = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/media/${media.id}/share`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        const updatedStats = { ...stats, shares: data.shares, rank: data.rankScore };
-        setStats(updatedStats);
-        updateLocalStorage(updatedStats);
-        setShareOpen(true);
-      }
-    } catch (err) {
-      console.error('Failed to share', err);
+const handleShareClick = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/media/${media.id}/share`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      const updatedStats = { ...stats, shares: data.shares, rank: data.rankScore };
+      setStats(updatedStats);
+      updateLocalStorage(updatedStats);
+
+      setShortUrl(data.shortUrl || media.storyUrl); // ✅ will always be available
+      setShareOpen(true);
     }
-  };
+  } catch (err) {
+    console.error('Failed to share', err);
+  }
+};
 
-  // --- Fetch short URL for sharing ---
-  useEffect(() => {
-    const fetchShortUrl = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/api/media/${media.id}/shorturl`);
-        const data = await res.json();
-        setShortUrl(data.success && data.shortUrl ? data.shortUrl : media.storyUrl);
-      } catch {
-        setShortUrl(media.storyUrl);
-      }
-    };
-    fetchShortUrl();
-  }, [media.id, media.storyUrl, BASE_URL]);
 
-  // --- IntersectionObserver for auto-view tracking ---
+
   useEffect(() => {
     if (!videoRef.current) return;
 
