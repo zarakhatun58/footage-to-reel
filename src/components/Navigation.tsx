@@ -53,7 +53,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
   };
 
   const handleSectionChange = (section: string) => {
-    if (["upload", "search", "stories"].includes(section) && !user) {
+    if (["upload"].includes(section) && !user) {
       setShowAuthDialog(true);
       return;
     }
