@@ -26,20 +26,6 @@ declare global {
 const AppWrapper = () => {
   const { loading } = useAuth();
 
-   // SSR-safe gapi initialization
-useEffect(() => {
-  if (typeof window !== "undefined" && window.gapi) {
-    window.gapi.load("client:auth2", () => {
-      const auth2 = window.gapi.auth2.getAuthInstance();
-      if (!auth2) {
-        window.gapi.client.init({
-          clientId: GOOGLE_CLIENT_ID,
-          scope: "profile email",
-        });
-      }
-    });
-  }
-}, []);
 
   if (loading) {
     return (
