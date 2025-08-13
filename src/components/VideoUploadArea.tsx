@@ -235,11 +235,10 @@ export const VideoUploadArea = () => {
 const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
   const formData = new FormData();
   formData.append(
-    type === "image" ? "images" : type === "video" ? "video" : "voiceover",
+    type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
     file
   );
 
-  // Instant preview
   const previewUrl = URL.createObjectURL(file);
   setUploadedMedia((prev: any) => [
     ...prev,
@@ -248,25 +247,24 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
       name: file.name,
       size: file.size,
       type,
-      transcriptionStatus: "processing",
+      transcriptionStatus: 'processing',
       thumbnail: previewUrl,
-      transcript: "Processing...",
-      tags: ["Processing..."],
-      emotions: ["Processing..."],
-      story: "",
-      storyUrl: "",
-      images: [],
-    },
+      transcript: 'Processing...',
+      tags: ['Processing...'],
+      emotions: ['Processing...'],
+      story: '',
+      storyUrl: '',
+      images: []
+    }
   ]);
 
   try {
     const xhr = new XMLHttpRequest();
 
-    // Progress bar
-    xhr.upload.onprogress = (event) => {
+    xhr.upload.onprogress = event => {
       if (event.lengthComputable) {
         const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadProgress((prev) => ({ ...prev, [mediaId]: progress }));
+        setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
       }
     };
 
@@ -275,110 +273,134 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
         const result = JSON.parse(xhr.responseText);
         const uploadedItem = result.uploaded?.[0];
 
-        if (!uploadedItem) throw new Error("Upload returned no file");
+        if (!uploadedItem) throw new Error('Upload returned no file');
 
-        const newId = uploadedItem._id ?? mediaId;
-
-        // Replace preview item with minimal info after upload
-        setUploadedMedia((prev: any) =>
-          prev.map((m: any) =>
-            m.id === mediaId
-              ? { ...m, id: newId, transcriptionStatus: "processing" }
-              : m
-          )
-        );
-
-        // ✅ Poll status until backend finishes processing
-        const pollStatus = async () => {
-          try {
-            const res = await fetch(`${BASE_URL}/api/videos/status/${newId}`);
-            const data = await res.json();
-
-            if (data.success && data.encodingStatus === "completed") {
-              setUploadedMedia((prev: any) =>
-                prev.map((m: any) =>
-                  m.id === newId
-                    ? {
-                        ...m,
-                        transcriptionStatus: "completed",
-                        thumbnail: data.thumbnailUrl || m.thumbnail,
-                        transcript: data.transcript || "Not available",
-                        tags: data.tags?.length ? data.tags : ["Not generated"],
-                        emotions: data.emotions?.length
-                          ? data.emotions
-                          : ["Not detected"],
-                        story: data.story || "",
-                        storyUrl: data.playbackUrl || m.storyUrl,
-                      }
-                    : m
-                )
-              );
-            } else {
-              // Keep polling until ready
-              setTimeout(pollStatus, 3000);
-            }
-          } catch (err) {
-            console.error("Polling failed:", err);
-            setTimeout(pollStatus, 3000);
-          }
+        const newMedia = {
+          id: uploadedItem._id ?? mediaId,
+          name: uploadedItem.filename,
+          size: file.size,
+          type,
+          transcriptionStatus: uploadedItem.status || 'processing',
+          thumbnail: uploadedItem.thumbnail || uploadedItem.images?.[0] || previewUrl,
+          transcript: uploadedItem.transcript || 'Not available',
+          tags: uploadedItem.tags?.length ? uploadedItem.tags : ['Not generated'],
+          emotions: uploadedItem.emotions?.length ? uploadedItem.emotions : ['Not detected'],
+          story: uploadedItem.story || '',
+          storyUrl: uploadedItem.storyUrl || '',
+          images: uploadedItem.images || []
         };
 
-        pollStatus();
+        setUploadedMedia((prev: any) =>
+          prev.map((media: any) => (media.id === mediaId ? newMedia : media))
+        );
+
+        setMediaId(newMedia.id);
+        setStoryText('');
+
+        // Auto start polling for final status & metadata
+        startVideoPolling(newMedia.id);
       } else {
         throw new Error(`Upload failed with status ${xhr.status}`);
       }
     };
 
     xhr.onerror = () => {
-      throw new Error("XHR upload failed");
+      throw new Error('XHR upload failed');
     };
 
-    xhr.open("POST", `${BASE_URL}/api/uploads`);
+    xhr.open('POST', `${BASE_URL}/api/uploads`);
     xhr.send(formData);
   } catch (error) {
-    console.error("Upload failed:", error);
-    setUploadedMedia((prev) =>
-      prev.map((m) =>
-        m.id === mediaId ? { ...m, transcriptionStatus: "error" } : m
+    console.error('Upload failed:', error);
+    setUploadedMedia(prev =>
+      prev.map(media =>
+        media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
       )
     );
   }
 };
 
-  const pollMediaStatus = async (mediaId: string) => {
-    const maxAttempts = 10;
-    const interval = 2000;
-    let attempts = 0;
+// Polling helper
+let pollingIntervals: Record<string, NodeJS.Timeout> = {};
 
-    const poll = async () => {
-      try {
-        attempts++;
-        const res = await fetch(`${BASE_URL}/api/media/${mediaId}`);
+const startVideoPolling = (videoId: string) => {
+  if (pollingIntervals[videoId]) clearInterval(pollingIntervals[videoId]);
 
-        // Safely check if it's JSON
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await res.text();
-          console.error(`Unexpected response (non-JSON): ${text}`);
-          throw new Error('Non-JSON response received from server');
-        }
+  pollingIntervals[videoId] = setInterval(async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
+      const data = await res.json();
 
-        const data = await res.json();
+      if (!data.success) return;
 
-        if (data.transcriptionStatus === 'completed' || attempts >= maxAttempts) {
-          setUploadedMedia(prev =>
-            prev.map(media => (media.id === mediaId ? { ...media, ...data } : media))
-          );
-        } else {
-          setTimeout(poll, interval);
-        }
-      } catch (err) {
-        console.error('Polling failed:', err);
+      const { playbackUrl, metadata } = data;
+
+      setUploadedMedia((prev: any) =>
+        prev.map((media: any) =>
+          media.id === videoId
+            ? {
+                ...media,
+                thumbnail: metadata.thumbnail || media.thumbnail,
+                transcript: metadata.transcript || media.transcript,
+                tags: metadata.tags?.length ? metadata.tags : media.tags,
+                emotions: metadata.emotions?.length ? metadata.emotions : media.emotions,
+                story: metadata.story || media.story,
+                storyUrl: metadata.storyUrl || media.storyUrl,
+                encodingStatus: metadata.encodingStatus || media.encodingStatus,
+                playbackUrl
+              }
+            : media
+        )
+      );
+
+      if (metadata.encodingStatus === 'completed') {
+        clearInterval(pollingIntervals[videoId]);
       }
-    };
+    } catch (err) {
+      console.error('Polling error:', err);
+    }
+  }, 5000); // poll every 5s
+};
 
-    poll();
-  };
+
+const pollVideoStatus = async (videoId: string) => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      console.error("Video status check failed:", data.error);
+      return;
+    }
+
+    const { playbackUrl, metadata } = data;
+
+    setUploadedMedia((prev: any) =>
+      prev.map((media: any) =>
+        media.id === videoId
+          ? {
+              ...media,
+              thumbnail: metadata.thumbnail || media.thumbnail,
+              transcript: metadata.transcript || media.transcript,
+              tags: metadata.tags?.length ? metadata.tags : media.tags,
+              emotions: metadata.emotions?.length ? metadata.emotions : media.emotions,
+              story: metadata.story || media.story,
+              storyUrl: metadata.storyUrl || media.storyUrl,
+              encodingStatus: metadata.encodingStatus || media.encodingStatus,
+              playbackUrl
+            }
+          : media
+      )
+    );
+
+    if (metadata.encodingStatus === 'completed') {
+        clearInterval(pollingIntervals[videoId]);
+        delete pollingIntervals[videoId]; // optional cleanup
+      }
+  } catch (err) {
+    console.error("Polling error:", err);
+  }
+};
 
 
 
