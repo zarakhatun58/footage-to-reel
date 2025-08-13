@@ -6,8 +6,10 @@ import { EmotionDetector } from "./EmotionDetector";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
+import { MediaStatsBar } from "./MediaStatsBar";
+import { UploadedMedia } from "./VideoUploadArea";
 
-type VideoType = {
+export type VideoType = {
   _id: string;
   filename: string;
   transcript?: string;
@@ -19,37 +21,55 @@ type VideoType = {
   views: number;
   shares: number;
   status: "generated" | "pending" | string;
+  [key: string]: any;
 };
 
 
 export const HeroSection = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    const savedVideos = localStorage.getItem("videos");
-    if (savedVideos) {
-      setVideos(JSON.parse(savedVideos));
-      setLoading(false);
-    } else {
-      fetch(`${BASE_URL}/api/videos`)
-        .then((res) => res.json())
-        .then((data: VideoType[]) => {
+    const fetchVideos = async () => {
+      try {
+        const savedVideos = localStorage.getItem("videos");
+        if (savedVideos) {
+          const parsed = JSON.parse(savedVideos);
+          setVideos(Array.isArray(parsed) ? parsed : []);
+        } else {
+          const res = await axios.get<VideoType[]>(`${BASE_URL}/api/videos`);
+          const data = Array.isArray(res.data) ? res.data : [];
           setVideos(data);
           localStorage.setItem("videos", JSON.stringify(data));
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+        }
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+        setVideos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
   }, []);
 
   // Filter only fully generated videos
-  const generatedVideos = videos.filter((v) => v.status === "generated");
+  const generatedVideos = Array.isArray(videos)
+    ? videos.filter((v) => v.status === "generated")
+    : [];
 
-  // Sort by likes descending
+  // Sort by likes descending and take top 3
   const top3Videos = generatedVideos
-    .sort((a, b) => b.likes - a.likes)
+    .slice()
+    .sort((a, b) => (b.likes || 0) - (a.likes || 0))
     .slice(0, 3);
+
+  if (loading) {
+    return <p className="text-white">Loading videos...</p>;
+  }
+
+  if (!generatedVideos.length) {
+    return <p className="text-white">No fully generated videos available.</p>;
+  }
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -121,24 +141,24 @@ export const HeroSection = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {top3Videos.map((video) => (
-                <div
-                  key={video._id}
-                  className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
-                  onClick={() => window.open(video.storyUrl, "_blank")}
-                >
-                  <h3 className="text-lg font-semibold text-purple-400 mb-2">
-                    {video.filename}
-                  </h3>
-                  <p className="text-gray-300 text-sm line-clamp-3">
-                    {video.story || "No story available."}
-                  </p>
-                  <div className="mt-3 flex justify-between text-xs text-gray-300">
-                    <span>👍 {video.likes}</span>
-                    <span>👁️ {video.views}</span>
-                    <span>🔗 {video.shares}</span>
-                  </div>
-                </div>
-              ))}
+          <div
+            key={video._id || video.id}
+            className="border rounded shadow hover:shadow-lg transition-shadow relative"
+          >
+            <video
+              controls
+              className="w-full h-48 object-cover rounded-t"
+              src={video.storyUrl}
+              preload="metadata"
+            >
+              Your browser does not support the video tag.
+            </video>
+            <div className="p-3">
+              <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
+              <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+            </div>
+          </div>
+        ))}
             </div>
           )}
         </div>
