@@ -176,21 +176,35 @@ export const VideoUploadArea = () => {
           if (!uploadedItem) throw new Error('Upload returned no file');
 
           // ✅ CHANGED: Use actual metadata from backend response
+          // const newMedia = {
+          //   id: uploadedItem._id || mediaId,
+          //   name: uploadedItem.filename,
+          //   size: file.size,
+          //   type,
+          //   transcriptionStatus: uploadedItem.status || 'completed',
+          //   thumbnail:
+          //     uploadedItem.thumbnail ||
+          //     uploadedItem.images?.[0] ||
+          //     (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+          //       ? uploadedItem.filename
+          //       : previewUrl),
+          //   transcript: uploadedItem.transcript || '',
+          //   tags: uploadedItem.tags || [],
+          //   emotions: uploadedItem.emotions || '',
+          //   story: '',
+          //   storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
+          //   images: uploadedItem.images || []
+          // };
           const newMedia = {
             id: uploadedItem._id || mediaId,
             name: uploadedItem.filename,
             size: file.size,
             type,
             transcriptionStatus: uploadedItem.status || 'completed',
-            thumbnail:
-              uploadedItem.thumbnail ||
-              uploadedItem.images?.[0] ||
-              (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-                ? uploadedItem.filename
-                : previewUrl),
-            transcript: uploadedItem.transcript || '',
-            tags: uploadedItem.tags || [],
-            emotions: uploadedItem.emotions || '',
+            thumbnail: uploadedItem.images?.[0] || previewUrl,
+            transcript: uploadedItem.transcript || 'Not available',
+            tags: uploadedItem.tags.length ? uploadedItem.tags : ['Not generated'],
+            emotions: uploadedItem.emotions.length ? uploadedItem.emotions : ['Not detected'],
             story: '',
             storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
             images: uploadedItem.images || []
@@ -677,7 +691,7 @@ export const VideoUploadArea = () => {
                   >
                     clear
                   </button>  */}
-                  </>
+                </>
               )}
 
               {uploadedMedia.find(m => m.type === 'video')?.storyUrl && (
