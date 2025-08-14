@@ -95,7 +95,7 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded shadow transition"
+        className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded shadow transition"
       >
         Audio
       </button>

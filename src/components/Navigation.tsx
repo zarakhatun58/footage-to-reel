@@ -52,14 +52,14 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     }
   };
 
-  const handleSectionChange = (section: string) => {
-    if (["upload"].includes(section) && !user) {
+  
+ const handleSectionChange = (section: string) => {    
+    if (section === "upload" && !user) {
       setShowAuthDialog(true);
       return;
     }
     onSectionChange(section);
   };
-
 
   return (
     <>
