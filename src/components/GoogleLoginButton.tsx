@@ -7,9 +7,9 @@ import api from '@/services/apis';
 const GoogleLoginButton = ({ onClose }: { onClose: () => void }) => {
   const { setUser } = useAuth();
   const navigate = useNavigate();
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleSuccess = async (credentialResponse: CredentialResponse) => {
+
+ const handleSuccess = async (credentialResponse: CredentialResponse) => {
     console.log("Google credentialResponse:", credentialResponse);
 
     if (!credentialResponse?.credential) {
@@ -17,7 +17,6 @@ const GoogleLoginButton = ({ onClose }: { onClose: () => void }) => {
       return;
     }
 
-    setGoogleLoading(true);
     try {
       const res = await api.post('/api/auth/googleLogin', {
         token: credentialResponse.credential,
@@ -47,10 +46,9 @@ const GoogleLoginButton = ({ onClose }: { onClose: () => void }) => {
     } catch (err: any) {
       console.error("Google login failed:", err);
       alert(err.response?.data?.error || "Google login failed");
-    } finally {
-      setGoogleLoading(false);
     }
   };
+
 
   const handleError = () => {
     console.error("Google Sign-In failed");
@@ -63,7 +61,6 @@ const GoogleLoginButton = ({ onClose }: { onClose: () => void }) => {
         onSuccess={handleSuccess}
         onError={handleError}
       />
-      {googleLoading && <span className="ml-2">Loading...</span>}
     </div>
   );
 };
