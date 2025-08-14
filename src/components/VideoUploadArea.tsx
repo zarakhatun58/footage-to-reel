@@ -231,50 +231,102 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
   }
 };
 
+const generateStory = async () => {
+  // ✅ Find the first media with a transcript
+  const mediaWithTranscript = uploadedMedia.find(
+    m => m.transcript && m.transcript.trim() !== ''
+  );
 
+  if (!mediaWithTranscript) {
+    alert('❌ No transcript found. Please upload media that has a transcript first.');
+    return;
+  }
 
+  const stop = simulateProgress(setStoryProgress); // progress animation
+  const prompt = 'Create a motivational story about learning to code.'; // default prompt
 
+  try {
+    const res = await fetch(`${BASE_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transcript: mediaWithTranscript.transcript,
+        prompt
+      })
+    });
 
-  const generateStory = async () => {
-    if (!uploadedMedia[0]) return;
-    const stop = simulateProgress(setStoryProgress); // Start progress animation
-    const prompt = 'Create a motivational story about learning to code.';
-    try {
+    const result = await res.json();
 
-      const res = await fetch(`${BASE_URL}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: uploadedMedia[0].transcript,
-          prompt
-        })
-      });
-
-      const result = await res.json();
-
-      if (!res.ok || !result.story) {
-        throw new Error(result.error || 'Story generation failed');
-      }
-
-      setStoryText(result.story);
-      if (result.storyAudioUrl) {
-        setStoryAudioUrl(result.storyAudioUrl);
-      }
-      setUploadedMedia(prev =>
-        prev.map(m =>
-          m.id === uploadedMedia[0].id
-            ? { ...m, story: result.story, prompt }
-            : m
-        )
-      );
-
-    } catch (error) {
-      console.error('Story generation error:', error);
-      alert('❌ Failed to generate story');
-    } finally {
-      stop(); // Complete progress
+    if (!res.ok || !result.story) {
+      throw new Error(result.error || 'Story generation failed');
     }
-  };
+
+    // ✅ Update UI with story
+    setStoryText(result.story);
+
+    if (result.storyAudioUrl) {
+      setStoryAudioUrl(result.storyAudioUrl);
+    }
+
+    setUploadedMedia(prev =>
+      prev.map(m =>
+        m.id === mediaWithTranscript.id
+          ? { ...m, story: result.story, prompt }
+          : m
+      )
+    );
+
+    console.log('✅ Story generated:', result.story);
+
+  } catch (error) {
+    console.error('Story generation error:', error);
+    alert('❌ Failed to generate story');
+  } finally {
+    stop(); // finish progress animation
+  }
+};
+
+
+  // const generateStory = async () => {
+  //   if (!uploadedMedia[0]) return;
+  //   const stop = simulateProgress(setStoryProgress); // Start progress animation
+  //   const prompt = 'Create a motivational story about learning to code.';
+  //   try {
+
+  //     const res = await fetch(`${BASE_URL}/api/generate`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         transcript: uploadedMedia[0].transcript,
+  //         prompt
+  //       })
+  //     });
+
+  //     const result = await res.json();
+
+  //     if (!res.ok || !result.story) {
+  //       throw new Error(result.error || 'Story generation failed');
+  //     }
+
+  //     setStoryText(result.story);
+  //     if (result.storyAudioUrl) {
+  //       setStoryAudioUrl(result.storyAudioUrl);
+  //     }
+  //     setUploadedMedia(prev =>
+  //       prev.map(m =>
+  //         m.id === uploadedMedia[0].id
+  //           ? { ...m, story: result.story, prompt }
+  //           : m
+  //       )
+  //     );
+
+  //   } catch (error) {
+  //     console.error('Story generation error:', error);
+  //     alert('❌ Failed to generate story');
+  //   } finally {
+  //     stop(); // Complete progress
+  //   }
+  // };
 
   // const generateVideoClip = async () => {
   //   if (!storyText || !uploadedMedia[0]) return;
@@ -777,6 +829,7 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
                 )
               )
             }
+            
             rows={6}
             placeholder="Story will appear here..."
           />
