@@ -172,7 +172,7 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
               {option === 'auto' && (
                 <button
                   onClick={autoGenerateAudio}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 rounded shadow transition-transform duration-200 hover:scale-105"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1.5 rounded shadow transition-transform duration-200 hover:scale-105"
                 >
                   Generate Audio
                 </button>

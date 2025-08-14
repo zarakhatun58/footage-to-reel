@@ -94,45 +94,46 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                   </Button>
                 );
               })}
+
               {user ? (
-                <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-2">
-                        <User className="w-4 h-4" />
-                        {user.profilePic && (
-                          <img
-                            src={user.profilePic}
-                            alt={user.username}
-                            className="w-6 h-6 rounded-full object-cover"
-                          />
-                        )}{user.username}
-                      </Button>
-                    </DropdownMenuTrigger>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <User className="w-4 h-4" />
+                      {user.profilePic && (
+                        <img
+                          src={user.profilePic}
+                          alt={user.username ?? "User"}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      )}
+                      {user.username ?? "Profile"}
+                    </Button>
+                  </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel className="text-sm">
-                        {user.profilePic && (
-                          <img
-                            src={user.profilePic}
-                            alt={user.username}
-                            className="w-6 h-6 rounded-full object-cover"
-                          />
-                        )}{user.username || "Profile"}
-                      </DropdownMenuLabel>
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">
-                        {user?.email || "No email"}
-                      </DropdownMenuLabel>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="text-sm">
+                      {user.profilePic && (
+                        <img
+                          src={user.profilePic}
+                          alt={user.username ?? "User"}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      )}
+                      {user.username ?? "Profile"}
+                    </DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      {user?.email ?? "No email"}
+                    </DropdownMenuLabel>
 
-                      <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                      <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
-                        <LogOut className="w-4 h-4" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
+                    <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)}>
                   Sign In
@@ -176,16 +177,19 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                   </Button>
                 );
               })}
+
               {user ? (
                 <>
                   <Button variant="ghost" size="sm" onClick={() => onSectionChange("profile")}>
-                    <User className="w-4 h-4 mr-1" />  {user.profilePic && (
+                    <User className="w-4 h-4 mr-1" />
+                    {user.profilePic && (
                       <img
                         src={user.profilePic}
-                        alt={user.username}
+                        alt={user.username ?? "User"}
                         className="w-6 h-6 rounded-full object-cover"
                       />
-                    )}{user.username}
+                    )}
+                    {user.username ?? "Profile"}
                   </Button>
                   <Button
                     variant="ghost"

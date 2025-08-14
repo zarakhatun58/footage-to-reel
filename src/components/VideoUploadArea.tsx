@@ -70,8 +70,7 @@ export const VideoUploadArea = () => {
   const handleAudioModeChange = (mode: any) => {
     setSelectedAudioMode(mode);
   };
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
+ const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
@@ -86,136 +85,183 @@ export const VideoUploadArea = () => {
     handleFiles(files);
   }, []);
 
+  // File input handler
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
-    Array.from(files).forEach(file => {
-      const tempId = `${Date.now()}-${file.name}`;
-      const mimeType = file.type;
-      const type = mimeType.startsWith('image')
-        ? 'image'
-        : mimeType.startsWith('video')
-          ? 'video'
-          : 'voiceover';
-
-      setUploadedMedia((prev: any) => [...prev, { id: tempId, name: file.name, type }]);
-      uploadFileToServer(tempId, file, type);
-    });
-
+    handleFiles(Array.from(files));
     e.target.value = '';
   };
 
-
+  // Unified file processing
   const handleFiles = (files: File[]) => {
     const supportedTypes = ['video/', 'audio/', 'image/'];
 
-    const validFiles = files.filter(file =>
-      supportedTypes.some(type => file.type.startsWith(type))
-    );
+    files.forEach(file => {
+      if (!supportedTypes.some(type => file.type.startsWith(type))) return;
 
-    validFiles.forEach(file => {
       const mediaId = `${Date.now()}-${Math.random()}`;
-      const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
+      const type = file.type.startsWith('video/') ? 'video' :
+                   file.type.startsWith('audio/') ? 'audio' : 'image';
 
+      const previewUrl = URL.createObjectURL(file);
+
+      // Add initial entry
       const newMedia: UploadedMedia = {
         id: mediaId,
         name: file.name,
         size: file.size,
         type,
-        transcriptionStatus: 'pending'
+        transcriptionStatus: 'processing',
+        thumbnail: previewUrl,
+        transcript: '',
+        tags: [],
+        emotions: '',
+        story: '',
+        images: []
       };
 
       setUploadedMedia(prev => [...prev, newMedia]);
-      uploadFileToServer(mediaId, file, type);
+      uploadFileToServer(mediaId, file, type, previewUrl);
     });
   };
 
+// const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+//   const formData = new FormData();
+//   formData.append(
+//     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+//     file
+//   );
 
-const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-  const formData = new FormData();
-  formData.append(
-    type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-    file
-  );
+//   // Show preview immediately
+//   const previewUrl = URL.createObjectURL(file);
+//   setUploadedMedia((prev: any) => [
+//     ...prev,
+//     {
+//       id: mediaId,
+//       name: file.name,
+//       size: file.size,
+//       type,
+//       transcriptionStatus: 'processing',
+//       thumbnail: previewUrl,
+//       transcript: '',
+//       tags: [],
+//       emotions: '',
+//       story: '',
+//       images: []
+//     }
+//   ]);
 
-  // Show preview immediately
-  const previewUrl = URL.createObjectURL(file);
-  setUploadedMedia((prev: any) => [
-    ...prev,
-    {
-      id: mediaId,
-      name: file.name,
-      size: file.size,
-      type,
-      transcriptionStatus: 'processing',
-      thumbnail: previewUrl,
-      transcript: '',
-      tags: [],
-      emotions: '',
-      story: '',
-      images: []
+//   try {
+//     const response = await api.post('/api/uploads', formData, {
+//       headers: { 'Content-Type': 'multipart/form-data' },
+//       onUploadProgress: (event) => {
+//         if (event.total) {
+//           const progress = Math.round((event.loaded / event.total) * 100);
+//           setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
+//         }
+//       },
+//     });
+
+//     const result = response.data;
+//     const uploadedItem = result.uploaded?.[0];
+
+//     if (!uploadedItem) throw new Error('Upload returned no file');
+
+//     const newMedia = {
+//       id: uploadedItem._id || mediaId,
+//       name: uploadedItem.filename,
+//       size: file.size,
+//       type,
+//       transcriptionStatus: uploadedItem.status || 'completed',
+//       thumbnail:
+//         uploadedItem.thumbnail ||
+//         uploadedItem.images?.[0] ||
+//         (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+//           ? uploadedItem.filename
+//           : previewUrl),
+//       transcript: uploadedItem.transcript || '',
+//       tags: uploadedItem.tags || [],
+//       emotions: uploadedItem.emotions || '',
+//       story: '',
+//       storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
+//       images: uploadedItem.images || []
+//     };
+
+//     setUploadedMedia((prev: any) =>
+//       prev.map((media: any) => (media.id === mediaId ? newMedia : media))
+//     );
+
+//     setMediaId(uploadedItem._id);
+//     setStoryText('');
+
+//     if (type === 'audio' && uploadedItem.filename) {
+//       setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+//     }
+
+//   } catch (error) {
+//     console.error('Upload failed:', error);
+//     setUploadedMedia(prev =>
+//       prev.map(media =>
+//         media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
+//       )
+//     );
+//   }
+// };
+
+  const uploadFileToServer = async (mediaId: string, file: File, type: string, previewUrl: string) => {
+    const formData = new FormData();
+    formData.append(type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover', file);
+
+    try {
+      const response = await api.post('/api/uploads', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (event) => {
+          if (event.total) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
+          }
+        },
+      });
+
+      const uploadedItem = response.data.uploaded?.[0];
+      if (!uploadedItem) throw new Error('Upload returned no file');
+
+      const updatedMedia: UploadedMedia = {
+        id: uploadedItem._id || mediaId,
+        name: uploadedItem.filename,
+        size: file.size,
+      type: (type === 'video' || type === 'audio' || type === 'image' ? type : 'unknown'),
+        transcriptionStatus: uploadedItem.status || 'completed',
+        thumbnail: uploadedItem.thumbnail || uploadedItem.images?.[0] || previewUrl,
+        transcript: uploadedItem.transcript || '',
+        tags: uploadedItem.tags || [],
+        emotions: uploadedItem.emotions || '',
+        story: '',
+        storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
+        images: uploadedItem.images || []
+      };
+
+      setUploadedMedia(prev =>
+        prev.map(media => (media.id === mediaId ? updatedMedia : media))
+      );
+
+      setMediaId(uploadedItem._id);
+      setStoryText('');
+
+      if (type === 'audio' && uploadedItem.filename) {
+        setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+      }
+
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadedMedia(prev =>
+        prev.map(media =>
+          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
+        )
+      );
     }
-  ]);
-
-  try {
-    const response = await api.post('/api/uploads', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (event) => {
-        if (event.total) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
-        }
-      },
-    });
-
-    const result = response.data;
-    const uploadedItem = result.uploaded?.[0];
-
-    if (!uploadedItem) throw new Error('Upload returned no file');
-
-    const newMedia = {
-      id: uploadedItem._id || mediaId,
-      name: uploadedItem.filename,
-      size: file.size,
-      type,
-      transcriptionStatus: uploadedItem.status || 'completed',
-      thumbnail:
-        uploadedItem.thumbnail ||
-        uploadedItem.images?.[0] ||
-        (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-          ? uploadedItem.filename
-          : previewUrl),
-      transcript: uploadedItem.transcript || '',
-      tags: uploadedItem.tags || [],
-      emotions: uploadedItem.emotions || '',
-      story: '',
-      storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
-      images: uploadedItem.images || []
-    };
-
-    setUploadedMedia((prev: any) =>
-      prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-    );
-
-    setMediaId(uploadedItem._id);
-    setStoryText('');
-
-    if (type === 'audio' && uploadedItem.filename) {
-      setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-    }
-
-  } catch (error) {
-    console.error('Upload failed:', error);
-    setUploadedMedia(prev =>
-      prev.map(media =>
-        media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-      )
-    );
-  }
-};
-
-
+  };
 
   const generateStory = async () => {
     if (!uploadedMedia[0]) return;
