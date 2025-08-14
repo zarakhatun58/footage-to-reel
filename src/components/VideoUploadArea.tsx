@@ -613,7 +613,7 @@ export const VideoUploadArea = () => {
         </div>
       )}
 
-      {/* {uploadedMedia.length > 0 && (
+      {uploadedMedia.length > 0 && (
         <div className="mt-6">
           <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
 
@@ -679,7 +679,7 @@ export const VideoUploadArea = () => {
               />
 
               {uploadedMedia[0] && (
-                <AudioUpload
+                <AudioUploadModal
                   media={uploadedMedia[0]}
                   setUploadedMedia={setUploadedMedia}
                   BASE_URL={BASE_URL}
@@ -702,8 +702,8 @@ export const VideoUploadArea = () => {
             </div>
           </div>
         </div>
-      )} */}
-      {uploadedMedia.length > 0 && (() => {
+      )}
+      {/* {uploadedMedia.length > 0 && (() => {
         const imageMedia = uploadedMedia.find(m => m.type === 'image');
         const videoMedia = uploadedMedia.find(m => m.type === 'video');
         const audioMedia = uploadedMedia.find(m => m.type === 'audio');
@@ -712,8 +712,6 @@ export const VideoUploadArea = () => {
         return (
           <div className="mt-6">
             <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
-
-              {/* Left Side: Media & Info */}
               <div className="flex flex-col gap-3 w-full md:w-[30%]">
                 {imageMedia?.storyUrl && (
                   <img
@@ -745,8 +743,6 @@ export const VideoUploadArea = () => {
                   </p>
                 </div>
               </div>
-
-              {/* Right Side: Text & Actions */}
               <div className="flex flex-col gap-3 w-full md:w-[70%]">
                 <Textarea
                   className="w-full"
@@ -788,7 +784,7 @@ export const VideoUploadArea = () => {
             </div>
           </div>
         );
-      })()}
+      })()} */}
 
       {/* Video preview */}
       <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
