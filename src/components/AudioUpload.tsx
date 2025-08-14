@@ -105,7 +105,7 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50 transition-opacity duration-300">
           <div
             ref={modalRef}
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4 relative transform transition-transform duration-300 scale-95 opacity-0 animate-scale-in"
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4 relative transform transition-transform duration-300 scale-95 animate-scale-in"
           >
             <button
               onClick={() => setIsOpen(false)}

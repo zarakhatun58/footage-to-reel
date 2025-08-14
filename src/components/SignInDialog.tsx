@@ -49,6 +49,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const navigate = useNavigate();
     const { token } = useParams();
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     useEffect(() => {
         const token = searchParams.get("token");
@@ -134,23 +135,47 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
 
     // 🔹 Google login
-    const handleSuccess = async (credentialResponse: any) => {
-        try {
-            const res = await axios.post(
-                `${BASE_URL}/api/auth/googleLogin`,
-                { token: credentialResponse.credential }
-            );
+const handleSuccess = async (credentialResponse: CredentialResponse) => {
+  if (!credentialResponse.credential) {
+    alert("Google login failed: No credential returned");
+    return;
+  }
 
-            const { token, user } = res.data;
-            localStorage.setItem("authToken", token);
-            setUser(user);
-            onClose();
-            navigate("/");
-        } catch (err) {
-            console.error("Google login failed:", err);
-            alert("Google login failed");
-        }
-    };
+  setGoogleLoading(true);
+  try {
+    const res = await axios.post(`${BASE_URL}/api/auth/googleLogin`, {
+      token: credentialResponse.credential,
+    });
+
+    const { token, user } = res.data;
+
+    if (!token || !user) {
+      alert("Google login failed: Missing user info");
+      return;
+    }
+
+    // Save token in localStorage
+    localStorage.setItem("authToken", token);
+
+    // Set user consistently in context
+    setUser({ 
+      id: user.id || user._id, 
+      username: user.username, 
+      email: user.email, 
+      token 
+    });
+
+    alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
+    onClose();
+    navigate("/");
+  } catch (err: any) {
+    console.error("Google login failed:", err);
+    alert(err.response?.data?.error || "Google login failed");
+  } finally {
+    setGoogleLoading(false);
+  }
+};
+
 
     const handleError = () => {
         console.error("Google Sign-In failed");
@@ -346,9 +371,9 @@ const handleLogout = () => {
                                     </form>
                                     <div
                                         className="w-full border border-gray-300 rounded-md px-4 py-2 cursor-pointer hover:shadow-sm flex items-center justify-center gap-2 mt-2"
-
                                     >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} >
+                                        </GoogleLogin>
                                     </div>
                                 </CardContent>
                             </Card>
