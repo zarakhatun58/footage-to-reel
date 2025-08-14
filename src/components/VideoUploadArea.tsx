@@ -423,84 +423,85 @@ const generateStory = async () => {
   // };
 
 
-  const generateVideoClip = async () => {
-    // Find the uploaded media record
+const generateVideoClip = async () => {
+  // Find the uploaded media record
+  const media = uploadedMedia.find((m) => m.id === mediaId);
+  if (!media) {
+    alert("Media not found.");
+    return;
+  }
 
-    const media = uploadedMedia.find((m) => m.id === mediaId);
-    if (!media) {
-      alert("Media not found.");
-      return;
+  // Extract all image filenames
+  const imageNames = Array.isArray(media.images)
+    ? media.images.map((imgUrl) => imgUrl.split("/").pop()).filter(Boolean)
+    : [];
+
+  // Extract audio filename (optional now)
+  const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
+
+  if (imageNames.length === 0) {
+    alert("Missing required image(s).");
+    return;
+  }
+
+  setLoadingVideo(true);
+  const stop = simulateProgress(setVideoProgress);
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageNames,
+        audioName, // can be null, backend handles fallback
+        mediaId,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Video generation failed.");
     }
 
-    // Extract all image filenames
-    const imageNames = Array.isArray(media.images)
-      ? media.images.map((imgUrl) => imgUrl.split("/").pop()).filter(Boolean)
-      : [];
-
-    // Extract audio filename
-    const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
-
-    if (imageNames.length === 0 || !audioName) {
-      alert("Missing required image(s) or audio.");
-      return;
-    }
-
-    setLoadingVideo(true);
-    const stop = simulateProgress(setVideoProgress);
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageNames,
-          audioName,
-          mediaId,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Video generation failed.");
-      }
-
-      setUploadedMedia((prev) =>
-        prev.map((m) =>
-          m.id === mediaId
-            ? {
+    setUploadedMedia((prev) =>
+      prev.map((m) =>
+        m.id === mediaId
+          ? {
               ...m,
               type: "video",
               storyUrl: data.playbackUrl,
               transcriptionStatus: "completed",
             }
-            : m
-        )
-      );
+          : m
+      )
+    );
 
-      // 2️⃣ Upload final video to backend
-      const uploadRes = await fetch(`${BASE_URL}/api/upload-final`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mediaId,
-          videoUrl: data.playbackUrl,
-          title: media.title,
-          userId: media.id,
-        }),
-      });
-      const uploadData = await uploadRes.json();
-      if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
+    // Upload final video to backend
+    const uploadRes = await fetch(`${BASE_URL}/api/upload-final`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mediaId,
+        videoUrl: data.playbackUrl,
+        title: media.title,
+        userId: media.id,
+      }),
+    });
 
-      alert("✅ Video generated and uploaded successfully!");
-    } catch (error) {
-      console.error("❌ Video generation error:", error);
-      alert("❌ Video generation failed. Please try again.");
-    } finally {
-      stop();
-      setLoadingVideo(false);
-    }
-  };
+    const uploadData = await uploadRes.json();
+    if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
+
+    alert("✅ Video generated and uploaded successfully!");
+  } catch (error) {
+    console.error("❌ Video generation error:", error);
+    alert("❌ Video generation failed. Please try again.");
+  } finally {
+    stop();
+    setLoadingVideo(false);
+  }
+};
+
 
   // Fetch all public/global videos
 
