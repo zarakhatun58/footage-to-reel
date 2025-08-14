@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import ProgressBar from "@ramonak/react-progress-bar";
 import { useToast } from '@/components/ui/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { BASE_URL } from '@/services/apis';
+import api, { BASE_URL } from '@/services/apis';
 import { MediaStatsBar } from './MediaStatsBar';
-import AudioUpload from './AudioUpload';
 import getYouTubeID from 'get-youtube-id';
 import axios from 'axios';
+import AudioUploadModal from './AudioUpload';
 
 
 export type UploadedMedia = {
@@ -33,8 +33,8 @@ export type UploadedMedia = {
   rankScore?: number;
   images?: string[];
   voiceUrl?: string;
-  renderId?: string; // ✅ add this
-  views?: number;    // ✅ for stats
+  renderId?: string; 
+  views?: number;    
   likes?: number;
   shares?: number;
 };
@@ -132,141 +132,86 @@ export const VideoUploadArea = () => {
   };
 
 
-  const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-    const formData = new FormData();
-    formData.append(
-      type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-      file
-    );
+const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+  const formData = new FormData();
+  formData.append(
+    type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+    file
+  );
 
-    // Show preview immediately
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedMedia((prev: any) => [
-      ...prev,
-      {
-        id: mediaId,
-        name: file.name,
-        size: file.size,
-        type,
-        transcriptionStatus: 'processing',
-        thumbnail: previewUrl,
-        transcript: '',
-        tags: [],
-        emotions: '',
-        story: '',
-        images: []
-      }
-    ]);
+  // Show preview immediately
+  const previewUrl = URL.createObjectURL(file);
+  setUploadedMedia((prev: any) => [
+    ...prev,
+    {
+      id: mediaId,
+      name: file.name,
+      size: file.size,
+      type,
+      transcriptionStatus: 'processing',
+      thumbnail: previewUrl,
+      transcript: '',
+      tags: [],
+      emotions: '',
+      story: '',
+      images: []
+    }
+  ]);
 
-    try {
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
+  try {
+    const response = await api.post('/api/uploads', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (event) => {
+        if (event.total) {
           const progress = Math.round((event.loaded / event.total) * 100);
           setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
         }
-      };
+      },
+    });
 
-      xhr.onload = async () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const result = JSON.parse(xhr.responseText);
-          const uploadedItem = result.uploaded?.[0];
+    const result = response.data;
+    const uploadedItem = result.uploaded?.[0];
 
-          if (!uploadedItem) throw new Error('Upload returned no file');
+    if (!uploadedItem) throw new Error('Upload returned no file');
 
-          // ✅ CHANGED: Use actual metadata from backend response
-          const newMedia = {
-            id: uploadedItem._id || mediaId,
-            name: uploadedItem.filename,
-            size: file.size,
-            type,
-            transcriptionStatus: uploadedItem.status || 'completed',
-            thumbnail:
-              uploadedItem.thumbnail ||
-              uploadedItem.images?.[0] ||
-              (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-                ? uploadedItem.filename
-                : previewUrl),
-            transcript: uploadedItem.transcript || '',
-            tags: uploadedItem.tags || [],
-            emotions: uploadedItem.emotions || '',
-            story: '',
-            storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
-            images: uploadedItem.images || []
-          };
-
-          setUploadedMedia((prev: any) =>
-            prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-          );
-
-          setMediaId(uploadedItem._id);
-          setStoryText('');
-
-          if (type === 'audio' && uploadedItem.filename) {
-            setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-          }
-
-          // ❌ REMOVED: No need to poll anymore
-          // pollMediaStatus(uploadedItem._id || mediaId);
-
-        } else {
-          throw new Error(`Upload failed with status ${xhr.status}`);
-        }
-      };
-
-      xhr.onerror = () => {
-        throw new Error('XHR upload failed');
-      };
-
-      xhr.open('POST', `${BASE_URL}/api/uploads`);
-      xhr.send(formData);
-    } catch (error) {
-      console.error('Upload failed:', error);
-      setUploadedMedia(prev =>
-        prev.map(media =>
-          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-        )
-      );
-    }
-  };
-
-
-
-
-const pollVideoStatus = async (videoId: string) => {
-  try {
-    const res = await fetch(`${BASE_URL}/api/apivideo/status/${videoId}`);
-    const data = await res.json();
-
-    if (!data.success) {
-      console.error("Video status check failed:", data.error);
-      return;
-    }
-
-    const { playbackUrl, metadata } = data;
+    const newMedia = {
+      id: uploadedItem._id || mediaId,
+      name: uploadedItem.filename,
+      size: file.size,
+      type,
+      transcriptionStatus: uploadedItem.status || 'completed',
+      thumbnail:
+        uploadedItem.thumbnail ||
+        uploadedItem.images?.[0] ||
+        (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+          ? uploadedItem.filename
+          : previewUrl),
+      transcript: uploadedItem.transcript || '',
+      tags: uploadedItem.tags || [],
+      emotions: uploadedItem.emotions || '',
+      story: '',
+      storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
+      images: uploadedItem.images || []
+    };
 
     setUploadedMedia((prev: any) =>
-      prev.map((media: any) =>
-        media.id === videoId
-          ? {
-              ...media,
-              thumbnail: metadata.thumbnail || media.thumbnail,
-              transcript: metadata.transcript || media.transcript,
-              tags: metadata.tags?.length ? metadata.tags : media.tags,
-              emotions: metadata.emotions?.length ? metadata.emotions : media.emotions,
-              story: metadata.story || media.story,
-              storyUrl: metadata.storyUrl || media.storyUrl,
-              encodingStatus: metadata.encodingStatus || media.encodingStatus,
-              playbackUrl
-            }
-          : media
-      )
+      prev.map((media: any) => (media.id === mediaId ? newMedia : media))
     );
 
-  
-  } catch (err) {
-    console.error("Polling error:", err);
+    setMediaId(uploadedItem._id);
+    setStoryText('');
+
+    if (type === 'audio' && uploadedItem.filename) {
+      setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+    }
+
+  } catch (error) {
+    console.error('Upload failed:', error);
+    setUploadedMedia(prev =>
+      prev.map(media =>
+        media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
+      )
+    );
   }
 };
 
@@ -659,11 +604,10 @@ const pollVideoStatus = async (videoId: string) => {
         </div>
       )}
 
-      {uploadedMedia.length > 0 && (
+      {/* {uploadedMedia.length > 0 && (
         <div className="mt-6">
           <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
 
-            {/* Left Side: Media & Info */}
             <div className="flex flex-col gap-3 w-full md:w-[30%]" >
               {uploadedMedia.find(m => m.type === 'image')?.storyUrl && (
                 <>
@@ -672,12 +616,12 @@ const pollVideoStatus = async (videoId: string) => {
                     alt="Uploaded Image"
                     className="rounded-md w-64 object-cover"
                   />
-                  {/* <button
+                  <button
                     onClick={() => removeMedia('image')}
                     className="absolute top-1 right-1 bg-red-500 text-white px-2 py-1 rounded cursor-pointer"
                   >
                     clear
-                  </button>  */}
+                  </button>
                   </>
               )}
 
@@ -705,12 +649,11 @@ const pollVideoStatus = async (videoId: string) => {
                 <p><strong>Emotions:</strong>{uploadedMedia[0]?.emotions
                   ? Array.isArray(uploadedMedia[0].emotions)
                     ? uploadedMedia[0].emotions.join(', ')
-                    : uploadedMedia[0].emotions // if it's already a string
+                    : uploadedMedia[0].emotions 
                   : 'Not detected'}</p>
               </div>
             </div>
 
-            {/* Right Side: Text & Actions */}
             <div className="flex flex-col gap-3 w-full md:w-[70%]">
               <Textarea
                 className="w-full"
@@ -750,7 +693,93 @@ const pollVideoStatus = async (videoId: string) => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
+      {uploadedMedia.length > 0 && (() => {
+  const imageMedia = uploadedMedia.find(m => m.type === 'image');
+  const videoMedia = uploadedMedia.find(m => m.type === 'video');
+  const audioMedia = uploadedMedia.find(m => m.type === 'audio');
+  const firstMedia = uploadedMedia[0];
+
+  return (
+    <div className="mt-6">
+      <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
+
+        {/* Left Side: Media & Info */}
+        <div className="flex flex-col gap-3 w-full md:w-[30%]">
+          {imageMedia?.storyUrl && (
+            <img
+              src={imageMedia.storyUrl}
+              alt="Uploaded Image"
+              className="rounded-md w-64 object-cover"
+            />
+          )}
+
+          {videoMedia?.storyUrl && (
+            <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
+          )}
+
+          {audioMedia?.storyUrl && (
+            <audio controls className="w-full">
+              <source src={audioMedia.storyUrl} type="audio/mp3" />
+              Your browser does not support the audio tag.
+            </audio>
+          )}
+
+          <div className="space-y-1 text-sm">
+            <p><strong>Transcript:</strong> {firstMedia?.transcript || 'Not available'}</p>
+            <p><strong>Tags:</strong> {firstMedia?.tags?.join(', ') || 'Not generated'}</p>
+            <p><strong>Emotions:</strong> {firstMedia?.emotions
+              ? Array.isArray(firstMedia.emotions)
+                ? firstMedia.emotions.join(', ')
+                : firstMedia.emotions
+              : 'Not detected'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Text & Actions */}
+        <div className="flex flex-col gap-3 w-full md:w-[70%]">
+          <Textarea
+            className="w-full"
+            value={firstMedia?.story || ''}
+            onChange={e =>
+              setUploadedMedia(prev =>
+                prev.map(m =>
+                  m.id === firstMedia.id ? { ...m, story: e.target.value } : m
+                )
+              )
+            }
+            rows={6}
+            placeholder="Story will appear here..."
+          />
+
+          {firstMedia && (
+            <AudioUploadModal
+              media={firstMedia}
+              setUploadedMedia={setUploadedMedia}
+              BASE_URL={BASE_URL}
+            />
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={generateStory}>Generate Story</Button>
+            <Button
+              onClick={generateVideoClip}
+              disabled={!firstMedia?.story || loadingVideo}
+            >
+              {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+            </Button>
+          </div>
+
+          <div className="text-sm font-semibold truncate">{firstMedia?.name}</div>
+          <div className="text-xs text-muted-foreground">
+            Status: {firstMedia?.transcriptionStatus}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})()}
 
       {/* Video preview */}
       <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
