@@ -33,8 +33,8 @@ export type UploadedMedia = {
   rankScore?: number;
   images?: string[];
   voiceUrl?: string;
-  renderId?: string; 
-  views?: number;    
+  renderId?: string;
+  views?: number;
   likes?: number;
   shares?: number;
 };
@@ -70,11 +70,12 @@ export const VideoUploadArea = () => {
   const handleAudioModeChange = (mode: any) => {
     setSelectedAudioMode(mode);
   };
- const handleDrag = useCallback((e: React.DragEvent) => {
+
+const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
-    else if (e.type === 'dragleave') setDragActive(false);
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -85,138 +86,70 @@ export const VideoUploadArea = () => {
     handleFiles(files);
   }, []);
 
-  // File input handler
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     handleFiles(Array.from(files));
-    e.target.value = '';
+    e.target.value = "";
   };
 
-  // Unified file processing
   const handleFiles = (files: File[]) => {
-    const supportedTypes = ['video/', 'audio/', 'image/'];
+    const supportedTypes = ["video/", "audio/", "image/"];
+    const validFiles = files.filter(file =>
+      supportedTypes.some(type => file.type.startsWith(type))
+    );
 
-    files.forEach(file => {
-      if (!supportedTypes.some(type => file.type.startsWith(type))) return;
+    validFiles.forEach(file => {
+      const tempId = `${Date.now()}-${Math.random()}`;
+      const type: "video" | "audio" | "image" | "unknown" = 
+        file.type.startsWith("video") ? "video" :
+        file.type.startsWith("audio") ? "audio" :
+        file.type.startsWith("image") ? "image" : "unknown";
 
-      const mediaId = `${Date.now()}-${Math.random()}`;
-      const type = file.type.startsWith('video/') ? 'video' :
-                   file.type.startsWith('audio/') ? 'audio' : 'image';
-
-      const previewUrl = URL.createObjectURL(file);
-
-      // Add initial entry
       const newMedia: UploadedMedia = {
+        id: tempId,
+        name: file.name,
+        size: file.size,
+        type,
+        transcriptionStatus: "pending",
+      };
+
+      setUploadedMedia(prev => [...prev, newMedia]);
+      uploadFileToServer(tempId, file, type);
+    });
+  };
+
+  const uploadFileToServer = async (mediaId: string, file: File, type: UploadedMedia["type"]) => {
+    const formData = new FormData();
+    formData.append(
+      type === "image" ? "images" : type === "video" ? "video" : "voiceover",
+      file
+    );
+
+    // Optional: show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setUploadedMedia(prev => [
+      ...prev,
+      {
         id: mediaId,
         name: file.name,
         size: file.size,
         type,
-        transcriptionStatus: 'processing',
+        transcriptionStatus: "processing",
         thumbnail: previewUrl,
-        transcript: '',
+        transcript: "",
         tags: [],
-        emotions: '',
-        story: '',
+        emotions: "",
+        story: "",
+        storyUrl: "",
         images: []
-      };
-
-      setUploadedMedia(prev => [...prev, newMedia]);
-      uploadFileToServer(mediaId, file, type, previewUrl);
-    });
-  };
-
-// const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-//   const formData = new FormData();
-//   formData.append(
-//     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-//     file
-//   );
-
-//   // Show preview immediately
-//   const previewUrl = URL.createObjectURL(file);
-//   setUploadedMedia((prev: any) => [
-//     ...prev,
-//     {
-//       id: mediaId,
-//       name: file.name,
-//       size: file.size,
-//       type,
-//       transcriptionStatus: 'processing',
-//       thumbnail: previewUrl,
-//       transcript: '',
-//       tags: [],
-//       emotions: '',
-//       story: '',
-//       images: []
-//     }
-//   ]);
-
-//   try {
-//     const response = await api.post('/api/uploads', formData, {
-//       headers: { 'Content-Type': 'multipart/form-data' },
-//       onUploadProgress: (event) => {
-//         if (event.total) {
-//           const progress = Math.round((event.loaded / event.total) * 100);
-//           setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
-//         }
-//       },
-//     });
-
-//     const result = response.data;
-//     const uploadedItem = result.uploaded?.[0];
-
-//     if (!uploadedItem) throw new Error('Upload returned no file');
-
-//     const newMedia = {
-//       id: uploadedItem._id || mediaId,
-//       name: uploadedItem.filename,
-//       size: file.size,
-//       type,
-//       transcriptionStatus: uploadedItem.status || 'completed',
-//       thumbnail:
-//         uploadedItem.thumbnail ||
-//         uploadedItem.images?.[0] ||
-//         (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-//           ? uploadedItem.filename
-//           : previewUrl),
-//       transcript: uploadedItem.transcript || '',
-//       tags: uploadedItem.tags || [],
-//       emotions: uploadedItem.emotions || '',
-//       story: '',
-//       storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
-//       images: uploadedItem.images || []
-//     };
-
-//     setUploadedMedia((prev: any) =>
-//       prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-//     );
-
-//     setMediaId(uploadedItem._id);
-//     setStoryText('');
-
-//     if (type === 'audio' && uploadedItem.filename) {
-//       setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-//     }
-
-//   } catch (error) {
-//     console.error('Upload failed:', error);
-//     setUploadedMedia(prev =>
-//       prev.map(media =>
-//         media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-//       )
-//     );
-//   }
-// };
-
-  const uploadFileToServer = async (mediaId: string, file: File, type: string, previewUrl: string) => {
-    const formData = new FormData();
-    formData.append(type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover', file);
+      }
+    ]);
 
     try {
-      const response = await api.post('/api/uploads', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (event) => {
+      const response = await axios.post(`${BASE_URL}/api/uploads`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: event => {
           if (event.total) {
             const progress = Math.round((event.loaded / event.total) * 100);
             setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
@@ -225,43 +158,121 @@ export const VideoUploadArea = () => {
       });
 
       const uploadedItem = response.data.uploaded?.[0];
-      if (!uploadedItem) throw new Error('Upload returned no file');
+      if (!uploadedItem) throw new Error("Upload returned no file");
+
+      const typeFromServer: UploadedMedia["type"] =
+        uploadedItem.mediaType === "video" || uploadedItem.mediaType === "audio" || uploadedItem.mediaType === "image"
+          ? uploadedItem.mediaType
+          : "unknown";
 
       const updatedMedia: UploadedMedia = {
         id: uploadedItem._id || mediaId,
         name: uploadedItem.filename,
         size: file.size,
-      type: (type === 'video' || type === 'audio' || type === 'image' ? type : 'unknown'),
-        transcriptionStatus: uploadedItem.status || 'completed',
-        thumbnail: uploadedItem.thumbnail || uploadedItem.images?.[0] || previewUrl,
-        transcript: uploadedItem.transcript || '',
+        type: typeFromServer,
+        transcriptionStatus: uploadedItem.status || "completed",
+        thumbnail: uploadedItem.images?.[0] || previewUrl,
+        transcript: uploadedItem.transcript || "",
         tags: uploadedItem.tags || [],
-        emotions: uploadedItem.emotions || '',
-        story: '',
-        storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
+        emotions: Array.isArray(uploadedItem.emotions) ? uploadedItem.emotions.join(", ") : "",
+        story: uploadedItem.story || "",
+        storyUrl: uploadedItem.storyUrl || uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
         images: uploadedItem.images || []
       };
 
-      setUploadedMedia(prev =>
-        prev.map(media => (media.id === mediaId ? updatedMedia : media))
-      );
-
-      setMediaId(uploadedItem._id);
-      setStoryText('');
-
-      if (type === 'audio' && uploadedItem.filename) {
-        setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-      }
-
+      setUploadedMedia(prev => prev.map(media => media.id === mediaId ? updatedMedia : media));
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error("Upload failed:", error);
       setUploadedMedia(prev =>
-        prev.map(media =>
-          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-        )
+        prev.map(media => media.id === mediaId ? { ...media, transcriptionStatus: "error" } : media)
       );
     }
   };
+
+  // const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+  //   const formData = new FormData();
+  //   formData.append(
+  //     type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+  //     file
+  //   );
+
+  //   // Show preview immediately
+  //   const previewUrl = URL.createObjectURL(file);
+  //   setUploadedMedia((prev: any) => [
+  //     ...prev,
+  //     {
+  //       id: mediaId,
+  //       name: file.name,
+  //       size: file.size,
+  //       type,
+  //       transcriptionStatus: 'processing',
+  //       thumbnail: previewUrl,
+  //       transcript: '',
+  //       tags: [],
+  //       emotions: '',
+  //       story: '',
+  //       images: []
+  //     }
+  //   ]);
+
+  //   try {
+  //     const response = await api.post('/api/uploads', formData, {
+  //       headers: { 'Content-Type': 'multipart/form-data' },
+  //       onUploadProgress: (event) => {
+  //         if (event.total) {
+  //           const progress = Math.round((event.loaded / event.total) * 100);
+  //           setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
+  //         }
+  //       },
+  //     });
+
+  //     const result = response.data;
+  //     const uploadedItem = result.uploaded?.[0];
+
+  //     if (!uploadedItem) throw new Error('Upload returned no file');
+
+  //     const newMedia = {
+  //       id: uploadedItem._id || mediaId,
+  //       name: uploadedItem.filename,
+  //       size: file.size,
+  //       type,
+  //       transcriptionStatus: uploadedItem.status || 'completed',
+  //       thumbnail:
+  //         uploadedItem.thumbnail ||
+  //         uploadedItem.images?.[0] ||
+  //         (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
+  //           ? uploadedItem.filename
+  //           : previewUrl),
+  //       transcript: uploadedItem.transcript || '',
+  //       tags: uploadedItem.tags || [],
+  //       emotions: uploadedItem.emotions || '',
+  //       story: '',
+  //       storyUrl: uploadedItem.images?.[0] || `${BASE_URL}/uploads/${uploadedItem.filename}`,
+  //       images: uploadedItem.images || []
+  //     };
+
+  //     setUploadedMedia((prev: any) =>
+  //       prev.map((media: any) => (media.id === mediaId ? newMedia : media))
+  //     );
+
+  //     setMediaId(uploadedItem._id);
+  //     setStoryText('');
+
+  //     if (type === 'audio' && uploadedItem.filename) {
+  //       setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+  //     }
+
+  //   } catch (error) {
+  //     console.error('Upload failed:', error);
+  //     setUploadedMedia(prev =>
+  //       prev.map(media =>
+  //         media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
+  //       )
+  //     );
+  //   }
+  // };
+
+
 
   const generateStory = async () => {
     if (!uploadedMedia[0]) return;
@@ -741,91 +752,91 @@ export const VideoUploadArea = () => {
         </div>
       )} */}
       {uploadedMedia.length > 0 && (() => {
-  const imageMedia = uploadedMedia.find(m => m.type === 'image');
-  const videoMedia = uploadedMedia.find(m => m.type === 'video');
-  const audioMedia = uploadedMedia.find(m => m.type === 'audio');
-  const firstMedia = uploadedMedia[0];
+        const imageMedia = uploadedMedia.find(m => m.type === 'image');
+        const videoMedia = uploadedMedia.find(m => m.type === 'video');
+        const audioMedia = uploadedMedia.find(m => m.type === 'audio');
+        const firstMedia = uploadedMedia[0];
 
-  return (
-    <div className="mt-6">
-      <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
+        return (
+          <div className="mt-6">
+            <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
 
-        {/* Left Side: Media & Info */}
-        <div className="flex flex-col gap-3 w-full md:w-[30%]">
-          {imageMedia?.storyUrl && (
-            <img
-              src={imageMedia.storyUrl}
-              alt="Uploaded Image"
-              className="rounded-md w-64 object-cover"
-            />
-          )}
+              {/* Left Side: Media & Info */}
+              <div className="flex flex-col gap-3 w-full md:w-[30%]">
+                {imageMedia?.storyUrl && (
+                  <img
+                    src={imageMedia.storyUrl}
+                    alt="Uploaded Image"
+                    className="rounded-md w-64 object-cover"
+                  />
+                )}
 
-          {videoMedia?.storyUrl && (
-            <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
-          )}
+                {videoMedia?.storyUrl && (
+                  <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
+                )}
 
-          {audioMedia?.storyUrl && (
-            <audio controls className="w-full">
-              <source src={audioMedia.storyUrl} type="audio/mp3" />
-              Your browser does not support the audio tag.
-            </audio>
-          )}
+                {audioMedia?.storyUrl && (
+                  <audio controls className="w-full">
+                    <source src={audioMedia.storyUrl} type="audio/mp3" />
+                    Your browser does not support the audio tag.
+                  </audio>
+                )}
 
-          <div className="space-y-1 text-sm">
-            <p><strong>Transcript:</strong> {firstMedia?.transcript || 'Not available'}</p>
-            <p><strong>Tags:</strong> {firstMedia?.tags?.join(', ') || 'Not generated'}</p>
-            <p><strong>Emotions:</strong> {firstMedia?.emotions
-              ? Array.isArray(firstMedia.emotions)
-                ? firstMedia.emotions.join(', ')
-                : firstMedia.emotions
-              : 'Not detected'}
-            </p>
+                <div className="space-y-1 text-sm">
+                  <p><strong>Transcript:</strong> {firstMedia?.transcript || 'Not available'}</p>
+                  <p><strong>Tags:</strong> {firstMedia?.tags?.join(', ') || 'Not generated'}</p>
+                  <p><strong>Emotions:</strong> {firstMedia?.emotions
+                    ? Array.isArray(firstMedia.emotions)
+                      ? firstMedia.emotions.join(', ')
+                      : firstMedia.emotions
+                    : 'Not detected'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side: Text & Actions */}
+              <div className="flex flex-col gap-3 w-full md:w-[70%]">
+                <Textarea
+                  className="w-full"
+                  value={firstMedia?.story || ''}
+                  onChange={e =>
+                    setUploadedMedia(prev =>
+                      prev.map(m =>
+                        m.id === firstMedia.id ? { ...m, story: e.target.value } : m
+                      )
+                    )
+                  }
+                  rows={6}
+                  placeholder="Story will appear here..."
+                />
+
+                {firstMedia && (
+                  <AudioUploadModal
+                    media={firstMedia}
+                    setUploadedMedia={setUploadedMedia}
+                    BASE_URL={BASE_URL}
+                  />
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={generateStory}>Generate Story</Button>
+                  <Button
+                    onClick={generateVideoClip}
+                    disabled={!firstMedia?.story || loadingVideo}
+                  >
+                    {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+                  </Button>
+                </div>
+
+                <div className="text-sm font-semibold truncate">{firstMedia?.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  Status: {firstMedia?.transcriptionStatus}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Right Side: Text & Actions */}
-        <div className="flex flex-col gap-3 w-full md:w-[70%]">
-          <Textarea
-            className="w-full"
-            value={firstMedia?.story || ''}
-            onChange={e =>
-              setUploadedMedia(prev =>
-                prev.map(m =>
-                  m.id === firstMedia.id ? { ...m, story: e.target.value } : m
-                )
-              )
-            }
-            rows={6}
-            placeholder="Story will appear here..."
-          />
-
-          {firstMedia && (
-            <AudioUploadModal
-              media={firstMedia}
-              setUploadedMedia={setUploadedMedia}
-              BASE_URL={BASE_URL}
-            />
-          )}
-
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={generateStory}>Generate Story</Button>
-            <Button
-              onClick={generateVideoClip}
-              disabled={!firstMedia?.story || loadingVideo}
-            >
-              {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
-            </Button>
-          </div>
-
-          <div className="text-sm font-semibold truncate">{firstMedia?.name}</div>
-          <div className="text-xs text-muted-foreground">
-            Status: {firstMedia?.transcriptionStatus}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})()}
+        );
+      })()}
 
       {/* Video preview */}
       <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
