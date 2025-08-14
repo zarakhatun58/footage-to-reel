@@ -22,11 +22,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BASE_URL } from "@/services/apis";
+import api, { BASE_URL } from "@/services/apis";
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { googleLogout } from "@react-oauth/google";
 import { useAuth } from "@/context/AuthContext";
-import GoogleLoginButton from "./GoogleLoginButton";
 
 type SignInDialogProps = {
     open: boolean;
@@ -50,10 +49,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const navigate = useNavigate();
     const { token } = useParams();
     const [loading, setLoading] = useState(false);
-    const [googleLoading, setGoogleLoading] = useState(false);
-  const closeModal = () => {
-    onClose(); 
-  };
+ 
     useEffect(() => {
         const token = searchParams.get("token");
         if (token) {
@@ -138,46 +134,45 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
 
     // 🔹 Google login
-    const handleSuccess = async (credentialResponse: CredentialResponse) => {
-        if (!credentialResponse.credential) {
-            alert("Google login failed: No credential returned");
-            return;
-        }
+ const handleSuccess = async (credentialResponse: CredentialResponse) => {
+    console.log("Google credentialResponse:", credentialResponse);
 
-        setGoogleLoading(true);
-        try {
-            const res = await axios.post(`${BASE_URL}/api/auth/googleLogin`, {
-                token: credentialResponse.credential,
-            });
+    if (!credentialResponse?.credential) {
+      alert("Google login failed: No credential returned");
+      return;
+    }
 
-            const { token, user } = res.data;
+    try {
+      const res = await api.post('/api/auth/googleLogin', {
+        token: credentialResponse.credential,
+      });
 
-            if (!token || !user) {
-                alert("Google login failed: Missing user info");
-                return;
-            }
+      const { token, user } = res.data;
 
-            // Save token in localStorage
-            localStorage.setItem("authToken", token);
+      if (!token || !user) {
+        alert("Google login failed: Missing user info");
+        return;
+      }
 
-            // Set user consistently in context
-            setUser({
-                id: user.id || user._id,
-                username: user.username,
-                email: user.email,
-                token
-            });
+      const normalizedUser = {
+        id: user.id || user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
+        token,
+      };
 
-            alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
-            onClose();
-            navigate("/");
-        } catch (err: any) {
-            console.error("Google login failed:", err);
-            alert(err.response?.data?.error || "Google login failed");
-        } finally {
-            setGoogleLoading(false);
-        }
-    };
+      localStorage.setItem("authToken", token);
+      setUser(normalizedUser);
+
+      alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
+      onClose();
+      navigate("/");
+    } catch (err: any) {
+      console.error("Google login failed:", err);
+      alert(err.response?.data?.error || "Google login failed");
+    }
+  };
 
 
     const handleError = () => {
@@ -320,7 +315,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                             {loading ? "Signing in..." : "Sign In"}
                                         </Button>
                                     </form>
-                                    <GoogleLoginButton onClose={closeModal} />
+                                    <GoogleLogin onSuccess={handleSuccess} onError={handleError}  />
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -366,7 +361,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                                             Sign Up
                                         </Button>
                                     </form>
-                                    <GoogleLoginButton onClose={closeModal} />
+                               <GoogleLogin onSuccess={handleSuccess} onError={handleError}  />
                                 </CardContent>
                             </Card>
                         </TabsContent>
