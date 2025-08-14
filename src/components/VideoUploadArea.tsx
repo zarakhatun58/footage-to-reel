@@ -33,8 +33,8 @@ export type UploadedMedia = {
   rankScore?: number;
   images?: string[];
   voiceUrl?: string;
-  renderId?: string; 
-  views?: number;    
+  renderId?: string;
+  views?: number;
   likes?: number;
   shares?: number;
 };
@@ -71,7 +71,7 @@ export const VideoUploadArea = () => {
     setSelectedAudioMode(mode);
   };
 
- const handleDrag = useCallback((e: React.DragEvent) => {
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
@@ -108,28 +108,22 @@ export const VideoUploadArea = () => {
 
 
   const handleFiles = (files: File[]) => {
-    const supportedTypes = ['video/', 'audio/', 'image/'];
-
+    const supportedTypes = ["video/", "audio/", "image/"];
     const validFiles = files.filter(file =>
       supportedTypes.some(type => file.type.startsWith(type))
     );
 
     validFiles.forEach(file => {
-      const mediaId = `${Date.now()}-${Math.random()}`;
-      const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
+      const tempId = `${Date.now()}-${Math.random()}`;
+      const type: UploadedMedia["type"] =
+        file.type.startsWith("video") ? "video" :
+          file.type.startsWith("audio") ? "audio" :
+            file.type.startsWith("image") ? "image" : "unknown";
 
-      const newMedia: UploadedMedia = {
-        id: mediaId,
-        name: file.name,
-        size: file.size,
-        type,
-        transcriptionStatus: 'pending'
-      };
-
-      setUploadedMedia(prev => [...prev, newMedia]);
-      uploadFileToServer(mediaId, file, type);
+      uploadFileToServer(tempId, file, type);
     });
   };
+
 
 
   const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
@@ -195,7 +189,9 @@ export const VideoUploadArea = () => {
             storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
             images: uploadedItem.images || []
           };
-
+          console.log("📌 Tags:", uploadedItem.tags);
+          console.log("📌 Transcript:", uploadedItem.transcript);
+          console.log("📌 Emotions:", uploadedItem.emotions);
           setUploadedMedia((prev: any) =>
             prev.map((media: any) => (media.id === mediaId ? newMedia : media))
           );
@@ -226,6 +222,7 @@ export const VideoUploadArea = () => {
       );
     }
   };
+
 
 
 
@@ -707,91 +704,91 @@ export const VideoUploadArea = () => {
         </div>
       )} */}
       {uploadedMedia.length > 0 && (() => {
-  const imageMedia = uploadedMedia.find(m => m.type === 'image');
-  const videoMedia = uploadedMedia.find(m => m.type === 'video');
-  const audioMedia = uploadedMedia.find(m => m.type === 'audio');
-  const firstMedia = uploadedMedia[0];
+        const imageMedia = uploadedMedia.find(m => m.type === 'image');
+        const videoMedia = uploadedMedia.find(m => m.type === 'video');
+        const audioMedia = uploadedMedia.find(m => m.type === 'audio');
+        const firstMedia = uploadedMedia[0];
 
-  return (
-    <div className="mt-6">
-      <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
+        return (
+          <div className="mt-6">
+            <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
 
-        {/* Left Side: Media & Info */}
-        <div className="flex flex-col gap-3 w-full md:w-[30%]">
-          {imageMedia?.storyUrl && (
-            <img
-              src={imageMedia.storyUrl}
-              alt="Uploaded Image"
-              className="rounded-md w-64 object-cover"
-            />
-          )}
+              {/* Left Side: Media & Info */}
+              <div className="flex flex-col gap-3 w-full md:w-[30%]">
+                {imageMedia?.storyUrl && (
+                  <img
+                    src={imageMedia.storyUrl}
+                    alt="Uploaded Image"
+                    className="rounded-md w-64 object-cover"
+                  />
+                )}
 
-          {videoMedia?.storyUrl && (
-            <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
-          )}
+                {videoMedia?.storyUrl && (
+                  <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
+                )}
 
-          {audioMedia?.storyUrl && (
-            <audio controls className="w-full">
-              <source src={audioMedia.storyUrl} type="audio/mp3" />
-              Your browser does not support the audio tag.
-            </audio>
-          )}
+                {audioMedia?.storyUrl && (
+                  <audio controls className="w-full">
+                    <source src={audioMedia.storyUrl} type="audio/mp3" />
+                    Your browser does not support the audio tag.
+                  </audio>
+                )}
 
-          <div className="space-y-1 text-sm">
-            <p><strong>Transcript:</strong> {firstMedia?.transcript || 'Not available'}</p>
-            <p><strong>Tags:</strong> {firstMedia?.tags?.join(', ') || 'Not generated'}</p>
-            <p><strong>Emotions:</strong> {firstMedia?.emotions
-              ? Array.isArray(firstMedia.emotions)
-                ? firstMedia.emotions.join(', ')
-                : firstMedia.emotions
-              : 'Not detected'}
-            </p>
+                <div className="space-y-1 text-sm">
+                  <p><strong>Transcript:</strong> {firstMedia?.transcript || 'Not available'}</p>
+                  <p><strong>Tags:</strong> {firstMedia?.tags?.join(', ') || 'Not generated'}</p>
+                  <p><strong>Emotions:</strong> {firstMedia?.emotions
+                    ? Array.isArray(firstMedia.emotions)
+                      ? firstMedia.emotions.join(', ')
+                      : firstMedia.emotions
+                    : 'Not detected'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side: Text & Actions */}
+              <div className="flex flex-col gap-3 w-full md:w-[70%]">
+                <Textarea
+                  className="w-full"
+                  value={firstMedia?.story || ''}
+                  onChange={e =>
+                    setUploadedMedia(prev =>
+                      prev.map(m =>
+                        m.id === firstMedia.id ? { ...m, story: e.target.value } : m
+                      )
+                    )
+                  }
+                  rows={6}
+                  placeholder="Story will appear here..."
+                />
+
+                {firstMedia && (
+                  <AudioUploadModal
+                    media={firstMedia}
+                    setUploadedMedia={setUploadedMedia}
+                    BASE_URL={BASE_URL}
+                  />
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={generateStory}>Generate Story</Button>
+                  <Button
+                    onClick={generateVideoClip}
+                    disabled={!firstMedia?.story || loadingVideo}
+                  >
+                    {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+                  </Button>
+                </div>
+
+                <div className="text-sm font-semibold truncate">{firstMedia?.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  Status: {firstMedia?.transcriptionStatus}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Right Side: Text & Actions */}
-        <div className="flex flex-col gap-3 w-full md:w-[70%]">
-          <Textarea
-            className="w-full"
-            value={firstMedia?.story || ''}
-            onChange={e =>
-              setUploadedMedia(prev =>
-                prev.map(m =>
-                  m.id === firstMedia.id ? { ...m, story: e.target.value } : m
-                )
-              )
-            }
-            rows={6}
-            placeholder="Story will appear here..."
-          />
-
-          {firstMedia && (
-            <AudioUploadModal
-              media={firstMedia}
-              setUploadedMedia={setUploadedMedia}
-              BASE_URL={BASE_URL}
-            />
-          )}
-
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={generateStory}>Generate Story</Button>
-            <Button
-              onClick={generateVideoClip}
-              disabled={!firstMedia?.story || loadingVideo}
-            >
-              {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
-            </Button>
-          </div>
-
-          <div className="text-sm font-semibold truncate">{firstMedia?.name}</div>
-          <div className="text-xs text-muted-foreground">
-            Status: {firstMedia?.transcriptionStatus}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})()}
+        );
+      })()}
 
       {/* Video preview */}
       <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
