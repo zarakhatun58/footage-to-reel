@@ -86,142 +86,151 @@ export const VideoUploadArea = () => {
     handleFiles(files);
   }, []);
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = e.target.files;
+  if (!files) return;
 
-    Array.from(files).forEach(file => {
-      const tempId = `${Date.now()}-${file.name}`;
-      const mimeType = file.type;
-      const type = mimeType.startsWith('image')
+  Array.from(files).forEach(file => {
+    const tempId = `${Date.now()}-${file.name}`;
+    const mimeType = file.type;
+    const type =
+      mimeType.startsWith('image')
         ? 'image'
         : mimeType.startsWith('video')
-          ? 'video'
-          : 'voiceover';
+        ? 'video'
+        : 'voiceover';
 
-      setUploadedMedia((prev: any) => [...prev, { id: tempId, name: file.name, type }]);
-      uploadFileToServer(tempId, file, type);
-    });
+    // ✅ Only call uploadFileToServer — preview is handled there
+    uploadFileToServer(tempId, file, type);
+  });
 
-    e.target.value = '';
-  };
+  e.target.value = '';
+};
 
+const handleFiles = (files: File[]) => {
+  const supportedTypes = ['video/', 'audio/', 'image/'];
+  const validFiles = files.filter(file =>
+    supportedTypes.some(type => file.type.startsWith(type))
+  );
 
-  const handleFiles = (files: File[]) => {
-    const supportedTypes = ["video/", "audio/", "image/"];
-    const validFiles = files.filter(file =>
-      supportedTypes.some(type => file.type.startsWith(type))
-    );
+  validFiles.forEach(file => {
+    const tempId = `${Date.now()}-${Math.random()}`;
+    const type: UploadedMedia['type'] =
+      file.type.startsWith('video')
+        ? 'video'
+        : file.type.startsWith('audio')
+        ? 'audio'
+        : file.type.startsWith('image')
+        ? 'image'
+        : 'unknown';
 
-    validFiles.forEach(file => {
-      const tempId = `${Date.now()}-${Math.random()}`;
-      const type: UploadedMedia["type"] =
-        file.type.startsWith("video") ? "video" :
-          file.type.startsWith("audio") ? "audio" :
-            file.type.startsWith("image") ? "image" : "unknown";
+    // ✅ No pushing here either
+    uploadFileToServer(tempId, file, type);
+  });
+};
 
-      uploadFileToServer(tempId, file, type);
-    });
-  };
+const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
+  const formData = new FormData();
+  formData.append(
+    type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
+    file
+  );
 
-
-
-  const uploadFileToServer = async (mediaId: string, file: File, type: string) => {
-    const formData = new FormData();
-    formData.append(
-      type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover',
-      file
-    );
-
-    // Show preview immediately
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedMedia((prev: any) => [
-      ...prev,
-      {
-        id: mediaId,
-        name: file.name,
-        size: file.size,
-        type,
-        transcriptionStatus: 'processing',
-        thumbnail: previewUrl,
-        transcript: '',
-        tags: [],
-        emotions: '',
-        story: '',
-        images: []
-      }
-    ]);
-
-    try {
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
-        }
-      };
-
-      xhr.onload = async () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const result = JSON.parse(xhr.responseText);
-          const uploadedItem = result.uploaded?.[0];
-
-          if (!uploadedItem) throw new Error('Upload returned no file');
-
-          // ✅ CHANGED: Use actual metadata from backend response
-          const newMedia = {
-            id: uploadedItem._id || mediaId,
-            name: uploadedItem.filename,
-            size: file.size,
-            type,
-            transcriptionStatus: uploadedItem.status || 'completed',
-            thumbnail:
-              uploadedItem.thumbnail ||
-              uploadedItem.images?.[0] ||
-              (uploadedItem.filename.endsWith('.jpg') || uploadedItem.filename.endsWith('.png')
-                ? uploadedItem.filename
-                : previewUrl),
-            transcript: uploadedItem.transcript || '',
-            tags: uploadedItem.tags || [],
-            emotions: uploadedItem.emotions || '',
-            story: '',
-            storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
-            images: uploadedItem.images || []
-          };
-          console.log("📌 Tags:", uploadedItem.tags);
-          console.log("📌 Transcript:", uploadedItem.transcript);
-          console.log("📌 Emotions:", uploadedItem.emotions);
-          setUploadedMedia((prev: any) =>
-            prev.map((media: any) => (media.id === mediaId ? newMedia : media))
-          );
-
-          setMediaId(uploadedItem._id);
-          setStoryText('');
-
-          if (type === 'audio' && uploadedItem.filename) {
-            setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
-          }
-        } else {
-          throw new Error(`Upload failed with status ${xhr.status}`);
-        }
-      };
-
-      xhr.onerror = () => {
-        throw new Error('XHR upload failed');
-      };
-
-      xhr.open('POST', `${BASE_URL}/api/uploads`);
-      xhr.send(formData);
-    } catch (error) {
-      console.error('Upload failed:', error);
-      setUploadedMedia(prev =>
-        prev.map(media =>
-          media.id === mediaId ? { ...media, transcriptionStatus: 'error' } : media
-        )
-      );
+  // ✅ Add preview placeholder here
+  const previewUrl = URL.createObjectURL(file);
+  setUploadedMedia((prev: any) => [
+    ...prev,
+    {
+      id: mediaId,
+      name: file.name,
+      size: file.size,
+      type,
+      transcriptionStatus: 'processing',
+      thumbnail: previewUrl,
+      transcript: '',
+      tags: [],
+      emotions: '',
+      story: '',
+      images: []
     }
-  };
+  ]);
+
+  try {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(prev => ({ ...prev, [mediaId]: progress }));
+      }
+    };
+
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const result = JSON.parse(xhr.responseText);
+        const uploadedItem = result.uploaded?.[0];
+
+        if (!uploadedItem) throw new Error('Upload returned no file');
+
+        const newMedia = {
+          id: uploadedItem._id || mediaId,
+          name: uploadedItem.filename,
+          size: file.size,
+          type,
+          transcriptionStatus: uploadedItem.status || 'completed',
+          thumbnail:
+            uploadedItem.thumbnail ||
+            uploadedItem.images?.[0] ||
+            (uploadedItem.filename.endsWith('.jpg') ||
+            uploadedItem.filename.endsWith('.png')
+              ? uploadedItem.filename
+              : previewUrl),
+          transcript: uploadedItem.transcript || '',
+          tags: uploadedItem.tags || [],
+          emotions: uploadedItem.emotions || '',
+          story: '',
+          storyUrl: `${BASE_URL}/uploads/${uploadedItem.filename}`,
+          images: uploadedItem.images || []
+        };
+
+        console.log('📌 Tags:', uploadedItem.tags);
+        console.log('📌 Transcript:', uploadedItem.transcript);
+        console.log('📌 Emotions:', uploadedItem.emotions);
+
+        // ✅ Replace placeholder with enriched backend data
+        setUploadedMedia((prev: any) =>
+          prev.map((media: any) => (media.id === mediaId ? newMedia : media))
+        );
+
+        setMediaId(uploadedItem._id);
+        setStoryText('');
+
+        if (type === 'audio' && uploadedItem.filename) {
+          setStoryAudioUrl(`${BASE_URL}/uploads/${uploadedItem.filename}`);
+        }
+      } else {
+        throw new Error(`Upload failed with status ${xhr.status}`);
+      }
+    };
+
+    xhr.onerror = () => {
+      throw new Error('XHR upload failed');
+    };
+
+    xhr.open('POST', `${BASE_URL}/api/uploads`);
+    xhr.send(formData);
+  } catch (error) {
+    console.error('Upload failed:', error);
+    setUploadedMedia(prev =>
+      prev.map(media =>
+        media.id === mediaId
+          ? { ...media, transcriptionStatus: 'error' }
+          : media
+      )
+    );
+  }
+};
+
 
 
 
@@ -613,7 +622,7 @@ export const VideoUploadArea = () => {
         </div>
       )}
 
-      {uploadedMedia.length > 0 && (
+      {/* {uploadedMedia.length > 0 && (
         <div className="mt-6">
           <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
 
@@ -702,89 +711,104 @@ export const VideoUploadArea = () => {
             </div>
           </div>
         </div>
-      )}
-      {/* {uploadedMedia.length > 0 && (() => {
-        const imageMedia = uploadedMedia.find(m => m.type === 'image');
-        const videoMedia = uploadedMedia.find(m => m.type === 'video');
-        const audioMedia = uploadedMedia.find(m => m.type === 'audio');
-        const firstMedia = uploadedMedia[0];
+      )} */}
 
-        return (
-          <div className="mt-6">
-            <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
-              <div className="flex flex-col gap-3 w-full md:w-[30%]">
-                {imageMedia?.storyUrl && (
-                  <img
-                    src={imageMedia.storyUrl}
-                    alt="Uploaded Image"
-                    className="rounded-md w-64 object-cover"
-                  />
-                )}
+   {uploadedMedia.length > 0 && (() => {
+  const imageMedia = uploadedMedia.find(m => m.type === 'image');
+  const videoMedia = uploadedMedia.find(m => m.type === 'video');
+  const audioMedia = uploadedMedia.find(m => m.type === 'audio');
 
-                {videoMedia?.storyUrl && (
-                  <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
-                )}
+  // ✅ Find the first media object that actually has transcript/tags/emotions
+  const mediaWithData =
+    uploadedMedia.find(
+      m => (m.transcript && m.transcript.trim() !== '') ||
+           (m.tags && m.tags.length > 0) ||
+           (Array.isArray(m.emotions) && m.emotions.length > 0) ||
+           (typeof m.emotions === 'string' && m.emotions.trim() !== '')
+    ) || uploadedMedia[0];
 
-                {audioMedia?.storyUrl && (
-                  <audio controls className="w-full">
-                    <source src={audioMedia.storyUrl} type="audio/mp3" />
-                    Your browser does not support the audio tag.
-                  </audio>
-                )}
+  return (
+    <div className="mt-6">
+      <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
+        {/* ---------- Left column: previews ---------- */}
+        <div className="flex flex-col gap-3 w-full md:w-[30%]">
+          {imageMedia?.storyUrl && (
+            <img
+              src={imageMedia.storyUrl}
+              alt="Uploaded Image"
+              className="rounded-md w-64 object-cover"
+            />
+          )}
 
-                <div className="space-y-1 text-sm">
-                  <p><strong>Transcript:</strong> {firstMedia?.transcript || 'Not available'}</p>
-                  <p><strong>Tags:</strong> {firstMedia?.tags?.join(', ') || 'Not generated'}</p>
-                  <p><strong>Emotions:</strong> {firstMedia?.emotions
-                    ? Array.isArray(firstMedia.emotions)
-                      ? firstMedia.emotions.join(', ')
-                      : firstMedia.emotions
-                    : 'Not detected'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 w-full md:w-[70%]">
-                <Textarea
-                  className="w-full"
-                  value={firstMedia?.story || ''}
-                  onChange={e =>
-                    setUploadedMedia(prev =>
-                      prev.map(m =>
-                        m.id === firstMedia.id ? { ...m, story: e.target.value } : m
-                      )
-                    )
-                  }
-                  rows={6}
-                  placeholder="Story will appear here..."
-                />
+          {videoMedia?.storyUrl && (
+            <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
+          )}
 
-                {firstMedia && (
-                  <AudioUploadModal
-                    media={firstMedia}
-                    setUploadedMedia={setUploadedMedia}
-                    BASE_URL={BASE_URL}
-                  />
-                )}
+          {audioMedia?.storyUrl && (
+            <audio controls className="w-full">
+              <source src={audioMedia.storyUrl} type="audio/mp3" />
+              Your browser does not support the audio tag.
+            </audio>
+          )}
 
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={generateStory}>Generate Story</Button>
-                  <Button
-                    onClick={generateVideoClip}
-                    disabled={!firstMedia?.story || loadingVideo}
-                  >
-                    {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
-                  </Button>
-                </div>
-
-                <div className="text-sm font-semibold truncate">{firstMedia?.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  Status: {firstMedia?.transcriptionStatus}
-                </div>
-              </div>
-            </div>
+          {/* ---------- Metadata ---------- */}
+          <div className="space-y-1 text-sm">
+            <p><strong>Transcript:</strong> {mediaWithData?.transcript || 'Not available'}</p>
+            <p><strong>Tags:</strong> {mediaWithData?.tags?.join(', ') || 'Not generated'}</p>
+            <p><strong>Emotions:</strong> {
+              mediaWithData?.emotions
+                ? Array.isArray(mediaWithData.emotions)
+                  ? mediaWithData.emotions.join(', ')
+                  : mediaWithData.emotions
+                : 'Not detected'
+            }</p>
           </div>
-        );
-      })()} */}
+        </div>
+
+        {/* ---------- Right column: story + actions ---------- */}
+        <div className="flex flex-col gap-3 w-full md:w-[70%]">
+          <Textarea
+            className="w-full"
+            value={mediaWithData?.story || ''}
+            onChange={e =>
+              setUploadedMedia(prev =>
+                prev.map(m =>
+                  m.id === mediaWithData.id ? { ...m, story: e.target.value } : m
+                )
+              )
+            }
+            rows={6}
+            placeholder="Story will appear here..."
+          />
+
+          {mediaWithData && (
+            <AudioUploadModal
+              media={mediaWithData}
+              setUploadedMedia={setUploadedMedia}
+              BASE_URL={BASE_URL}
+            />
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={generateStory}>Generate Story</Button>
+            <Button
+              onClick={generateVideoClip}
+              disabled={!mediaWithData?.story || loadingVideo}
+            >
+              {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+            </Button>
+          </div>
+
+          <div className="text-sm font-semibold truncate">{mediaWithData?.name}</div>
+          <div className="text-xs text-muted-foreground">
+            Status: {mediaWithData?.transcriptionStatus}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})()}
+
 
       {/* Video preview */}
       <h3 className="text-lg font-semibold mt-2">🎬 Your Generated Video</h3>
