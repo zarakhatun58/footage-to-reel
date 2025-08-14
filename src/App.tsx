@@ -17,19 +17,7 @@ import { useEffect } from "react";
 const queryClient = new QueryClient();
 export const GOOGLE_CLIENT_ID = '584714840164-0ebm888scgf8vj8rhtvsfg32i80o2b3m.apps.googleusercontent.com';
 
-
 const AppWrapper = () => {
-  const { loading } = useAuth();
-
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-orange-400 text-xl">
-        Loading...
-      </div>
-    );
-  }
-
 
   return (
      <BrowserRouter>

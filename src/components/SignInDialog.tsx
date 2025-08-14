@@ -26,6 +26,7 @@ import { BASE_URL } from "@/services/apis";
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { googleLogout } from "@react-oauth/google";
 import { useAuth } from "@/context/AuthContext";
+import GoogleLoginButton from "./GoogleLoginButton";
 
 type SignInDialogProps = {
     open: boolean;
@@ -50,7 +51,9 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const { token } = useParams();
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-
+  const closeModal = () => {
+    onClose(); 
+  };
     useEffect(() => {
         const token = searchParams.get("token");
         if (token) {
@@ -135,46 +138,46 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
 
     // 🔹 Google login
-const handleSuccess = async (credentialResponse: CredentialResponse) => {
-  if (!credentialResponse.credential) {
-    alert("Google login failed: No credential returned");
-    return;
-  }
+    const handleSuccess = async (credentialResponse: CredentialResponse) => {
+        if (!credentialResponse.credential) {
+            alert("Google login failed: No credential returned");
+            return;
+        }
 
-  setGoogleLoading(true);
-  try {
-    const res = await axios.post(`${BASE_URL}/api/auth/googleLogin`, {
-      token: credentialResponse.credential,
-    });
+        setGoogleLoading(true);
+        try {
+            const res = await axios.post(`${BASE_URL}/api/auth/googleLogin`, {
+                token: credentialResponse.credential,
+            });
 
-    const { token, user } = res.data;
+            const { token, user } = res.data;
 
-    if (!token || !user) {
-      alert("Google login failed: Missing user info");
-      return;
-    }
+            if (!token || !user) {
+                alert("Google login failed: Missing user info");
+                return;
+            }
 
-    // Save token in localStorage
-    localStorage.setItem("authToken", token);
+            // Save token in localStorage
+            localStorage.setItem("authToken", token);
 
-    // Set user consistently in context
-    setUser({ 
-      id: user.id || user._id, 
-      username: user.username, 
-      email: user.email, 
-      token 
-    });
+            // Set user consistently in context
+            setUser({
+                id: user.id || user._id,
+                username: user.username,
+                email: user.email,
+                token
+            });
 
-    alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
-    onClose();
-    navigate("/");
-  } catch (err: any) {
-    console.error("Google login failed:", err);
-    alert(err.response?.data?.error || "Google login failed");
-  } finally {
-    setGoogleLoading(false);
-  }
-};
+            alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
+            onClose();
+            navigate("/");
+        } catch (err: any) {
+            console.error("Google login failed:", err);
+            alert(err.response?.data?.error || "Google login failed");
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
 
 
     const handleError = () => {
@@ -182,24 +185,24 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
         alert("Google Sign-In failed");
     };
 
-const handleLogout = () => {
-    try {
-        // Log out from Google if user is logged in via Google
-        googleLogout();
+    const handleLogout = () => {
+        try {
+            // Log out from Google if user is logged in via Google
+            googleLogout();
 
-        // Clear local auth token
-        localStorage.removeItem('authToken');
+            // Clear local auth token
+            localStorage.removeItem('authToken');
 
-        // Reset user in context if needed
-        setUser(null);
+            // Reset user in context if needed
+            setUser(null);
 
-        // Redirect to homepage
-        navigate("/");
-    } catch (err) {
-        console.error("Logout failed:", err);
-        alert("Logout failed, please try again.");
-    }
-};
+            // Redirect to homepage
+            navigate("/");
+        } catch (err) {
+            console.error("Logout failed:", err);
+            alert("Logout failed, please try again.");
+        }
+    };
 
 
     const handleForgotPassword = async (e: React.FormEvent) => {
@@ -317,13 +320,7 @@ const handleLogout = () => {
                                             {loading ? "Signing in..." : "Sign In"}
                                         </Button>
                                     </form>
-
-                                    <div
-                                        className="w-full border border-gray-300 rounded-md px-4 py-2 
-                                        cursor-pointer hover:shadow-sm flex items-center justify-center gap-2" >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} >
-                                        </GoogleLogin>
-                                    </div>
+                                    <GoogleLoginButton onClose={closeModal} />
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -369,12 +366,7 @@ const handleLogout = () => {
                                             Sign Up
                                         </Button>
                                     </form>
-                                    <div
-                                        className="w-full border border-gray-300 rounded-md px-4 py-2 cursor-pointer hover:shadow-sm flex items-center justify-center gap-2 mt-2"
-                                    >
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} >
-                                        </GoogleLogin>
-                                    </div>
+                                    <GoogleLoginButton onClose={closeModal} />
                                 </CardContent>
                             </Card>
                         </TabsContent>

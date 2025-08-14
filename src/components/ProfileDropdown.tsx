@@ -16,12 +16,14 @@ import { useNavigate } from "react-router-dom";
 export const ProfileDropdown  =() => {
    const { user, setUser } = useAuth();
      const navigate = useNavigate();
+
    const handleLogout = async () => {
     localStorage.removeItem('authToken');
     setUser(null);
     navigate("/");
     googleLogout();
   };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
