@@ -785,7 +785,6 @@ const uploadFileToServer = async (mediaId: string, file: File, type: string) => 
             <AudioUploadModal
               media={mediaWithData}
               setUploadedMedia={setUploadedMedia}
-              BASE_URL={BASE_URL}
             />
           )}
 

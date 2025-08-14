@@ -1,3 +1,4 @@
+import { BASE_URL } from '@/services/apis';
 import React, { useRef, useState, useEffect } from 'react';
 
 type UploadedMedia = {
@@ -11,11 +12,11 @@ type UploadedMedia = {
 type Props = {
   media: UploadedMedia;
   setUploadedMedia: React.Dispatch<React.SetStateAction<UploadedMedia[]>>;
-  BASE_URL: string;
+
 };
 
-const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia}) => {
+const [isOpen, setIsOpen] = useState(false);
   const [option, setOption] = useState<'upload' | 'record' | 'auto'>('upload');
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -33,20 +34,34 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const handleAudioUpload = async (file: File) => {
+  // ✅ Unified function for all audio actions
+  const handleAudioAction = async (file?: File, text?: string) => {
     const formData = new FormData();
-    formData.append('file', file);
+    if (file) {
+      formData.append('file', file);
+    } else if (text) {
+      formData.append('text', text);
+    } else {
+      return alert('No audio data provided');
+    }
+
     try {
-      const res = await fetch(`${BASE_URL}/api/audio/${media.id}`, { method: 'POST', body: formData });
+      const res = await fetch(`${BASE_URL}/api/audio/${media.id}`, {
+        method: 'POST',
+        body: formData,
+      });
       const data = await res.json();
       if (data.success && data.audioUrl) {
         setUploadedMedia(prev =>
           prev.map(m => (m.id === media.id ? { ...m, voiceUrl: data.audioUrl } : m))
         );
-        alert('🎤 Audio uploaded successfully!');
+        alert(file ? '🎤 Audio uploaded successfully!' : '🎤 Audio generated successfully!');
+        setIsOpen(false); // ✅ close modal after success
+      } else {
+        alert('❌ Audio action failed');
       }
     } catch {
-      alert('❌ Failed to upload audio');
+      alert('❌ Server error while processing audio');
     }
   };
 
@@ -56,12 +71,15 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       recordedChunksRef.current = [];
+
       mediaRecorder.ondataavailable = e => e.data.size > 0 && recordedChunksRef.current.push(e.data);
+
       mediaRecorder.onstop = async () => {
         setIsRecording(false);
         const blob = new Blob(recordedChunksRef.current, { type: 'audio/mp3' });
-        await handleAudioUpload(new File([blob], 'recorded-audio.mp3', { type: 'audio/mp3' }));
+        await handleAudioAction(new File([blob], 'recorded-audio.mp3', { type: 'audio/mp3' }));
       };
+
       mediaRecorder.start();
       setIsRecording(true);
     } catch {
@@ -73,22 +91,7 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
 
   const autoGenerateAudio = async () => {
     if (!media.story) return alert('No story text to generate audio');
-    try {
-      const res = await fetch(`${BASE_URL}/api/audio/generate-audio/${media.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: media.story }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setUploadedMedia(prev =>
-          prev.map(m => (m.id === media.id ? { ...m, voiceUrl: data.audioUrl } : m))
-        );
-        alert('🎤 Audio auto-generated successfully!');
-      }
-    } catch {
-      alert('❌ Failed to auto-generate audio');
-    }
+    await handleAudioAction(undefined, media.story);
   };
 
   return (
@@ -100,12 +103,11 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
         Audio
       </button>
 
-      {/* Modal with blur background and fade-in/out */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50 transition-opacity duration-300">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
           <div
             ref={modalRef}
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4 relative transform transition-transform duration-300 scale-95 animate-scale-in"
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4 relative"
           >
             <button
               onClick={() => setIsOpen(false)}
@@ -144,7 +146,7 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
                 <input
                   type="file"
                   accept="audio/mp3"
-                  onChange={e => e.target.files && handleAudioUpload(e.target.files[0])}
+                  onChange={e => e.target.files && handleAudioAction(e.target.files[0])}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               )}
@@ -154,14 +156,14 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
                   {!isRecording ? (
                     <button
                       onClick={startRecording}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 rounded shadow transition-transform duration-200 hover:scale-105"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 rounded shadow"
                     >
                       Start Recording
                     </button>
                   ) : (
                     <button
                       onClick={stopRecording}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-1.5 rounded shadow transition-transform duration-200 hover:scale-105"
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-1.5 rounded shadow"
                     >
                       Stop & Upload
                     </button>
@@ -172,7 +174,7 @@ const AudioUploadModal: React.FC<Props> = ({ media, setUploadedMedia, BASE_URL }
               {option === 'auto' && (
                 <button
                   onClick={autoGenerateAudio}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1.5 rounded shadow transition-transform duration-200 hover:scale-105"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1.5 rounded shadow"
                 >
                   Generate Audio
                 </button>
