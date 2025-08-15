@@ -892,7 +892,7 @@ const generateVideoClip = async () => {
           <div key={video._id || video.id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
             <video
               controls
-              className="w-36 h-36 object-cover rounded-t"
+              className="w-full h-46 object-cover rounded-t"
               src={video.storyUrl}
               preload="metadata"
             >
@@ -911,7 +911,7 @@ const generateVideoClip = async () => {
           <div key={video._id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
             <video
               controls
-              className="w-full h-48 object-cover rounded-t"
+              className="w-full h-46 object-cover rounded-t"
               src={video.storyUrl}
               preload="metadata"
             >
@@ -920,7 +920,7 @@ const generateVideoClip = async () => {
 
             <div className="p-3">
               <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-              <MediaStatsBar media={video} BASE_URL="https://footage-flow-server.onrender.com" />
+               <MediaStatsBar media={video} BASE_URL={BASE_URL} />
             </div>
 
             {/* Optional delete button on top-right */}

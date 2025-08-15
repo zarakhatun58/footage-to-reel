@@ -1,10 +1,9 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '@/services/apis';
-import { GOOGLE_CLIENT_ID } from '@/App';
 
 type User = {
-   id?: string;
+  id?: string;
   email?: string;
   username?: string;
   profilePic?: string;
@@ -13,7 +12,7 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-   setUser: (user: User | null) => void;
+  setUser: (user: User | null) => void;
   login: (token: string, userData: Partial<User>) => void;
   logout: () => void;
   loading: boolean;
@@ -25,40 +24,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-  const initializeAuth = async () => {
-    const savedToken = localStorage.getItem('authToken');
-    if (!savedToken) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
-        headers: { Authorization: `Bearer ${savedToken}` },
-        withCredentials: true,
-      });
-
-      if (isMounted) {
-        setUser({ ...res.data.user, token: savedToken });
+    const initializeAuth = async () => {
+      const savedToken = localStorage.getItem('authToken');
+      if (!savedToken) {
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-      localStorage.removeItem('authToken');
-      if (isMounted) setUser(null);
-    } finally {
-      if (isMounted) setLoading(false);
-    }
-  };
 
-  initializeAuth();
-  return () => {
-    isMounted = false;
-  };
-}, []);
+      // Optimistically set user with token, then validate with API
+      if (isMounted) setUser({ token: savedToken });
 
+      try {
+        const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
+          headers: { Authorization: `Bearer ${savedToken}` },
+          withCredentials: true,
+        });
+
+        if (isMounted) {
+          setUser({ ...res.data.user, token: savedToken });
+        }
+      } catch (error) {
+        console.error('Failed to load user:', error);
+        // Only remove token if definitely invalid (optional)
+        // localStorage.removeItem('authToken');
+        if (isMounted) setUser(null); // fallback to logged-out state
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const login = (token: string, userData: Partial<User>) => {
     localStorage.setItem('authToken', token);
@@ -71,7 +73,7 @@ useEffect(() => {
   };
 
   return (
-    <AuthContext.Provider value={{ user,setUser, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
