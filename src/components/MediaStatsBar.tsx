@@ -138,14 +138,13 @@ const handleShareClick = async () => {
 
       <div className="flex gap-6 items-center justify-between text-sm mt-4 text-gray-700">
         <button onClick={handleLike} className="flex items-center gap-1 hover:text-green-600 transition-colors" aria-label="Like video">
-          <ThumbsUp className="w-5 h-5" />
+          <ThumbsUp className="w-4 h-4" />
           {stats.likes}
         </button>
 
         <div className="relative">
           <button onClick={handleShareClick} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors" aria-haspopup="true" aria-expanded={shareOpen}>
-            <Share2 className="w-5 h-5" />
-            Share
+            <Share2 className="w-4 h-4" />
           </button>
 
           {shareOpen && (
@@ -166,18 +165,17 @@ const handleShareClick = async () => {
         </div>
 
         <div className="flex items-center gap-1" title="Views">
-          <Eye className="w-5 h-5 text-purple-500" />
+          <Eye className="w-4 h-4 text-purple-500" />
           {stats.views}
         </div>
 
         <div className="flex items-center gap-1" title="Rank">
-          <BarChart3 className="w-5 h-5 text-pink-500" />
+          <BarChart3 className="w-4 h-4 text-pink-500" />
           Rank: {stats.rank}
         </div>
 
         <a href={media.storyUrl} download className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors" aria-label="Download video">
-          <Download className="w-5 h-5" />
-          Download
+          <Download className="w-4 h-4" />
         </a>
       </div>
     </div>

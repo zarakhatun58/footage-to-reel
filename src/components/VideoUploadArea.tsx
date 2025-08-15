@@ -638,7 +638,7 @@ const generateVideoClip = async () => {
 
 
       {/* Story Generation Progress */}
-      {/* {storyProgress > 0 && storyProgress < 100 && (
+      {storyProgress > 0 && storyProgress < 100 && (
         <div className="w-full mt-4">
           <ProgressBar
             completed={storyProgress}
@@ -654,7 +654,7 @@ const generateVideoClip = async () => {
             Generating story: {storyProgress}%
           </div>
         </div>
-      )} */}
+      )}
 
       {/* Video Generation Progress */}
       {videoProgress > 0 && videoProgress < 100 && (
@@ -892,7 +892,7 @@ const generateVideoClip = async () => {
           <div key={video._id || video.id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
             <video
               controls
-              className="w-full h-48 object-cover rounded-t"
+              className="w-36 h-36 object-cover rounded-t"
               src={video.storyUrl}
               preload="metadata"
             >

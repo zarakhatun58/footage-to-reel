@@ -49,7 +49,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const navigate = useNavigate();
     const { token } = useParams();
     const [loading, setLoading] = useState(false);
- 
+
     useEffect(() => {
         const token = searchParams.get("token");
         if (token) {
@@ -95,76 +95,76 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
 
     // 🔹 Email/password login
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
 
-  try {
-    const res = await api.post(
-      "/api/auth/login",
-      { email, password },
-      { withCredentials: true, timeout: 5000 } // optional timeout
-    );
+        try {
+            const res = await api.post(
+                "/api/auth/login",
+                { email, password },
+                { withCredentials: true, timeout: 5000 } // optional timeout
+            );
 
-    const { token, user } = res.data;
+            const { token, user } = res.data;
 
-    if (!token || !user) {
-      alert("Login failed: Missing user info");
-      return;
-    }
+            if (!token || !user) {
+                alert("Login failed: Missing user info");
+                return;
+            }
 
-    localStorage.setItem("authToken", token);
-    setUser(user);
+            localStorage.setItem("authToken", token);
+            setUser(user);
 
-    alert(`✅ Login successful! Welcome ${user.username || user.email}`);
-    onClose();
-    navigate("/");
-  } catch (err: any) {
-    console.error("❌ Login failed:", err);
-    alert(err.response?.data?.error || "Login failed");
-  } finally {
-    setLoading(false);
-  }
-};
+            alert(`✅ Login successful! Welcome ${user.username || user.email}`);
+            onClose();
+            navigate("/");
+        } catch (err: any) {
+            console.error("❌ Login failed:", err);
+            alert(err.response?.data?.error || "Login failed");
+        } finally {
+            setLoading(false);
+        }
+    };
 
 
 
     // 🔹 Google login
-const handleSuccess = async (credentialResponse: CredentialResponse) => {
-  if (!credentialResponse?.credential) return alert("Google login failed");
+    const handleSuccess = async (credentialResponse: CredentialResponse) => {
+        if (!credentialResponse?.credential) return alert("Google login failed");
 
-  setLoading(true);
-  try {
-    const res = await api.post(
-      "/api/auth/googleLogin",
-      { token: credentialResponse.credential },
-      { timeout: 5000 }
-    );
+        setLoading(true);
+        try {
+            const res = await api.post(
+                "/api/auth/googleLogin",
+                { token: credentialResponse.credential },
+                { timeout: 5000 }
+            );
 
-    const { token, user } = res.data;
-    if (!token || !user) return alert("Google login failed");
+            const { token, user } = res.data;
+            if (!token || !user) return alert("Google login failed");
 
-    const normalizedUser = {
-      id: user.id || user._id,
-      username: user.username,
-      email: user.email,
-      profilePic: user.profilePic,
-      token,
+            const normalizedUser = {
+                id: user.id || user._id,
+                username: user.username,
+                email: user.email,
+                profilePic: user.profilePic,
+                token,
+            };
+
+            localStorage.setItem("authToken", token);
+            setUser(normalizedUser);
+
+            alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
+            onClose();
+            navigate("/");
+        } catch (err: any) {
+            console.error("Google login failed:", err);
+            alert(err.response?.data?.error || "Google login failed");
+        } finally {
+            setLoading(false);
+        }
     };
-
-    localStorage.setItem("authToken", token);
-    setUser(normalizedUser);
-
-    alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
-    onClose();
-    navigate("/");
-  } catch (err: any) {
-    console.error("Google login failed:", err);
-    alert(err.response?.data?.error || "Google login failed");
-  } finally {
-    setLoading(false);
-  }
-};
 
 
 
@@ -308,7 +308,9 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
                                             {loading ? "Signing in..." : "Sign In"}
                                         </Button>
                                     </form>
-                                    <GoogleLogin onSuccess={handleSuccess} onError={handleError}  />
+                                    <div className="m-2">
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                    </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -354,7 +356,10 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
                                             Sign Up
                                         </Button>
                                     </form>
-                               <GoogleLogin onSuccess={handleSuccess} onError={handleError}  />
+                                    <div className="m-2">
+                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                    </div>
+
                                 </CardContent>
                             </Card>
                         </TabsContent>
