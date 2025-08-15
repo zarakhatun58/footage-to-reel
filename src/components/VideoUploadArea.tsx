@@ -470,7 +470,7 @@ const generateVideoClip = async () => {
           ? {
               ...m,
               type: "video",
-              storyUrl: data.playbackUrl,
+              storyUrl: data.videoUrl,
               transcriptionStatus: "completed",
             }
           : m
@@ -483,7 +483,7 @@ const generateVideoClip = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mediaId,
-        videoUrl: data.playbackUrl,
+        videoUrl: data.videoUrl,
         title: media.title,
         userId: media.id,
       }),
