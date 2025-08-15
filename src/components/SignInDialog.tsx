@@ -95,84 +95,77 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
 
 
     // 🔹 Email/password login
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // stop form from closing / page reloading
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-        setLoading(true);
-        try {
-            const res = await axios.post(`${BASE_URL}/api/auth/login`, {
-                email,
-                password,
-            });
+  try {
+    const res = await api.post(
+      "/api/auth/login",
+      { email, password },
+      { withCredentials: true, timeout: 5000 } // optional timeout
+    );
 
-            console.log("📦 Full login response:", res.data);
+    const { token, user } = res.data;
 
-            const { token, user } = res.data;
-
-            if (!token || !user) {
-                console.error("❌ Login succeeded but user/token is missing:", res.data);
-                alert("Login failed: Missing user info from server");
-                return;
-            }
-
-            localStorage.setItem("authToken", token);
-            setUser(user);
-
-            alert(`✅ Login successful! Welcome ${user.username || user.email}`);
-            console.log("👤 Logged in user set in AuthContext:", user);
-
-            onClose();
-            navigate("/");
-        } catch (err: any) {
-            console.error("❌ Login failed:", err);
-            setError(err.response?.data?.error || "Login failed");
-            alert(err.response?.data?.error || "Login failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    // 🔹 Google login
- const handleSuccess = async (credentialResponse: CredentialResponse) => {
-    console.log("Google credentialResponse:", credentialResponse);
-
-    if (!credentialResponse?.credential) {
-      alert("Google login failed: No credential returned");
+    if (!token || !user) {
+      alert("Login failed: Missing user info");
       return;
     }
 
-    try {
-      const res = await api.post('/api/auth/googleLogin', {
-        token: credentialResponse.credential,
-      });
+    localStorage.setItem("authToken", token);
+    setUser(user);
 
-      const { token, user } = res.data;
+    alert(`✅ Login successful! Welcome ${user.username || user.email}`);
+    onClose();
+    navigate("/");
+  } catch (err: any) {
+    console.error("❌ Login failed:", err);
+    alert(err.response?.data?.error || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      if (!token || !user) {
-        alert("Google login failed: Missing user info");
-        return;
-      }
 
-      const normalizedUser = {
-        id: user.id || user._id,
-        username: user.username,
-        email: user.email,
-        profilePic: user.profilePic,
-        token,
-      };
 
-      localStorage.setItem("authToken", token);
-      setUser(normalizedUser);
+    // 🔹 Google login
+const handleSuccess = async (credentialResponse: CredentialResponse) => {
+  if (!credentialResponse?.credential) return alert("Google login failed");
 
-      alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
-      onClose();
-      navigate("/");
-    } catch (err: any) {
-      console.error("Google login failed:", err);
-      alert(err.response?.data?.error || "Google login failed");
-    }
-  };
+  setLoading(true);
+  try {
+    const res = await api.post(
+      "/api/auth/googleLogin",
+      { token: credentialResponse.credential },
+      { timeout: 5000 }
+    );
+
+    const { token, user } = res.data;
+    if (!token || !user) return alert("Google login failed");
+
+    const normalizedUser = {
+      id: user.id || user._id,
+      username: user.username,
+      email: user.email,
+      profilePic: user.profilePic,
+      token,
+    };
+
+    localStorage.setItem("authToken", token);
+    setUser(normalizedUser);
+
+    alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
+    onClose();
+    navigate("/");
+  } catch (err: any) {
+    console.error("Google login failed:", err);
+    alert(err.response?.data?.error || "Google login failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
     const handleError = () => {

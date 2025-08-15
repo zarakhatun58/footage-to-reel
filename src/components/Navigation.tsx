@@ -41,16 +41,18 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleLogout = () => {
-    try {
-      googleLogout();
-      localStorage.removeItem('authToken');
-      setUser(null);
-      navigate("/");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
+const handleLogout = () => {
+  try {
+    googleLogout();
+    localStorage.removeItem('authToken');
+    setUser(null);
+    // Full page reload to the home page
+    window.location.href = "/";
+  } catch (err) {
+    console.error("Logout failed:", err);
+  }
+};
+
 
   
  const handleSectionChange = (section: string) => {    
