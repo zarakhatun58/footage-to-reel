@@ -136,7 +136,7 @@ const handleShareClick = async () => {
         className="w-full rounded-md"
       />
 
-      <div className="flex gap-6 items-center justify-between text-sm mt-4 text-gray-700">
+      <div className="flex gap-3 items-center justify-between text-sm mt-4 text-gray-700">
         <button onClick={handleLike} className="flex items-center gap-1 hover:text-green-600 transition-colors" aria-label="Like video">
           <ThumbsUp className="w-4 h-4" />
           {stats.likes}
@@ -171,7 +171,7 @@ const handleShareClick = async () => {
 
         <div className="flex items-center gap-1" title="Rank">
           <BarChart3 className="w-4 h-4 text-pink-500" />
-          Rank: {stats.rank}
+         {stats.rank}
         </div>
 
         <a href={media.storyUrl} download className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors" aria-label="Download video">

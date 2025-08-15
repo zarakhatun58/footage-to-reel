@@ -36,7 +36,7 @@ useEffect(() => {
     }
 
     try {
-      const res = await axios.get(`${BASE_URL}/api/auth/me`, {
+      const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${savedToken}` },
         withCredentials: true,
       });
