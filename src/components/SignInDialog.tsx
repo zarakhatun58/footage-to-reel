@@ -39,25 +39,24 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     const [signUpEmail, setSignUpEmail] = useState("");
     const [signUpPassword, setSignUpPassword] = useState("");
     const { user, setUser } = useAuth();
-    const [error, setError] = useState<string | null>(null);
     const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
     const [forgotEmail, setForgotEmail] = useState("");
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [newPassword, setNewPassword] = useState("");
     const [resetToken, setResetToken] = useState("");
-    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { token } = useParams();
+   const { login } = useAuth();
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const token = searchParams.get("token");
-        if (token) {
-            setResetToken(token);
-            setResetPasswordOpen(true);
-        }
-    }, [searchParams]);
-
+   const saveAuthData = (token: string, user: any) => {
+    const normalizedUser = {
+        id: user.id || user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
+    };
+    login(token, normalizedUser);
+};
 
     const handleSignUp = async (e: any) => {
         e.preventDefault();
@@ -81,8 +80,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             }
 
             // ✅ Store token and update UI instantly
-            localStorage.setItem("authToken", token);
-            setUser(user);
+           saveAuthData(token, user);
 
             alert("✅ Sign up successful!");
             onClose();
@@ -92,7 +90,6 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             alert(err.response?.data?.message || "Signup failed");
         }
     };
-
 
     // 🔹 Email/password login
     const handleSubmit = async (e: React.FormEvent) => {
@@ -113,8 +110,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                 return;
             }
 
-            localStorage.setItem("authToken", token);
-            setUser(user);
+           saveAuthData(token, user);
 
             alert(`✅ Login successful! Welcome ${user.username || user.email}`);
             onClose();
@@ -126,8 +122,6 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             setLoading(false);
         }
     };
-
-
 
     // 🔹 Google login
     const handleSuccess = async (credentialResponse: CredentialResponse) => {
@@ -144,16 +138,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             const { token, user } = res.data;
             if (!token || !user) return alert("Google login failed");
 
-            const normalizedUser = {
-                id: user.id || user._id,
-                username: user.username,
-                email: user.email,
-                profilePic: user.profilePic,
-                token,
-            };
-
-            localStorage.setItem("authToken", token);
-            setUser(normalizedUser);
+            saveAuthData(token, user);
 
             alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
             onClose();

@@ -29,28 +29,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeAuth = async () => {
       const savedToken = localStorage.getItem('authToken');
+      const savedUser = localStorage.getItem('authUser');
+
       if (!savedToken) {
         setLoading(false);
         return;
       }
 
-      // Optimistically set user with token, then validate with API
-      if (isMounted) setUser({ token: savedToken });
+      // ✅ Show saved user instantly (no API wait)
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          if (isMounted) setUser({ ...parsedUser, token: savedToken });
+        } catch {
+          // corrupted data
+          localStorage.removeItem('authUser');
+        }
+      } else {
+        // fallback to token only
+        if (isMounted) setUser({ token: savedToken });
+      }
 
+      // 🔄 Fetch fresh profile from API
       try {
         const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${savedToken}` },
           withCredentials: true,
         });
-
-        if (isMounted) {
-          setUser({ ...res.data.user, token: savedToken });
+        if (isMounted && res.data?.user) {
+          const fullUser = { ...res.data.user, token: savedToken };
+          setUser(fullUser);
+          localStorage.setItem('authUser', JSON.stringify(fullUser));
         }
       } catch (error) {
         console.error('Failed to load user:', error);
-        // Only remove token if definitely invalid (optional)
-        // localStorage.removeItem('authToken');
-        if (isMounted) setUser(null); // fallback to logged-out state
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authUser');
+        if (isMounted) setUser(null);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -63,12 +78,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (token: string, userData: Partial<User>) => {
+    const fullUser = { ...userData, token };
     localStorage.setItem('authToken', token);
-    setUser({ ...userData, token });
+    localStorage.setItem('authUser', JSON.stringify(fullUser));
+    setUser(fullUser);
   };
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
     setUser(null);
   };
 
