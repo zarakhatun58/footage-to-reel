@@ -478,7 +478,7 @@ const generateVideoClip = async () => {
     );
 
     // Upload final video to backend
-    const uploadRes = await fetch(`${BASE_URL}/api/upload-final`, {
+    const uploadRes = await fetch(`${BASE_URL}/api/apivideo/upload-final`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -835,15 +835,16 @@ const generateVideoClip = async () => {
             placeholder="Story will appear here..."
           />
 
-          {mediaWithData && (
+         
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={generateStory}>Generate Story</Button>
+             {mediaWithData && (
             <AudioUploadModal
               media={mediaWithData}
               setUploadedMedia={setUploadedMedia}
             />
           )}
 
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={generateStory}>Generate Story</Button>
             <Button
               onClick={generateVideoClip}
               disabled={!mediaWithData?.story || loadingVideo}
