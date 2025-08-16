@@ -478,6 +478,9 @@ const generateVideoClip = async () => {
     );
 
     // Upload final video to backend
+    if (!data.videoUrl) {
+  throw new Error("Video URL is missing. Cannot upload final video.");
+}
     const uploadRes = await fetch(`${BASE_URL}/api/apivideo/upload-final`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
