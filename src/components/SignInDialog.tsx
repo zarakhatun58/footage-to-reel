@@ -100,7 +100,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             const res = await api.post(
                 "/api/auth/login",
                 { email, password },
-                { withCredentials: true, timeout: 15000 } // optional timeout
+                { withCredentials: true, timeout: 2000 } // optional timeout
             );
 
             const { token, user } = res.data;
@@ -132,7 +132,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             const res = await api.post(
                 "/api/auth/googleLogin",
                 { token: credentialResponse.credential },
-                { timeout: 15000 }
+                { timeout: 2000 }
             );
 
             const { token, user } = res.data;
