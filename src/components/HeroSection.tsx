@@ -106,7 +106,7 @@ export const HeroSection = () => {
               <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
             </div>
           </div> */}
-           {loading ? (
+           {/* {loading ? (
             <p className="text-white">Loading videos...</p>
           ) : top3Videos.length === 0 ? (
             <p className="text-white">No videos available yet.</p>
@@ -127,7 +127,7 @@ export const HeroSection = () => {
                 </div>
               ))}
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </section>
