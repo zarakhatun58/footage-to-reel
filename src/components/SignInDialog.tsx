@@ -68,7 +68,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
                     email: signUpEmail,
                     password: signUpPassword,
                 },
-                { withCredentials: true }
+                // { withCredentials: true }
             );
 
             console.log("✅ Register response:", registerRes.data);
@@ -100,7 +100,7 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
             const res = await api.post(
                 "/api/auth/login",
                 { email, password },
-                { withCredentials: true, timeout: 2000 } // optional timeout
+                // { withCredentials: true, timeout: 4000 } // optional timeout
             );
 
             const { token, user } = res.data;
@@ -124,34 +124,44 @@ const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
     };
 
     // 🔹 Google login
-    const handleSuccess = async (credentialResponse: CredentialResponse) => {
-        if (!credentialResponse?.credential) return alert("Google login failed");
+const handleSuccess = async (credentialResponse: CredentialResponse) => {
+  if (!credentialResponse?.credential) {
+    return alert("Google login failed: No credential received.");
+  }
 
-        setLoading(true);
-        try {
-            const res = await api.post(
-                "/api/auth/googleLogin",
-                { token: credentialResponse.credential },
-                { timeout: 2000 }
-            );
+  setLoading(true);
+  try {
+    const res = await api.post(
+      "/api/auth/googleLogin",
+      { token: credentialResponse.credential },
+      { timeout: 4000 }
+    );
 
-            const { token, user } = res.data;
-            if (!token || !user) return alert("Google login failed");
+    const { token, user } = res.data;
 
-            saveAuthData(token, user);
+    if (!token || !user) {
+      return alert("Google login failed: Incomplete response from server.");
+    }
 
-            alert(`✅ Google login successful! Welcome ${user.username || user.email}`);
-            onClose();
-            navigate("/");
-        } catch (err: any) {
-            console.error("Google login failed:", err);
-            alert(err.response?.data?.error || "Google login failed");
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Normalize and store auth data
+    saveAuthData(token, user);
 
+    alert(`✅ Google login successful! Welcome, ${user.username || user.email}`);
+    onClose();
+    navigate("/");
+  } catch (err: any) {
+    console.error("Google login failed:", err.response?.data || err.message || err);
 
+    // Provide better feedback if available
+    const serverError = err.response?.data?.error || "Google login failed";
+    const detail = err.response?.data?.detail;
+    const message = serverError + (detail ? ` — ${detail}` : "");
+
+    alert(message);
+  } finally {
+    setLoading(false);
+  }
+};
 
     const handleError = () => {
         console.error("Google Sign-In failed");

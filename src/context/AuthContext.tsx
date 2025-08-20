@@ -54,7 +54,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${savedToken}` },
-          withCredentials: true,
         });
         if (isMounted && res.data?.user) {
           const fullUser = { ...res.data.user, token: savedToken };
