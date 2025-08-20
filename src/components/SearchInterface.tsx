@@ -14,6 +14,7 @@ interface SearchResult {
   duration: string; // format "HH:MM:SS"
   transcript: string;
   tags: string[];
+  emotions:string[];
   confidence: number;
 }
 
@@ -60,10 +61,15 @@ export const SearchInterface = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
+
     try {
-      const res = await fetch(`${BASE_URL}/search-videos?search=${encodeURIComponent(searchQuery.trim())}`);
+      const query = encodeURIComponent(searchQuery.trim());
+
+      // ✅ Call new backend endpoint
+      const res = await fetch(`${BASE_URL}/api/search-videos?search=${query}`);
       const data = await res.json();
-      if (data?.videos) {
+
+      if (res.ok && data?.videos) {
         setSearchResults(
           data.videos.map((video: any) => ({
             id: video._id,
@@ -72,6 +78,7 @@ export const SearchInterface = () => {
             duration: video.duration || "00:00:30",
             transcript: video.transcript || "",
             tags: video.tags || [],
+            emotions: video.emotions || [],   // ✅ add emotions too
             confidence: video.confidence || 0,
           }))
         );
@@ -85,6 +92,7 @@ export const SearchInterface = () => {
       setIsSearching(false);
     }
   };
+
 
   const handleSuggestedSearch = (query: string) => {
     setSearchQuery(query);
@@ -193,12 +201,12 @@ export const SearchInterface = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               className="pl-10 text-lg h-12"
-                autoFocus
+              autoFocus
             />
           </div>
-          <Button 
-            variant="ai" 
-            size="lg" 
+          <Button
+            variant="ai"
+            size="lg"
             onClick={handleSearch}
             disabled={isSearching || !searchQuery.trim()}
             className="px-8"
@@ -285,11 +293,44 @@ export const SearchInterface = () => {
                   </p>
 
                   <div className="flex flex-wrap gap-2">
-                    {result.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
+                    {/* Tags */}
+                    {result.tags?.map((tag, index) => (
+                      <Badge key={`tag-${index}`} variant="outline" className="text-xs">
+                        #{tag}
                       </Badge>
                     ))}
+
+                    {/* Emotions with color coding */}
+                    {result.emotions?.map((emotion, index) => {
+                      let colorClass = "bg-gray-200 text-gray-800"; // default
+
+                      switch (emotion.toLowerCase()) {
+                        case "happy":
+                          colorClass = "bg-green-100 text-green-700";
+                          break;
+                        case "sad":
+                          colorClass = "bg-blue-100 text-blue-700";
+                          break;
+                        case "angry":
+                          colorClass = "bg-red-100 text-red-700";
+                          break;
+                        case "excited":
+                          colorClass = "bg-yellow-100 text-yellow-800";
+                          break;
+                        case "surprised":
+                          colorClass = "bg-purple-100 text-purple-700";
+                          break;
+                      }
+
+                      return (
+                        <Badge
+                          key={`emotion-${index}`}
+                          className={`text-xs ${colorClass}`}
+                        >
+                          {emotion}
+                        </Badge>
+                      );
+                    })}
                   </div>
 
                   <div className="flex gap-2 pt-2">
