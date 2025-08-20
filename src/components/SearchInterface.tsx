@@ -58,40 +58,51 @@ export const SearchInterface = () => {
     fetchSuggestions();
   }, []);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
+const handleSearch = async () => {
+  if (!searchQuery.trim()) return;
+  setIsSearching(true);
 
-    try {
-      const query = encodeURIComponent(searchQuery.trim());
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s max
 
-      // ✅ Call new backend endpoint
-      const res = await fetch(`${BASE_URL}/api/search-videos?search=${query}`);
-      const data = await res.json();
+  try {
+    const res = await fetch(
+      `${BASE_URL}/api/search-videos?search=${encodeURIComponent(searchQuery.trim())}`,
+      { signal: controller.signal }
+    );
 
-      if (res.ok && data?.videos) {
-        setSearchResults(
-          data.videos.map((video: any) => ({
-            id: video._id,
-            videoName: video.title || "Untitled Video",
-            timestamp: video.timestamp || "00:00:00",
-            duration: video.duration || "00:00:30",
-            transcript: video.transcript || "",
-            tags: video.tags || [],
-            emotions: video.emotions || [],   // ✅ add emotions too
-            confidence: video.confidence || 0,
-          }))
-        );
-      } else {
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error("❌ Search API failed:", error);
+    clearTimeout(timeoutId);
+    const data = await res.json();
+
+    if (res.ok && data?.videos) {
+      setSearchResults(
+        data.videos.map((video: any) => ({
+          id: video._id,
+          videoName: video.title || "Untitled Video",
+          timestamp: video.timestamp || "00:00:00",
+          duration: video.duration || "00:00:30",
+          transcript: video.transcript || "",
+          tags: video.tags || [],
+          emotions: video.emotions || [],
+          confidence: video.confidence || 0,
+        }))
+      );
+    } else {
       setSearchResults([]);
-    } finally {
-      setIsSearching(false);
     }
-  };
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.error("❌ Search request timed out");
+    } else {
+      console.error("❌ Search API failed:", error);
+    }
+    setSearchResults([]);
+  } finally {
+    clearTimeout(timeoutId);
+    setIsSearching(false);
+  }
+};
+
 
 
   const handleSuggestedSearch = (query: string) => {
