@@ -14,7 +14,9 @@ interface SearchResult {
   duration: string; // format "HH:MM:SS"
   transcript: string;
   tags: string[];
-  emotions:string[];
+  emotions: string[];
+  storyUrl?: string;
+  thumbnail?: string;
   confidence: number;
 }
 
@@ -58,50 +60,50 @@ export const SearchInterface = () => {
     fetchSuggestions();
   }, []);
 
-const handleSearch = async () => {
-  if (!searchQuery.trim()) return;
-  setIsSearching(true);
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s max
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s max
 
-  try {
-    const res = await fetch(
-      `${BASE_URL}/api/search-videos?search=${encodeURIComponent(searchQuery.trim())}`,
-      { signal: controller.signal }
-    );
-
-    clearTimeout(timeoutId);
-    const data = await res.json();
-
-    if (res.ok && data?.videos) {
-      setSearchResults(
-        data.videos.map((video: any) => ({
-          id: video._id,
-          videoName: video.title || "Untitled Video",
-          timestamp: video.timestamp || "00:00:00",
-          duration: video.duration || "00:00:30",
-          transcript: video.transcript || "",
-          tags: video.tags || [],
-          emotions: video.emotions || [],
-          confidence: video.confidence || 0,
-        }))
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/search-videos?search=${encodeURIComponent(searchQuery.trim())}`,
+        { signal: controller.signal }
       );
-    } else {
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      if (res.ok && data?.videos) {
+        setSearchResults(
+          data.videos.map((video: any) => ({
+            id: video._id,
+            videoName: video.title || "Untitled Video",
+            timestamp: video.timestamp || "00:00:00",
+            duration: video.duration || "00:00:30",
+            transcript: video.transcript || "",
+            tags: video.tags || [],
+            emotions: video.emotions || [],
+            confidence: video.confidence || 0,
+          }))
+        );
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        console.error("❌ Search request timed out");
+      } else {
+        console.error("❌ Search API failed:", error);
+      }
       setSearchResults([]);
+    } finally {
+      clearTimeout(timeoutId);
+      setIsSearching(false);
     }
-  } catch (error: any) {
-    if (error.name === "AbortError") {
-      console.error("❌ Search request timed out");
-    } else {
-      console.error("❌ Search API failed:", error);
-    }
-    setSearchResults([]);
-  } finally {
-    clearTimeout(timeoutId);
-    setIsSearching(false);
-  }
-};
+  };
 
 
 
@@ -289,6 +291,19 @@ const handleSearch = async () => {
                 <div className="flex-1 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
+                      {result.thumbnail ? (
+                        <img
+                          src={result.thumbnail}
+                          alt={result.videoName}
+                          className="w-full max-h-48 object-cover rounded-lg shadow"
+                        />
+                      ) : (
+                        <video
+                          src={result.storyUrl}
+                          controls
+                          className="w-full max-h-48 rounded-lg shadow"
+                        />
+                      )}
                       <h4 className="font-semibold text-foreground">{result.videoName}</h4>
                       <p className="text-sm text-muted-foreground">
                         Timestamp: {result.timestamp} • Duration: {result.duration}
@@ -348,7 +363,10 @@ const handleSearch = async () => {
                     <Button variant="ai" size="sm" onClick={() => handleUseInStory(result)}>
                       Use in Story
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleViewClip(result)}>
+                    {/* <Button variant="outline" size="sm" onClick={() => handleViewClip(result)}>
+                      View Clip
+                    </Button> */}
+                    <Button variant="outline" size="sm"   onClick={() => window.open(result.storyUrl, "_blank")}>
                       View Clip
                     </Button>
                   </div>

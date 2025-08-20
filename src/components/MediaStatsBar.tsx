@@ -174,7 +174,7 @@ const handleShareClick = async () => {
          {stats.rank}
         </div>
 
-        <a href={media.storyUrl} download className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors" aria-label="Download video">
+        <a target="_blank" href={media.storyUrl} download className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors" aria-label="Download video">
           <Download className="w-4 h-4" />
         </a>
       </div>
