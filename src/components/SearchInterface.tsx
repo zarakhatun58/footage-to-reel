@@ -10,8 +10,8 @@ import { BASE_URL } from "@/services/apis";
 interface SearchResult {
   id: string;
   videoName: string;
-  timestamp: string; // format "HH:MM:SS"
-  duration: string; // format "HH:MM:SS"
+  timestamp: string;
+  duration: string;
   transcript: string;
   tags: string[];
   emotions: string[];
@@ -87,6 +87,7 @@ export const SearchInterface = () => {
             tags: video.tags || [],
             emotions: video.emotions || [],
             confidence: video.confidence || 0,
+             storyUrl: video.storyUrl || video.storyUrl || "", 
           }))
         );
       } else {
@@ -279,13 +280,6 @@ export const SearchInterface = () => {
           {searchResults.map((result) => (
             <Card key={result.id} className="p-6 hover:shadow-elegant transition-all duration-300">
               <div className="flex gap-4">
-                {/* Video Thumbnail Placeholder */}
-                <div className="w-32 h-20 bg-gradient-ai rounded-lg flex items-center justify-center flex-shrink-0">
-                  <div className="text-white text-xs text-center">
-                    <p className="font-medium">{result.timestamp}</p>
-                    <p className="opacity-80">{result.duration}</p>
-                  </div>
-                </div>
 
                 {/* Content */}
                 <div className="flex-1 space-y-3">
@@ -360,15 +354,15 @@ export const SearchInterface = () => {
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    <Button variant="ai" size="sm" onClick={() => handleUseInStory(result)}>
+                    {/* <Button variant="ai" size="sm" onClick={() => handleUseInStory(result)}>
                       Use in Story
-                    </Button>
+                    </Button> */}
                     {/* <Button variant="outline" size="sm" onClick={() => handleViewClip(result)}>
                       View Clip
                     </Button> */}
-                    <Button variant="outline" size="sm"   onClick={() => window.open(result.storyUrl, "_blank")}>
+                    {/* <Button variant="outline" size="sm"   onClick={() => window.open(result.storyUrl, "_blank")}>
                       View Clip
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </div>

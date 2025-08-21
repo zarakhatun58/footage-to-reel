@@ -25,10 +25,10 @@ export type VideoType = {
 
 
 export const HeroSection = () => {
- const [videos, setVideos] = useState<VideoType[]>([]);
+  const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
+  useEffect(() => {
     axios
       .get(`${BASE_URL}/api/videos`)
       .then((res) => {
@@ -87,26 +87,7 @@ export const HeroSection = () => {
             </Button>
           </div>
 
-          {/* Feature Preview Cards */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 ">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
-              <Upload className="w-12 h-12 text-story-warm mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-purple-400 mb-2">Smart Upload</h3>
-              <p className="text-gray-600">Upload videos from any device with intelligent processing</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
-              <Search className="w-12 h-12 text-story-warm mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-purple-400 mb-2">AI Search</h3>
-              <p className="text-gray-600">Find moments instantly with transcription-powered search</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-purple-600 hover:bg-white/15 transition-all duration-300">
-              <Sparkles className="w-12 h-12 text-story-warm mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-purple-400 mb-2">Story Magic</h3>
-              <p className="text-gray-600">Generate beautiful stories with simple AI prompts</p>
-            </div>
-          </div> */}
-           {/* {loading ? (
+          {loading ? (
             <p className="text-white">Loading videos...</p>
           ) : top3Videos.length === 0 ? (
             <p className="text-white">No videos available yet.</p>
@@ -114,12 +95,21 @@ export const HeroSection = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {top3Videos.map((video) => (
                 <div
-                  key={video._id}
+                 
                   className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
                   onClick={() => window.open(video.storyUrl, "_blank")}
                 >
+                  <video
+                    controls
+                     key={video._id}
+                    className="w-full h-46 object-cover rounded-t"
+                    src={video.storyUrl}
+                    preload="metadata"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
                   <h3 className="text-lg font-semibold text-purple-400 mb-2">
-                    {video.filename}
+                    {video.title}
                   </h3>
                   <p className="text-gray-300 text-sm line-clamp-3">
                     {video.story || "No story available."}
@@ -127,7 +117,7 @@ export const HeroSection = () => {
                 </div>
               ))}
             </div>
-          )} */}
+          )}
         </div>
       </div>
     </section>

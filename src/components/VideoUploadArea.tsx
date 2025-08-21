@@ -809,6 +809,7 @@ const generateVideoClip = async () => {
 
           {/* ---------- Metadata ---------- */}
           <div className="space-y-1 text-sm">
+            <p><strong>Title: {mediaWithData?.title}</strong></p>
             <p><strong>Transcript:</strong> {mediaWithData?.transcript || 'Not available'}</p>
             <p><strong>Tags:</strong> {mediaWithData?.tags?.join(', ') || 'Not generated'}</p>
             <p><strong>Emotions:</strong> {
