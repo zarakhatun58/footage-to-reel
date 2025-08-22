@@ -26,7 +26,7 @@ export type VideoType = {
 
 
 export const HeroSection = () => {
-   const [videos, setVideos] = useState<VideoType[]>([]);
+  const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,14 +104,13 @@ export const HeroSection = () => {
               Explore Features
             </Button>
           </div>
-
-           {loading ? (
+          {loading ? (
             <p className="text-white">Loading videos...</p>
-          ) : top3Videos.length === 0 ? (
+          ) : videos.length === 0 ? (
             <p className="text-white">No videos available yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {top3Videos.map((video) => (
+              {videos.slice(0, 3).map((video) => (
                 <div
                   key={video._id}
                   className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
@@ -119,7 +118,7 @@ export const HeroSection = () => {
                 >
                   <video
                     controls
-                    className="w-full h-46 object-cover rounded-t"
+                    className="w-full h-48 object-cover rounded-t"
                     src={video.storyUrl}
                     preload="metadata"
                   />
@@ -129,7 +128,6 @@ export const HeroSection = () => {
                   <p className="text-gray-300 text-sm line-clamp-3">
                     {video.story || "No story available."}
                   </p>
-                  {/* ✅ Media Stats Bar shows rank engagement */}
                   <MediaStatsBar media={video} BASE_URL={BASE_URL} />
                 </div>
               ))}
