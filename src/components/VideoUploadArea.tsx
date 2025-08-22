@@ -570,25 +570,25 @@ const generateVideoClip = async () => {
 };
 
 
-
-  const getAllVideos = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
-      if (res.data.success) {
-        const videosArray = Array.isArray(res.data.videos) ? res.data.videos : [];
-        setUploadedMedia(videosArray);
-        localStorage.setItem('uploadedMedia', JSON.stringify(videosArray));
-      }
-    } catch (err) {
-      console.error('Error fetching videos:', err);
-    } finally {
-      setLoadingVideo(false);
+const getAllVideos = async () => {
+  try {
+    const res = await axios.get(`${BASE_URL}/api/apivideo/all-generate-video`);
+    if (res.data.success) {
+      const videosArray = Array.isArray(res.data.videos) ? res.data.videos : [];
+      setVideos(videosArray); // ✅ keep consistent
+      localStorage.setItem('videos', JSON.stringify(videosArray));
     }
-  };
+  } catch (err) {
+    console.error('Error fetching videos:', err);
+  } finally {
+    setLoadingVideo(false);
+  }
+};
 
-  useEffect(() => {
-    getAllVideos();
-  }, []);
+useEffect(() => {
+  getAllVideos();
+}, []);
+
 
   const videoId = getYouTubeID('https://youtu.be/abc123XYZ');
   console.log(videoId);
@@ -730,7 +730,6 @@ const generateVideoClip = async () => {
 
           {/* ---------- Metadata ---------- */}
           <div className="space-y-1 text-sm">
-            <p><strong>Title: {mediaWithData?.title}</strong></p>
             <p><strong>Transcript:</strong> {mediaWithData?.transcript || 'Not available'}</p>
             <p><strong>Tags:</strong> {mediaWithData?.tags?.join(', ') || 'Not generated'}</p>
             <p><strong>Emotions:</strong> {
@@ -795,7 +794,7 @@ const generateVideoClip = async () => {
         <div key={media.id}>
           {media.storyUrl && media.type === 'video' && (
             <div className='border p-3 mt-4 rounded'>
-              <video controls className="w-full h-48 mt-2 rounded">
+              <video controls className="w-64 h-48 mt-2 rounded">
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
@@ -817,7 +816,7 @@ const generateVideoClip = async () => {
           <div key={video._id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
             <video
               controls
-              className="w-full h-48 object-cover rounded-t"
+              className="w-64 h-48 object-cover rounded-t"
               src={video.storyUrl}
               preload="metadata"
             >

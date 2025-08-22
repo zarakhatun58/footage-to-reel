@@ -26,43 +26,41 @@ export type VideoType = {
 
 
 export const HeroSection = () => {
-  const [videos, setVideos] = useState<VideoType[]>([]);
+   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedVideos = localStorage.getItem("videos");
+    const savedVideos = localStorage.getItem("heroVideos");
 
     if (savedVideos) {
-      // Load from cache first
       const cached = JSON.parse(savedVideos);
       const sortedCached = cached.sort(
-        (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
+        (a: VideoType, b: VideoType) => (b.rankScore || 0) - (a.rankScore || 0)
       );
       setVideos(sortedCached);
       setLoading(false);
     }
 
-    // Always fetch fresh in background
+    // Always fetch fresh data from all-generated video endpoint
     axios
-      .get(`${BASE_URL}/api/videos`)
+      .get(`${BASE_URL}/api/apivideo/all-generate-video`)
       .then((res) => {
-        const videosArray = Array.isArray(res.data)
-          ? res.data
-          : res.data.videos || [];
+        const videosArray = Array.isArray(res.data.videos)
+          ? res.data.videos
+          : [];
 
         const sortedVideos = videosArray.sort(
-          (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
+          (a: VideoType, b: VideoType) => (b.rankScore || 0) - (a.rankScore || 0)
         );
 
         setVideos(sortedVideos);
-        localStorage.setItem("videos", JSON.stringify(sortedVideos));
+        localStorage.setItem("heroVideos", JSON.stringify(sortedVideos));
       })
       .catch((err) => console.error("Failed to fetch videos:", err))
       .finally(() => setLoading(false));
   }, []);
 
   const top3Videos = videos.slice(0, 3);
-
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Background Image with Overlay */}
@@ -107,7 +105,7 @@ export const HeroSection = () => {
             </Button>
           </div>
 
-          {loading ? (
+           {loading ? (
             <p className="text-white">Loading videos...</p>
           ) : top3Videos.length === 0 ? (
             <p className="text-white">No videos available yet.</p>
