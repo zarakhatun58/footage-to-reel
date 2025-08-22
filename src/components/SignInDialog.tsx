@@ -134,7 +134,7 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
     const res = await api.post(
       "/api/auth/googleLogin",
       { token: credentialResponse.credential },
-      { timeout: 4000 }
+    //   { timeout: 4000 }
     );
 
     const { token, user } = res.data;

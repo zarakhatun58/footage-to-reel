@@ -1,23 +1,31 @@
 import { Eye, Share2, BarChart3, ThumbsUp, Download, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { UploadedMedia } from './VideoUploadArea';
+import { VideoType } from './HeroSection';
 
 
 type MediaStatsBarProps = {
-  media: UploadedMedia;
+  media: UploadedMedia | VideoType;
   BASE_URL: string;
 };
 
 const SocialShareLinks = {
-  facebook: (url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-  twitter: (url: string) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, // X
-  linkedin: (url: string) => `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}`,
-  whatsapp: (url: string) => `https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`,
-  youtube: (url: string) => `https://www.youtube.com/watch?v=${encodeURIComponent(url)}`, // for linking a video
+  facebook: (url: string) =>
+    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+  twitter: (url: string) =>
+    `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`,
+  linkedin: (url: string) =>
+    `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(
+      url
+    )}`,
+  whatsapp: (url: string) =>
+    `https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`,
+  youtube: (url: string) =>
+    `https://www.youtube.com/watch?v=${encodeURIComponent(url)}`,
 };
 
 export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL }) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+ const videoRef = useRef<HTMLVideoElement | null>(null);
   const [stats, setStats] = useState({
     likes: media.likes || 0,
     shares: media.shares || 0,
@@ -25,69 +33,22 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
     rank: media.rankScore || 0,
   });
   const [shareOpen, setShareOpen] = useState(false);
-  const [shortUrl, setShortUrl] = useState('');
-  const [copySuccess, setCopySuccess] = useState('');
+  const [shortUrl, setShortUrl] = useState("");
+  const [copySuccess, setCopySuccess] = useState("");
 
-  // Helper: update stats in localStorage
-  const updateLocalStorage = (updatedStats: typeof stats) => {
-    const savedVideos = localStorage.getItem('videos');
+ const updateLocalStorage = (updatedStats: typeof stats) => {
+    const savedVideos = localStorage.getItem("videos");
     if (savedVideos) {
       const videos = JSON.parse(savedVideos);
-      const updated = videos.map((v: any) => (v._id === media.id ? { ...v, ...updatedStats } : v));
-      localStorage.setItem('videos', JSON.stringify(updated));
+      const updated = videos.map((v: any) =>
+        v._id === media.id ? { ...v, ...updatedStats } : v
+      );
+      localStorage.setItem("videos", JSON.stringify(updated));
     }
   };
 
-  // --- Engagement Handlers ---
-  const handleViewCount = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/media/${media.id}/view`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        const updatedStats = { ...stats, views: data.views, rank: data.rankScore };
-        setStats(updatedStats);
-        updateLocalStorage(updatedStats);
-      }
-    } catch (err) {
-      console.error('Failed to count view', err);
-    }
-  };
 
-  const handleLike = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/media/${media.id}/like`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        const updatedStats = { ...stats, likes: data.likes, rank: data.rankScore };
-        setStats(updatedStats);
-        updateLocalStorage(updatedStats);
-      }
-    } catch (err) {
-      console.error('Failed to like', err);
-    }
-  };
-
-const handleShareClick = async () => {
-  try {
-    const res = await fetch(`${BASE_URL}/api/media/${media.id}/share`, { method: 'POST' });
-    const data = await res.json();
-
-    if (data.success) {
-      const updatedStats = { ...stats, shares: data.shares, rank: data.rankScore };
-      setStats(updatedStats);
-      updateLocalStorage(updatedStats);
-
-      setShortUrl(data.shortUrl || media.storyUrl); // ✅ will always be available
-      setShareOpen(true);
-    }
-  } catch (err) {
-    console.error('Failed to share', err);
-  }
-};
-
-
-
-  useEffect(() => {
+ useEffect(() => {
     if (!videoRef.current) return;
 
     const observer = new IntersectionObserver(
@@ -95,7 +56,6 @@ const handleShareClick = async () => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             handleViewCount();
-            // Optional: unobserve so we count only once per load
             observer.unobserve(entry.target);
           }
         });
@@ -107,28 +67,102 @@ const handleShareClick = async () => {
     return () => observer.disconnect();
   }, [videoRef.current]);
 
-  // --- Social Share ---
-  const shareOnSocial = (platform: keyof typeof SocialShareLinks) => {
-    if (!shortUrl) return;
-    const shareLink = SocialShareLinks[platform](shortUrl);
-    window.open(shareLink, '_blank', 'noopener,noreferrer');
-    setShareOpen(false);
-  };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/media/${media._id}/stats`);
+        const data = await res.json();
+        if (data.success) {
+          setStats({
+            likes: data.likes,
+            shares: data.shares,
+            views: data.views,
+            rank: data.rankScore,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats", err);
+      }
+    };
 
-  // --- Copy link ---
-  const copyToClipboard = async () => {
+    if (media?._id) {
+      fetchStats();
+    }
+  }, [media?._id, BASE_URL]);
+
+  const handleViewCount = async () => {
     try {
-      await navigator.clipboard.writeText(shortUrl);
-      setCopySuccess('Copied!');
-      setTimeout(() => setCopySuccess(''), 2000);
-    } catch {
-      setCopySuccess('Failed to copy');
-      setTimeout(() => setCopySuccess(''), 2000);
+      const res = await fetch(`${BASE_URL}/api/media/${media.id}/view`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updatedStats = { ...stats, views: data.views, rank: data.rankScore };
+        setStats(updatedStats);
+        updateLocalStorage(updatedStats);
+      }
+    } catch (err) {
+      console.error("Failed to count view", err);
     }
   };
 
+  const handleLike = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/media/${media.id}/like`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updatedStats = { ...stats, likes: data.likes, rank: data.rankScore };
+        setStats(updatedStats);
+        updateLocalStorage(updatedStats);
+      }
+    } catch (err) {
+      console.error("Failed to like", err);
+    }
+  };
+
+  const handleShareClick = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/media/${media.id}/share`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const updatedStats = { ...stats, shares: data.shares, rank: data.rankScore };
+        setStats(updatedStats);
+        updateLocalStorage(updatedStats);
+
+        setShortUrl(data.shortUrl || media.storyUrl);
+        setShareOpen(true);
+      }
+    } catch (err) {
+      console.error("Failed to share", err);
+    }
+  };
+
+  const shareOnSocial = (platform: keyof typeof SocialShareLinks) => {
+    if (!shortUrl) return;
+    const shareLink = SocialShareLinks[platform](shortUrl);
+    window.open(shareLink, "_blank", "noopener,noreferrer");
+    setShareOpen(false);
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shortUrl);
+      setCopySuccess("Copied!");
+      setTimeout(() => setCopySuccess(""), 2000);
+    } catch {
+      setCopySuccess("Failed to copy");
+      setTimeout(() => setCopySuccess(""), 2000);
+    }
+  };
+
+
   return (
-    <div className="max-w-xl mx-auto p-4 border rounded-md shadow-md bg-white">
+    <div className="max-w-xl mx-auto p-4 border rounded-md shadow-md bg-white mt-2">
       <video
         ref={videoRef}
         controls
@@ -171,7 +205,7 @@ const handleShareClick = async () => {
 
         <div className="flex items-center gap-1" title="Rank">
           <BarChart3 className="w-4 h-4 text-pink-500" />
-         {stats.rank}
+          {stats.rank}
         </div>
 
         <a target="_blank" href={media.storyUrl} download className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors" aria-label="Download video">

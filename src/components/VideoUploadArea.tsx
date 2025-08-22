@@ -15,6 +15,7 @@ import AudioUploadModal from './AudioUpload';
 
 
 export type UploadedMedia = {
+  _id: string;
   id: string;
   name: string;
   size: number;
@@ -550,13 +551,24 @@ const generateVideoClip = async () => {
 
 
 
-  const handleDeleteVideo = (id: any) => {
-    // Confirm before delete (optional)
-    if (!window.confirm('Are you sure you want to delete this video?')) return;
+ const handleDeleteVideo = async (id: string) => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/media/${id}`, { method: "DELETE" });
+    const data = await res.json();
 
-    // Update state to remove the video
-    setUploadedMedia((prev) => prev.filter((media) => media.id !== id));
-  };
+    if (data.success) {
+      // Remove from uploadedMedia
+      setUploadedMedia(prev => prev.filter(media => media._id !== id && media.id !== id));
+
+      // Remove from all videos
+      setVideos(prev => prev.filter(video => video._id !== id && video.id !== id));
+
+    }
+  } catch (err) {
+    console.error("Failed to delete video", err);
+  }
+};
+
 
 
   const getAllVideos = async () => {
@@ -678,97 +690,6 @@ const generateVideoClip = async () => {
         </div>
       )}
 
-      {/* {uploadedMedia.length > 0 && (
-        <div className="mt-6">
-          <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
-
-            <div className="flex flex-col gap-3 w-full md:w-[30%]" >
-              {uploadedMedia.find(m => m.type === 'image')?.storyUrl && (
-                <>
-                  <img
-                    src={uploadedMedia.find(m => m.type === 'image')?.storyUrl}
-                    alt="Uploaded Image"
-                    className="rounded-md w-64 object-cover"
-                  />
-                  <button
-                    onClick={() => removeMedia('image')}
-                    className="absolute top-1 right-1 bg-red-500 text-white px-2 py-1 rounded cursor-pointer"
-                  >
-                    clear
-                  </button>
-                  </>
-              )}
-
-              {uploadedMedia.find(m => m.type === 'video')?.storyUrl && (
-                <video
-                  controls
-                  src={uploadedMedia.find(m => m.type === 'video')?.storyUrl}
-                  className="rounded-md w-64"
-                />
-              )}
-
-              {uploadedMedia.find(m => m.type === 'audio')?.voiceUrl && (
-                <audio controls className="w-full">
-                  <source
-                    src={`${BASE_URL}/${uploadedMedia.find(m => m.type === 'audio')?.voiceUrl}`}
-                    type="audio/mp3"
-                  />
-                  Your browser does not support the audio tag.
-                </audio>
-              )}
-
-              <div className="space-y-1 text-sm">
-                <p><strong>Transcript:</strong> {uploadedMedia[0]?.transcript || 'Not available'}</p>
-                <p><strong>Tags:</strong> {uploadedMedia[0]?.tags?.join(', ') || 'Not generated'}</p>
-                <p><strong>Emotions:</strong>{uploadedMedia[0]?.emotions
-                  ? Array.isArray(uploadedMedia[0].emotions)
-                    ? uploadedMedia[0].emotions.join(', ')
-                    : uploadedMedia[0].emotions 
-                  : 'Not detected'}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 w-full md:w-[70%]">
-              <Textarea
-                className="w-full"
-                value={uploadedMedia[0]?.story || ''}
-                onChange={e =>
-                  setUploadedMedia(prev =>
-                    prev.map(m =>
-                      m.id === uploadedMedia[0].id ? { ...m, story: e.target.value } : m
-                    )
-                  )
-                }
-                rows={6}
-                placeholder="Story will appear here..."
-              />
-
-              {uploadedMedia[0] && (
-                <AudioUploadModal
-                  media={uploadedMedia[0]}
-                  setUploadedMedia={setUploadedMedia}
-                  BASE_URL={BASE_URL}
-                />
-              )}
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={generateStory}>Generate Story</Button>
-                <Button
-                  onClick={generateVideoClip}
-                  disabled={!uploadedMedia[0]?.story || loadingVideo}
-                >
-                  {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
-                </Button>
-              </div>
-
-              <div className="text-sm font-semibold truncate">{uploadedMedia[0]?.name}</div>
-              <div className="text-xs text-muted-foreground">
-                Status: {uploadedMedia[0]?.transcriptionStatus}
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
-
    {uploadedMedia.length > 0 && (() => {
   const imageMedia = uploadedMedia.find(m => m.type === 'image');
   const videoMedia = uploadedMedia.find(m => m.type === 'video');
@@ -874,7 +795,7 @@ const generateVideoClip = async () => {
         <div key={media.id}>
           {media.storyUrl && media.type === 'video' && (
             <div className='border p-3 mt-4 rounded'>
-              <video controls className="w-64 mt-2 rounded">
+              <video controls className="w-full h-48 mt-2 rounded">
                 <source src={media.storyUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
@@ -889,33 +810,14 @@ const generateVideoClip = async () => {
           )}
         </div>
       ))}
-      {/* Top 3 Ranked Videos */}
-      <h3 className="text-lg font-semibold mt-4">🔥 Top 3 Trending Videos</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-2">
-        {topRankedVideos.map(video => (
-          <div key={video._id || video.id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
-            <video
-              controls
-              className="w-full h-46 object-cover rounded-t"
-              src={video.storyUrl}
-              preload="metadata"
-            >
-              Your browser does not support the video tag.
-            </video>
-            <div className="p-3">
-              <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-              <MediaStatsBar media={video} BASE_URL={BASE_URL} />
-            </div>
-          </div>
-        ))}
-      </div>
+   
       {/* all - video  */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {videos.map(video => (
           <div key={video._id} className="border rounded shadow hover:shadow-lg transition-shadow relative">
             <video
               controls
-              className="w-full h-46 object-cover rounded-t"
+              className="w-full h-48 object-cover rounded-t"
               src={video.storyUrl}
               preload="metadata"
             >

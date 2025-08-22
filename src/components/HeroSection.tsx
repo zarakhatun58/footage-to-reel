@@ -6,6 +6,7 @@ import { EmotionDetector } from "./EmotionDetector";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
+import { MediaStatsBar } from "./MediaStatsBar";
 
 export type VideoType = {
   _id: string;
@@ -29,13 +30,32 @@ export const HeroSection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const savedVideos = localStorage.getItem("videos");
+
+    if (savedVideos) {
+      // Load from cache first
+      const cached = JSON.parse(savedVideos);
+      const sortedCached = cached.sort(
+        (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
+      );
+      setVideos(sortedCached);
+      setLoading(false);
+    }
+
+    // Always fetch fresh in background
     axios
       .get(`${BASE_URL}/api/videos`)
       .then((res) => {
-        const sortedVideos = res.data.videos.sort(
+        const videosArray = Array.isArray(res.data)
+          ? res.data
+          : res.data.videos || [];
+
+        const sortedVideos = videosArray.sort(
           (a: VideoType, b: VideoType) => b.rankScore - a.rankScore
         );
+
         setVideos(sortedVideos);
+        localStorage.setItem("videos", JSON.stringify(sortedVideos));
       })
       .catch((err) => console.error("Failed to fetch videos:", err))
       .finally(() => setLoading(false));
@@ -95,25 +115,24 @@ export const HeroSection = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {top3Videos.map((video) => (
                 <div
-                 
+                  key={video._id}
                   className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
                   onClick={() => window.open(video.storyUrl, "_blank")}
                 >
                   <video
                     controls
-                     key={video._id}
                     className="w-full h-46 object-cover rounded-t"
                     src={video.storyUrl}
                     preload="metadata"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                  />
                   <h3 className="text-lg font-semibold text-purple-400 mb-2">
-                    {video.title}
+                    {video.title || "Untitled Video"}
                   </h3>
                   <p className="text-gray-300 text-sm line-clamp-3">
                     {video.story || "No story available."}
                   </p>
+                  {/* ✅ Media Stats Bar shows rank engagement */}
+                  <MediaStatsBar media={video} BASE_URL={BASE_URL} />
                 </div>
               ))}
             </div>
