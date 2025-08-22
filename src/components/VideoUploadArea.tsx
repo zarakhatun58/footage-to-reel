@@ -796,7 +796,9 @@ export const VideoUploadArea = () => {
             <source src={uploadedMedia[0].storyUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-
+          <p><strong>Tags:</strong> {uploadedMedia[0].tags?.join(', ') || 'Not generated'}</p>
+          <p><strong>Emotions:</strong> {
+           uploadedMedia[0].emotions}</p>
           <MediaStatsBar media={uploadedMedia[0]} BASE_URL={BASE_URL} />
 
           <button

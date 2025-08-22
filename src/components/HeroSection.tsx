@@ -125,9 +125,9 @@ export const HeroSection = () => {
                   <h3 className="text-lg font-semibold text-purple-400 mb-2">
                     {video.title || "Untitled Video"}
                   </h3>
-                  <p className="text-gray-300 text-sm line-clamp-3">
+                  {/* <p className="text-gray-300 text-sm line-clamp-3">
                     {video.story || "No story available."}
-                  </p>
+                  </p> */}
                   <MediaStatsBar media={video} BASE_URL={BASE_URL} />
                 </div>
               ))}
