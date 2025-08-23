@@ -71,6 +71,7 @@ export const StoryGenerator = () => {
   const { toast } = useToast();
   const [mediaList, setMediaList] = useState<UploadedMedia[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<UploadedMedia | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadingVideo, setLoadingVideo] = useState(false);
 
@@ -129,36 +130,6 @@ const handleGenerateStory = async () => {
   }
 };
 
-  const autoGenerateAudio = async () => {
-    if (!selectedMedia) {
-      alert('No media selected');
-      return;
-    }
-    if (!selectedMedia.story) {
-      alert('No story text to generate audio from');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/audio/generate-audio/${selectedMedia.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: selectedMedia.story }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMediaList(prev =>
-          prev.map(m => (m.id === selectedMedia.id ? { ...m, voiceUrl: data.audioUrl } : m))
-        );
-        alert('🎤 Audio auto-generated successfully!');
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err) {
-      alert('❌ Failed to auto-generate audio');
-      console.error(err);
-    }
-  };
 const changeMusic = async (mediaId: string, music: string) => {
   const media = mediaList.find(m => m.id === mediaId);
   if (!media) return alert("Media not found");
@@ -197,17 +168,13 @@ const changeMusic = async (mediaId: string, music: string) => {
 };
 
 const autoGenerateStoryVideo = async (mediaId: string) => {
-  // Find the media item from list
   const media = mediaList.find(m => m.id === mediaId);
-
   if (!media) {
     alert("Media not found.");
     return;
   }
 
-  // Use description (from /api/plan) as the story text
   const storyText = media.description || media.transcript;
-
   if (!storyText || storyText.trim() === "") {
     alert("No story text available for video.");
     return;
@@ -216,7 +183,6 @@ const autoGenerateStoryVideo = async (mediaId: string) => {
   setLoadingVideo(true);
 
   try {
-    // Call backend API
     const res = await fetch(`${BASE_URL}/api/generate-story-video`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -224,24 +190,22 @@ const autoGenerateStoryVideo = async (mediaId: string) => {
     });
 
     const data = await res.json();
-
     if (!data.success) {
       throw new Error(data.error || "Story video generation failed");
     }
 
-    // Update media list with new video info
+    // Update media list
     setMediaList((prev) =>
       prev.map((m) =>
         m.id === mediaId
-          ? {
-              ...m,
-              type: "video",
-              storyUrl: data.url, // backend returns url
-              transcriptionStatus: "completed",
-            }
+          ? { ...m, type: "video", storyUrl: data.url, transcriptionStatus: "completed" }
           : m
       )
     );
+
+    // 👉 Directly set the selected video for playback
+    setSelectedVideo(data.url);
+    setIsPlaying(true);
 
     alert("✅ Story video generated successfully!");
   } catch (error) {
@@ -251,6 +215,7 @@ const autoGenerateStoryVideo = async (mediaId: string) => {
     setLoadingVideo(false);
   }
 };
+
 
 
   const useTemplate = (template: string) => {
@@ -418,7 +383,7 @@ const autoGenerateStoryVideo = async (mediaId: string) => {
               Play Story
             </Button>
 
-            <Button variant="outline" onClick={autoGenerateAudio}>
+            <Button variant="outline" onClick={() => changeMusic(selectedMedia.id, "new-music.mp3")}>
               <Music className="w-4 h-4 mr-2" />
               Change Music
             </Button>
@@ -444,10 +409,10 @@ const autoGenerateStoryVideo = async (mediaId: string) => {
         </Card>
       )}
 
-      {isPlaying && (
+     {isPlaying && selectedVideo && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <video
-            src={generatedStory.storyUrl} // You need to populate this from API response
+            src={selectedVideo} // You need to populate this from API response
             controls
             autoPlay
             className="max-w-full max-h-full rounded-lg"
