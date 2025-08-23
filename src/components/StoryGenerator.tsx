@@ -74,64 +74,61 @@ export const StoryGenerator = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadingVideo, setLoadingVideo] = useState(false);
 
-  const handleGenerateStory = async () => {
-    if (!prompt.trim()) {
+const handleGenerateStory = async () => {
+  if (!prompt.trim()) {
+    toast({
+      title: "Missing Prompt",
+      description: "Please enter a story prompt to generate your video story",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setIsGenerating(true);
+  setGenerationProgress(0);
+
+  try {
+    setGenerationProgress(10);
+
+    // ✅ Call backend correctly
+    const response = await axios.post(`${BASE_URL}/api/plan`, {
+      prompt,
+    });
+
+    setGenerationProgress(100);
+
+    if (response.data && response.data.story) {
+      // Build story object locally since backend only returns { story }
+      const apiStory: GeneratedStory = {
+        id: Date.now().toString(), // generate unique id locally
+        title: prompt.charAt(0).toUpperCase() + prompt.slice(1),
+        description: response.data.story,
+        clips: [],
+        duration: 'Unknown',
+        music: undefined,
+        status: 'ready',
+      };
+
+      setGeneratedStory(apiStory);
+
       toast({
-        title: "Missing Prompt",
-        description: "Please enter a story prompt to generate your video story",
-        variant: "destructive",
+        title: "Story Generated!",
+        description: "Your AI-powered story is ready to view and share",
       });
-      return;
+    } else {
+      throw new Error("Invalid response from server");
     }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error?.response?.data?.error || error.message || "Failed to generate story",
+      variant: "destructive",
+    });
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
-    setIsGenerating(true);
-    setGenerationProgress(0);
-
-    try {
-      // Optionally, provide a transcript or use empty string if you don't have one
-      const transcript = "Sample transcript or actual transcript from videos";
-
-      // Start progress at some value
-      setGenerationProgress(10);
-
-      const response = await axios.post(`${BASE_URL}/api/generate`, {
-        prompt,
-        transcript,
-        filename: 'user_prompt_input.mp4',
-        mediaType: 'video',
-      });
-
-      setGenerationProgress(100);
-
-      if (response.data && response.data.story) {
-        const apiStory: GeneratedStory = {
-          id: response.data.id,
-          title: prompt.charAt(0).toUpperCase() + prompt.slice(1),
-          description: response.data.story,
-          clips: [], // You might enhance this if API returns clips
-          duration: 'Unknown',
-          music: undefined,
-          status: 'ready',
-        };
-
-        setGeneratedStory(apiStory);
-        toast({
-          title: "Story Generated!",
-          description: "Your AI-powered story is ready to view and share",
-        });
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error?.response?.data?.error || error.message || "Failed to generate story",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
   const autoGenerateAudio = async () => {
     if (!selectedMedia) {
       alert('No media selected');
@@ -162,59 +159,99 @@ export const StoryGenerator = () => {
       console.error(err);
     }
   };
+const changeMusic = async (mediaId: string, music: string) => {
+  const media = mediaList.find(m => m.id === mediaId);
+  if (!media) return alert("Media not found");
 
-  const autoGenerateStoryVideo = async (mediaId: string) => {
-    // Find the media item from list
-    const media = mediaList.find(m => m.id === mediaId);
+  setLoadingVideo(true);
 
-    if (!media) {
-      alert("Media not found.");
-      return;
+  try {
+    const res = await fetch(`${BASE_URL}/api/generate-story-video`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: media.transcript,
+        music,   // ✅ extra param
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.error);
+
+    setMediaList(prev =>
+      prev.map(m =>
+        m.id === mediaId
+          ? { ...m, storyUrl: data.url }
+          : m
+      )
+    );
+
+    alert("✅ Story video with new music generated!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to change music");
+  } finally {
+    setLoadingVideo(false);
+  }
+};
+
+const autoGenerateStoryVideo = async (mediaId: string) => {
+  // Find the media item from list
+  const media = mediaList.find(m => m.id === mediaId);
+
+  if (!media) {
+    alert("Media not found.");
+    return;
+  }
+
+  // Use description (from /api/plan) as the story text
+  const storyText = media.description || media.transcript;
+
+  if (!storyText || storyText.trim() === "") {
+    alert("No story text available for video.");
+    return;
+  }
+
+  setLoadingVideo(true);
+
+  try {
+    // Call backend API
+    const res = await fetch(`${BASE_URL}/api/generate-story-video`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: storyText }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Story video generation failed");
     }
 
-    if (!media.transcript || media.transcript.trim() === "") {
-      alert("No transcript available for story.");
-      return;
-    }
-
-    setLoadingVideo(true);
-
-    try {
-      // Call new backend API
-      const res = await fetch(`${BASE_URL}/api/generate-story-video`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: media.transcript }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Story video generation failed");
-      }
-
-      // Update media list with new video info
-      setMediaList(prev =>
-        prev.map(m =>
-          m.id === mediaId
-            ? {
+    // Update media list with new video info
+    setMediaList((prev) =>
+      prev.map((m) =>
+        m.id === mediaId
+          ? {
               ...m,
               type: "video",
-              storyUrl: data.url,   // ✅ backend returns `url`
+              storyUrl: data.url, // backend returns url
               transcriptionStatus: "completed",
             }
-            : m
-        )
-      );
+          : m
+      )
+    );
 
-      alert("✅ Story video generated successfully!");
-    } catch (error) {
-      console.error("Story video generation error:", error);
-      alert("❌ Story video generation failed. Please try again.");
-    } finally {
-      setLoadingVideo(false);
-    }
-  };
+    alert("✅ Story video generated successfully!");
+  } catch (error) {
+    console.error("Story video generation error:", error);
+    alert("❌ Story video generation failed. Please try again.");
+  } finally {
+    setLoadingVideo(false);
+  }
+};
+
 
   const useTemplate = (template: string) => {
     setPrompt(template);
