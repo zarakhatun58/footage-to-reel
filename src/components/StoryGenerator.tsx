@@ -163,7 +163,7 @@ export const StoryGenerator = () => {
     }
   };
 
-  const autoGenerateVideo = async (mediaId: string) => {
+  const autoGenerateStoryVideo = async (mediaId: string) => {
     // Find the media item from list
     const media = mediaList.find(m => m.id === mediaId);
 
@@ -172,41 +172,25 @@ export const StoryGenerator = () => {
       return;
     }
 
-    // Extract images and audio filenames
-    const imageNames = Array.isArray(media.images)
-      ? media.images.map(url => url.split('/').pop()).filter(Boolean)
-      : [];
-
-    const audioName = media.voiceUrl ? media.voiceUrl.split('/').pop() : null;
-
-    if (imageNames.length === 0) {
-      alert("No images available for video.");
-      return;
-    }
-
-    if (!audioName) {
-      alert("No audio available for video.");
+    if (!media.transcript || media.transcript.trim() === "") {
+      alert("No transcript available for story.");
       return;
     }
 
     setLoadingVideo(true);
 
     try {
-      // Call backend API to generate video
-      const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
+      // Call new backend API
+      const res = await fetch(`${BASE_URL}/api/generate-story-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mediaId,
-          imageNames,
-          audioName,
-        }),
+        body: JSON.stringify({ text: media.transcript }),
       });
 
       const data = await res.json();
 
       if (!data.success) {
-        throw new Error(data.error || "Video generation failed");
+        throw new Error(data.error || "Story video generation failed");
       }
 
       // Update media list with new video info
@@ -215,22 +199,23 @@ export const StoryGenerator = () => {
           m.id === mediaId
             ? {
               ...m,
-              type: 'video',
-              storyUrl: data.playbackUrl,
-              transcriptionStatus: 'completed',
+              type: "video",
+              storyUrl: data.url,   // ✅ backend returns `url`
+              transcriptionStatus: "completed",
             }
             : m
         )
       );
 
-      alert("✅ Video generated successfully!");
+      alert("✅ Story video generated successfully!");
     } catch (error) {
-      console.error("Video generation error:", error);
-      alert("❌ Video generation failed. Please try again.");
+      console.error("Story video generation error:", error);
+      alert("❌ Story video generation failed. Please try again.");
     } finally {
       setLoadingVideo(false);
     }
   };
+
   const useTemplate = (template: string) => {
     setPrompt(template);
   };
@@ -381,13 +366,17 @@ export const StoryGenerator = () => {
           ))}
           {/* Story Actions */}
           <div className="flex flex-wrap gap-3 pt-4 border-t">
-            <Button variant="ai" size="lg" onClick={() => {
-              if (selectedMedia?.id) {
-                autoGenerateVideo(selectedMedia.id);
-              } else {
-                alert("No media selected");
-              }
-            }}>
+            <Button
+              variant="ai"
+              size="lg"
+              onClick={() => {
+                if (selectedMedia?.id) {
+                  autoGenerateStoryVideo(selectedMedia.id);
+                } else {
+                  alert("No media selected");
+                }
+              }}
+            >
               <Play className="w-5 h-5 mr-2" />
               Play Story
             </Button>
