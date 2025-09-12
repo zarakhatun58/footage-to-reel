@@ -1,12 +1,14 @@
-
-import { Button } from "@/components/ui/button";
-import { Video, Search, Sparkles, Upload } from "lucide-react";
-import heroImage from "@/assets/hero-video-ai.jpg";
-import { EmotionDetector } from "./EmotionDetector";
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { BASE_URL } from "@/services/apis";
+import { motion } from "framer-motion";
+import { useKeenSlider, KeenSliderInstance } from "keen-slider/react";
+import "keen-slider/keen-slider.min.css";
+import { Video, Sparkles, Upload, Search, Play, Star } from "lucide-react";
 import { MediaStatsBar } from "./MediaStatsBar";
+import heroImage from "../assets/hero-video-ai.jpg";
+import { BASE_URL } from "../services/apis";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { Button } from "./ui/button";
 
 export type VideoType = {
   _id: string;
@@ -21,120 +23,327 @@ export type VideoType = {
   shares: number;
   status: "generated" | "pending" | string;
   [key: string]: any;
+}
+
+// Keen Slider Autoplay Plugin
+const autoplay = (slider: KeenSliderInstance) => {
+  let timeout: ReturnType<typeof setTimeout>;
+  let mouseOver = false;
+
+  const clearNextTimeout = () => clearTimeout(timeout);
+
+  const nextTimeout = () => {
+    clearNextTimeout();
+    if (!mouseOver) {
+      timeout = setTimeout(() => {
+        slider.next();
+      }, 4000);
+    }
+  };
+
+  slider.on("created", () => {
+    slider.container.addEventListener("mouseover", () => (mouseOver = true));
+    slider.container.addEventListener("mouseout", () => (mouseOver = false));
+    nextTimeout();
+  });
+
+  slider.on("dragStarted", clearNextTimeout);
+  slider.on("animationEnded", nextTimeout);
+  slider.on("updated", nextTimeout);
 };
-
-
 
 export const HeroSection = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // Fetch videos
   useEffect(() => {
-    const savedVideos = localStorage.getItem("heroVideos");
+    // Mock data for demonstration since we don't have a real API
+    const mockVideos: VideoType[] = [
+      {
+        _id: "1",
+        filename: "sample-video-1.mp4",
+        title: "AI-Generated Wedding Story",
+        transcript: "A beautiful wedding celebration captured through AI...",
+        story: "This is a heartwarming story of love and commitment...",
+        tags: ["wedding", "celebration", "love"],
+        rankScore: 9.5,
+        storyUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+        likes: 1250,
+        views: 15600,
+        shares: 342,
+        status: "generated",
+        duration: 180
+      },
+      {
+        _id: "2", 
+        filename: "sample-video-2.mp4",
+        title: "Travel Adventure Montage",
+        transcript: "An exciting journey through mountain landscapes...",
+        story: "Adventure awaits in the great outdoors...",
+        tags: ["travel", "adventure", "nature"],
+        rankScore: 8.9,
+        storyUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4",
+        likes: 890,
+        views: 12400,
+        shares: 234,
+        status: "generated",
+        duration: 145
+      }
+      
+    ];
 
-    if (savedVideos) {
-      const cached = JSON.parse(savedVideos);
-      const sortedCached = cached.sort(
-        (a: VideoType, b: VideoType) => (b.rankScore || 0) - (a.rankScore || 0)
-      );
-      setVideos(sortedCached);
+    // Simulate API call
+    setTimeout(() => {
+      setVideos(mockVideos);
       setLoading(false);
-    }
+    }, 1000);
 
-    // Always fetch fresh data from all-generated video endpoint
+    // Uncomment for real API call
+    /*
     axios
       .get(`${BASE_URL}/api/apivideo/all-generate-video`)
       .then((res) => {
-        const videosArray = Array.isArray(res.data.videos)
-          ? res.data.videos
-          : [];
-
-        const sortedVideos = videosArray.sort(
-          (a: VideoType, b: VideoType) => (b.rankScore || 0) - (a.rankScore || 0)
-        );
-
-        setVideos(sortedVideos);
-        localStorage.setItem("heroVideos", JSON.stringify(sortedVideos));
+        const arr = Array.isArray(res.data.videos) ? res.data.videos : [];
+        setVideos(arr.sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0)));
       })
       .catch((err) => console.error("Failed to fetch videos:", err))
       .finally(() => setLoading(false));
+    */
   }, []);
 
-  const top3Videos = videos.slice(0, 3);
+  // Keen Slider
+  const [sliderRef] = useKeenSlider<HTMLDivElement>(
+    {
+      loop: true,
+      mode: "snap",
+      slides: { perView: 1, spacing: 20 },
+      breakpoints: {
+        "(min-width: 768px)": {
+          slides: { perView: 2, spacing: 20 }
+        },
+        "(min-width: 1024px)": {
+          slides: { perView: 3, spacing: 20 }
+        }
+      }
+    },
+    [autoplay]
+  );
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Background Image with Overlay */}
-      <div className="absolute z-0">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Enhanced Background */}
+      <div className="absolute inset-0">
         <img
           src={heroImage}
-          alt="AI Video Editing Interface"
-          className="w-full h-[50%] object-cover opacity-10"
+          alt="AI Video Editing Platform"
+          className="w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-hero" />
+        <div className="absolute inset-0 bg-gradient-glow animate-pulse-glow" />
       </div>
 
       {/* Floating Elements */}
-      <div className="absolute top-20 left-10 animate-float opacity-30">
-        <Video className="w-16 h-16 text-white" />
-      </div>
-      <div className="absolute bottom-32 right-16 animate-float opacity-20" style={{ animationDelay: '1s' }}>
-        <Sparkles className="w-12 h-12 text-story-warm" />
-      </div>
+      <motion.div
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 0.6 }}
+        className="absolute top-20 left-16 float"
+      >
+        <Video className="w-20 h-20 text-primary glow" />
+      </motion.div>
+      
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 0.6 }}
+        className="absolute bottom-32 right-16 float-delayed"
+      >
+        <Sparkles className="w-16 h-16 text-accent pulse-glow" />
+      </motion.div>
+
+      <motion.div
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 0.4 }}
+        className="absolute top-1/3 left-8 float"
+      >
+        <Star className="w-12 h-12 text-primary-glow" />
+      </motion.div>
 
       {/* Main Content */}
-      <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
-        <div className="animate-fade-in">
-          <h1 className="text-6xl md:text-7xl font-bold text-purple mb-6 leading-tight">
-            Turn Your
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-story-warm to-accent"> Memories</span>
-            <br />
-            Into Stories
+      <div className="relative z-10 text-center max-w-6xl mx-auto px-6 pt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="mb-8"
+        >
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+            Turn Your{" "}
+            <span className="gradient-text animate-gradient">
+              Memories
+            </span>
+            <br /> 
+            Into{" "}
+            <span className="gradient-text animate-gradient">
+              Stories
+            </span>
           </h1>
-          <p className="text-xl md:text-2xl text-purple-600 mb-8 max-w-2xl mx-auto">
-            Upload your footage, let AI transcribe and organize it, then create beautiful stories
-            with simple prompts. Your personal memories, reimagined.
-          </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <Button variant="hero" size="lg" className="text-lg px-8 py-4">
-              <Upload className="w-5 h-5 mr-2" />
-              Start Creating Stories
-            </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 bg-white/10 border-purple-600 text-white hover:bg-white/20">
-              <Search className="w-5 h-5 mr-2" />
-              Explore Features
-            </Button>
-          </div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-xl md:text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed"
+          >
+            Upload your footage, let AI transcribe and organize it, then create
+            beautiful stories with simple prompts powered by advanced machine learning.
+          </motion.p>
+        </motion.div>
+
+        {/* Enhanced Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+        >
+          <Button
+            variant="hero"
+            size="lg"
+            className="hover-lift hover-glow"
+            onClick={() => navigate("/upload")}
+          >
+            <Upload className="w-6 h-6 mr-3" />
+            Start Creating Stories
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            className="hover-lift"
+            onClick={() =>
+              document
+                .getElementById("features")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
+            <Search className="w-6 h-6 mr-3" />
+            Explore Features  
+          </Button>
+        </motion.div>
+
+        {/* Enhanced Video Showcase */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="w-full max-w-5xl mx-auto"
+        >
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-8">
+            Featured AI-Generated Stories
+          </h2>
+          
           {loading ? (
-            <p className="text-white">Loading videos...</p>
+            <div className="glass-card p-12 animate-pulse">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div>
+                <span className="ml-3 text-white/70">Loading amazing stories...</span>
+              </div>
+            </div>
           ) : videos.length === 0 ? (
-            <p className="text-white">No videos available yet.</p>
+            <div className="glass-card p-12">
+              <div className="text-center">
+                <Video className="w-16 h-16 text-primary mx-auto mb-4 opacity-50" />
+                <p className="text-white/70 text-lg">No videos available yet.</p>
+                <p className="text-white/50 text-sm mt-2">Be the first to create an AI story!</p>
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {videos.slice(0, 3).map((video) => (
-                <div
+            <div ref={sliderRef} className="keen-slider">
+              {videos.slice(0, 6).map((video, index) => (
+                <motion.div
                   key={video._id}
-                  className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-purple-600 hover:bg-white/20 transition cursor-pointer"
-                  onClick={() => window.open(video.storyUrl, "_blank")}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 * index }}
+                  className="keen-slider__slide group"
                 >
-                  <video
-                    controls
-                    className="w-full h-48 object-cover rounded-t"
-                    src={video.storyUrl}
-                    preload="metadata"
-                  />
-                  <h3 className="text-lg font-semibold text-purple-400 mb-2">
-                    {video.title || "Untitled Video"}
-                  </h3>
-                  {/* <p className="text-gray-300 text-sm line-clamp-3">
-                    {video.story || "No story available."}
-                  </p> */}
-                  <MediaStatsBar media={video} BASE_URL={BASE_URL} />
-                </div>
+                  <div className="glass-card p-6 hover-lift hover-glow cursor-pointer relative overflow-hidden">
+                    {/* Video Thumbnail/Player */}
+                    <div className="relative mb-4 rounded-xl overflow-hidden">
+                      <video
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                        poster={video.thumbnail}
+                        preload="metadata"
+                        onClick={() => window.open(video.storyUrl, "_blank")}
+                      >
+                        <source src={video.storyUrl} type="video/mp4" />
+                      </video>
+                      
+                      {/* Play Overlay */}
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="bg-white/20 backdrop-blur border border-white/30 rounded-full p-4">
+                          <Play className="w-8 h-8 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Status Badge */}
+                      <div className="absolute top-3 right-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          video.status === 'generated' 
+                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                            : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                        }`}>
+                          {video.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Video Info */}
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold text-white group-hover:text-primary-glow transition-colors line-clamp-2">
+                        {video.title || "Untitled Story"}
+                      </h3>
+                      
+                      {video.story && (
+                        <p className="text-sm text-white/60 line-clamp-2">
+                          {video.story}
+                        </p>
+                      )}
+                      
+                      {/* Tags */}
+                      {video.tags && video.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {video.tags.slice(0, 3).map((tag, tagIndex) => (
+                            <span 
+                              key={tagIndex}
+                              className="px-2 py-1 bg-primary/20 text-primary-glow text-xs rounded-full border border-primary/30"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+                    </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
+
+      {/* Scroll Indicator */}
+      <motion.div
+        animate={{ y: [0, 15, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/60 text-center"
+      >
+        <div className="text-sm mb-2">Discover More</div>
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-auto"></div>
+      </motion.div>
     </section>
   );
 };

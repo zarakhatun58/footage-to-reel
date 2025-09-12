@@ -597,9 +597,9 @@ export const VideoUploadArea = () => {
     setUploadedMedia(prev => prev.filter(m => m.type !== type));
   };
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6 mt-10">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-foreground mb-2">Upload Your Footage</h2>
+        <h2 className="text-3xl font-bold gradient-text mb-2 ">Upload Your Footage</h2>
         <p className="text-muted-foreground">Upload personal footage to create AI-powered stories</p>
       </div>
 
@@ -612,7 +612,7 @@ export const VideoUploadArea = () => {
       >
         <div className="p-12 text-center">
           <Upload className={`w-16 h-16 mx-auto mb-4 ${dragActive ? 'text-video-primary' : 'text-muted-foreground'}`} />
-          <h3 className="text-xl font-semibold mb-2">{dragActive ? 'Drop your videos here' : 'Upload your video memories'}</h3>
+          <h3 className="text-xl font-semibold mb-2 gradient-text">{dragActive ? 'Drop your videos here' : 'Upload your video memories'}</h3>
           <p className="text-muted-foreground mb-6">Drag and drop or click to upload. Supports MP4, MOV, MP3, PNG...</p>
           <Button variant="ai" size="lg" asChild>
             <label className="cursor-pointer">

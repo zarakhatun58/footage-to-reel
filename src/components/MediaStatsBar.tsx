@@ -162,22 +162,16 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
 
 
   return (
-    <div className="max-w-xl mx-auto p-4 border rounded-md shadow-md bg-white mt-2">
-      <video
-        ref={videoRef}
-        controls
-        src={media.storyUrl}
-        className="w-full rounded-md"
-      />
+    <div className="max-w-xl mx-auto bg-transparent ">
 
-      <div className="flex gap-3 items-center justify-between text-sm mt-4 text-gray-700">
-        <button onClick={handleLike} className="flex items-center gap-1 hover:text-green-600 transition-colors" aria-label="Like video">
+      <div className="flex gap-3 items-center justify-between text-sm mt-4 text-[#ffffff]">
+        <button onClick={handleLike} className="flex items-center gap-1 hover:text-[#ffffff] transition-colors" aria-label="Like video">
           <ThumbsUp className="w-4 h-4" />
           {stats.likes}
         </button>
 
         <div className="relative">
-          <button onClick={handleShareClick} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors" aria-haspopup="true" aria-expanded={shareOpen}>
+          <button onClick={handleShareClick} className="flex items-center gap-1 text-[#ffffff] hover:text-[#ffffff] transition-colors" aria-haspopup="true" aria-expanded={shareOpen}>
             <Share2 className="w-4 h-4" />
           </button>
 
@@ -189,11 +183,11 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
               <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('whatsapp')}>WhatsApp</button>
               <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('youtube')}>YouTube</button>
 
-              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between" onClick={copyToClipboard}>
+              <button className="block w-full px-4 py-2 text-left hover:bg-transparent flex items-center justify-between" onClick={copyToClipboard}>
                 Copy Link
                 <Copy className="w-4 h-4 ml-2" />
               </button>
-              {copySuccess && <div className="text-xs text-green-600 px-4 py-1">{copySuccess}</div>}
+              {copySuccess && <div className="text-xs text-[#ffffff] px-4 py-1">{copySuccess}</div>}
             </div>
           )}
         </div>

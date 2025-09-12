@@ -53,8 +53,6 @@ const handleLogout = () => {
   }
 };
 
-
-  
  const handleSectionChange = (section: string) => {    
     if (section === "upload" && !user) {
       setShowAuthDialog(true);
