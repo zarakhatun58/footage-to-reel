@@ -5,6 +5,7 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
+    
     "baseUrl": ".",
      "lib": ["DOM", "ES2020"], 
      "typeRoots": ["./node_modules/@types", "./src/types"],

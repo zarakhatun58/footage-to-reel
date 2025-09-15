@@ -473,6 +473,8 @@ export const VideoUploadArea = () => {
               type: "video",
               storyUrl: data.videoUrl,
               transcriptionStatus: "completed",
+               title: data.title || m.title, 
+               thumbnailUrl: data.thumbnailUrl,
             }
             : m
         )
@@ -551,23 +553,32 @@ export const VideoUploadArea = () => {
 
 
 
-  const handleDeleteVideo = async (id: string) => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/media/${id}`, { method: "DELETE" });
-      const data = await res.json();
+const handleDeleteVideo = async (id: string) => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/apivideo/delete/${id}`, {
+      method: "DELETE",
+    });
 
-      if (data.success) {
-        // Remove from uploadedMedia
-        setUploadedMedia(prev => prev.filter(media => media._id !== id && media.id !== id));
+    const data = await res.json();
 
-        // Remove from all videos
-        setVideos(prev => prev.filter(video => video._id !== id && video.id !== id));
+    if (data.success) {
+      // Remove from uploadedMedia state
+      setUploadedMedia((prev) =>
+        prev.filter((media) => media._id !== id && media.id !== id)
+      );
 
-      }
-    } catch (err) {
-      console.error("Failed to delete video", err);
+      // Remove from videos state
+      setVideos((prev) =>
+        prev.filter((video) => video._id !== id && video.id !== id)
+      );
+    } else {
+      console.error("Delete failed:", data.message || "Unknown error");
     }
-  };
+  } catch (err) {
+    console.error("Failed to delete video:", err);
+  }
+};
+
 
 
   const getAllVideos = async () => {
@@ -799,6 +810,7 @@ export const VideoUploadArea = () => {
           <p><strong>Tags:</strong> {uploadedMedia[0].tags?.join(', ') || 'Not generated'}</p>
           <p><strong>Emotions:</strong> {
            uploadedMedia[0].emotions}</p>
+           <p>{uploadedMedia[0].title || "Untitled"}</p>
           <MediaStatsBar media={uploadedMedia[0]} BASE_URL={BASE_URL} />
 
           <button
@@ -830,8 +842,6 @@ export const VideoUploadArea = () => {
               <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
               <MediaStatsBar media={video} BASE_URL={BASE_URL} />
             </div>
-
-            {/* Delete button */}
             <button
               onClick={() => handleDeleteVideo(video._id)}
               className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"

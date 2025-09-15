@@ -13,11 +13,11 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useEffect, useState } from "react";
 import { UploadInterface } from "./components/UploadInterface";
-import { VideoEditor } from "./components/VideoEditor";
 import { ProjectGallery } from "./components/ProjectGallery";
 import { Navbar } from "./components/Navbar";
 import { VideoUploadArea } from "./components/VideoUploadArea";
 import { ThemeProvider } from "./components/ThemeProvider";
+import {VideoEditor} from "./components/VideoEditor";
 
 
 const queryClient = new QueryClient();

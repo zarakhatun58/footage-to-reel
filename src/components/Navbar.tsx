@@ -117,7 +117,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     <span>{item.label}</span>
                                 </motion.button>
                             ))}
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
                             {user ? (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
