@@ -157,15 +157,11 @@ export const ProjectGallery = () => {
                                     {video.storyUrl ? (
                                         <video
                                             src={video.storyUrl}
-                                            muted
                                             playsInline
                                             preload="metadata"
+                                            controls
                                             className="w-full h-full object-cover"
-                                            onMouseEnter={(e) => e.currentTarget.play()}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.pause();
-                                                e.currentTarget.currentTime = 0;
-                                            }}
+
                                         />
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
@@ -235,17 +231,13 @@ export const ProjectGallery = () => {
                                     <div className="relative w-32 h-20 bg-black overflow-hidden rounded flex-shrink-0 group">
                                         {video.storyUrl ? (
                                             <video
-                                                src={video.storyUrl}
-                                                muted
-                                                playsInline
-                                                preload="metadata"
-                                                className="w-full h-full object-cover"
-                                                onMouseEnter={(e) => e.currentTarget.play()}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.pause();
-                                                    e.currentTarget.currentTime = 0;
-                                                }}
-                                            />
+                                            src={video.storyUrl}
+                                            playsInline
+                                            preload="metadata"
+                                            controls
+                                            className="w-full h-full object-cover"
+
+                                        />
                                         ) : (
                                             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
                                                 <Play className="w-6 h-6 text-white/70" />

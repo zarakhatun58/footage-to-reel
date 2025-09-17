@@ -58,60 +58,19 @@ export const HeroSection = () => {
   const navigate = useNavigate();
 
   // Fetch videos
-  useEffect(() => {
-    // Mock data for demonstration since we don't have a real API
-    const mockVideos: VideoType[] = [
-      {
-        _id: "1",
-        filename: "sample-video-1.mp4",
-        title: "AI-Generated Wedding Story",
-        transcript: "A beautiful wedding celebration captured through AI...",
-        story: "This is a heartwarming story of love and commitment...",
-        tags: ["wedding", "celebration", "love"],
-        rankScore: 9.5,
-        storyUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
-        likes: 1250,
-        views: 15600,
-        shares: 342,
-        status: "generated",
-        duration: 180
-      },
-      {
-        _id: "2", 
-        filename: "sample-video-2.mp4",
-        title: "Travel Adventure Montage",
-        transcript: "An exciting journey through mountain landscapes...",
-        story: "Adventure awaits in the great outdoors...",
-        tags: ["travel", "adventure", "nature"],
-        rankScore: 8.9,
-        storyUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4",
-        likes: 890,
-        views: 12400,
-        shares: 234,
-        status: "generated",
-        duration: 145
-      }
-      
-    ];
+useEffect(() => {
+  setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setVideos(mockVideos);
-      setLoading(false);
-    }, 1000);
-
-    // Uncomment for real API call
-    /*
-    axios
-      .get(`${BASE_URL}/api/apivideo/all-generate-video`)
-      .then((res) => {
-        const arr = Array.isArray(res.data.videos) ? res.data.videos : [];
-        setVideos(arr.sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0)));
-      })
-      .catch((err) => console.error("Failed to fetch videos:", err))
-      .finally(() => setLoading(false));
-    */
-  }, []);
+  axios
+    .get(`${BASE_URL}/api/apivideo/all-generate-video`)
+    .then((res) => {
+      const arr = Array.isArray(res.data.videos) ? res.data.videos : [];
+      // ✅ Sort videos by rankScore (highest first)
+      setVideos(arr.sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0)));
+    })
+    .catch((err) => console.error("Failed to fetch videos:", err))
+    .finally(() => setLoading(false));
+}, []);
 
   // Keen Slider
   const [sliderRef] = useKeenSlider<HTMLDivElement>(
@@ -273,19 +232,21 @@ export const HeroSection = () => {
                     <div className="relative mb-4 rounded-xl overflow-hidden">
                       <video
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                        poster={video.thumbnail}
-                        preload="metadata"
-                        onClick={() => window.open(video.storyUrl, "_blank")}
+                        // poster={video.thumbnail}
+                        // preload="metadata"
+                         controls
+                        // onClick={() => window.open(video.storyUrl, "_blank")}
+                        src={video.storyUrl}
                       >
                         <source src={video.storyUrl} type="video/mp4" />
                       </video>
                       
                       {/* Play Overlay */}
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      {/* <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="bg-white/20 backdrop-blur border border-white/30 rounded-full p-4">
                           <Play className="w-8 h-8 text-white" />
                         </div>
-                      </div>
+                      </div> */}
                       
                       {/* Status Badge */}
                       <div className="absolute top-3 right-3">

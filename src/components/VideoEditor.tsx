@@ -30,10 +30,13 @@ type VideoType = {
   _id: string;
   filename: string;
   transcript?: string;
+  emotions?: string;
   story?: string;
+  audioName?: string;
   tags?: string[];
   rankScore: number;
   storyUrl?: string;
+  voiceUrl?: string;
   likes: number;
   views: number;
   shares: number;
@@ -55,7 +58,8 @@ export const VideoEditor = () => {
   const [editedTitle, setEditedTitle] = useState("");
   const [editedStory, setEditedStory] = useState("");
   const [editedTags, setEditedTags] = useState<string[]>([]);
-  const [editedAudioUrl, setEditedAudioUrl] = useState("");
+  const [editedEmotions, setEditedEmotions] = useState<string[]>([]);
+  const [editedAudioName, setEditedAudioName] = useState("");
   const [editedVideoUrl, setEditedVideoUrl] = useState("");
 
   // Playback
@@ -117,8 +121,9 @@ export const VideoEditor = () => {
     setEditedTitle(video.title || "");
     setEditedStory(video.story || "");
     setEditedTags(video.tags || []);
-    setEditedAudioUrl(video.audioUrl || "");
-    setEditedVideoUrl(video.url);
+    //  setEditedEmotions(video.emotions || []);
+    setEditedAudioName(video.audioName || "");
+    setEditedVideoUrl(video.storyUrl || "");
   };
 
   // Save edits (PUT)
@@ -127,12 +132,13 @@ export const VideoEditor = () => {
 
     try {
       const res = await axios.put(
-        `${BASE_URL}/api/apivideo/edit/${selectedVideo.id}`,
+        `${BASE_URL}/api/apivideo/edit/${selectedVideo._id}`,
         {
           title: editedTitle,
           story: editedStory,
           tags: editedTags,
-          audioUrl: editedAudioUrl,
+          emotions: editedEmotions,
+          audioName: editedAudioName,
           videoUrl: editedVideoUrl,
         }
       );
@@ -151,17 +157,44 @@ export const VideoEditor = () => {
     }
   };
 
+  const handleAudioUpload = async (file: File) => {
+    if (!selectedVideo) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/audio/${selectedVideo._id}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.audioUrl) {
+        setEditedAudioName(data.audioUrl);
+        alert("🎤 Audio uploaded successfully!");
+      } else {
+        alert("❌ Audio upload failed");
+      }
+    } catch (err) {
+      console.error("❌ Error uploading audio:", err);
+      alert("❌ Server error while processing audio");
+    }
+  };
+
 
   // Save Final (POST /upload-final)
   const handleSaveFinal = async () => {
     if (!selectedVideo) return;
     try {
       const res = await axios.post(`${BASE_URL}/upload-final`, {
-        id: selectedVideo.id,
+        mediaId: selectedVideo._id,
         title: editedTitle,
         story: editedStory,
         tags: editedTags,
-        audioUrl: editedAudioUrl,
+        emotions: editedEmotions,
+        audioName: editedAudioName,
         videoUrl: editedVideoUrl,
       });
       if (res.data.success) {
@@ -270,8 +303,9 @@ export const VideoEditor = () => {
                           setEditedTitle(video.title || "");
                           setEditedStory(video.story || "");
                           setEditedTags(video.tags || []);
-                          setEditedAudioUrl(video.audioUrl || "");
-                          setEditedVideoUrl(video.url || "");
+                          // setEditedEmotions(video.emotions || []);
+                          setEditedAudioName(video.audioName || "");
+                          setEditedVideoUrl(video.storyUrl || "");
                         }}
                       >
                         Edit
@@ -301,7 +335,7 @@ export const VideoEditor = () => {
                     <video
                       ref={videoRef}
                       key={selectedVideo.id}
-                      src={selectedVideo.url}
+                      src={selectedVideo.storyUrl}
                       className="w-full h-full object-contain"
                       controls
                       onLoadedMetadata={(e) =>
@@ -471,6 +505,7 @@ export const VideoEditor = () => {
               </div>
 
             </div>
+
             <div>
               <label className="text-xs font-medium text-muted-foreground">Video URL</label>
               <input
@@ -482,13 +517,22 @@ export const VideoEditor = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Audio URL</label>
+              <label className="text-xs font-medium text-muted-foreground">Audio Name</label>
               <input
-                type="text"
-                value={editedAudioUrl}
-                onChange={(e) => setEditedAudioUrl(e.target.value)}
-                className="w-full h-8 px-2 text-xs bg-background border border-border rounded"
+                type="file"
+                accept="audio/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleAudioUpload(file); 
+                  }
+                }}
+                className="w-full text-xs bg-background border border-border rounded"
               />
+
+              {editedAudioName && (
+                <audio controls src={editedAudioName} className="mt-2 w-full" />
+              )}
             </div>
 
             <div>
@@ -500,7 +544,19 @@ export const VideoEditor = () => {
                 className="w-full h-8 px-2 text-xs bg-background border border-border rounded"
               />
             </div>
-
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Tags</label>
+              <input
+                type="text"
+                value={editedTags.join(", ")}
+                onChange={(e) =>
+                  setEditedTags(
+                    e.target.value.split(",").map((tag) => tag.trim())
+                  )
+                }
+                className="w-full h-8 px-2 text-xs bg-background border border-border rounded"
+              />
+            </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Story</label>
               <textarea
