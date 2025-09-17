@@ -246,17 +246,41 @@ export const VideoEditor = () => {
                 {videos.map((video) => (
                   <div
                     key={video.id}
-                    onClick={() => selectVideo(video)}
-                    className={`p-2 rounded bg-background border border-border hover:bg-accent/50 cursor-pointer ${selectedVideo?.id === video.id ? "bg-accent" : ""
-                      }`}
+                    className="border rounded overflow-hidden bg-background"
                   >
-                    <p className="text-xs font-medium">{video.title}</p>
-                    <span className="text-[10px] text-muted-foreground">
-                      Score {video.rankScore || 0}
-                    </span>
+                    {/* Thumbnail / Player */}
+                    <video
+                      controls
+                      className="w-full h-32 object-cover"
+                      src={video.storyUrl}
+                      preload="metadata"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+
+                    {/* Small Edit Button */}
+                    <div className="p-2 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedVideo(video);
+                          setIsPlaying(false);
+                          setCurrentTime(0);
+                          setEditedTitle(video.title || "");
+                          setEditedStory(video.story || "");
+                          setEditedTags(video.tags || []);
+                          setEditedAudioUrl(video.audioUrl || "");
+                          setEditedVideoUrl(video.url || "");
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
+
             )}
           </div>
         </motion.div>
@@ -278,14 +302,14 @@ export const VideoEditor = () => {
                       ref={videoRef}
                       key={selectedVideo.id}
                       src={selectedVideo.url}
-                      className="max-h-full max-w-full rounded-lg"
+                      className="w-full h-full object-contain"
                       controls
                       onLoadedMetadata={(e) =>
                         setDuration((e.target as HTMLVideoElement).duration)
                       }
                     />
                   ) : (
-                    <p className="text-muted-foreground">Select a video to preview</p>
+                    <p className="text-muted-foreground m-auto text-center">Select a video to preview</p>
                   )}
                 </div>
               </div>
@@ -445,10 +469,49 @@ export const VideoEditor = () => {
                   ))}
                 </div>
               </div>
-              <Button variant="hero" size="sm" onClick={handleEditVideo} disabled={!selectedVideo}>
-                Update Video
-              </Button>
+
             </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Video URL</label>
+              <input
+                type="text"
+                value={editedVideoUrl}
+                onChange={(e) => setEditedVideoUrl(e.target.value)}
+                className="w-full h-8 px-2 text-xs bg-background border border-border rounded"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Audio URL</label>
+              <input
+                type="text"
+                value={editedAudioUrl}
+                onChange={(e) => setEditedAudioUrl(e.target.value)}
+                className="w-full h-8 px-2 text-xs bg-background border border-border rounded"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Title</label>
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-full h-8 px-2 text-xs bg-background border border-border rounded"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Story</label>
+              <textarea
+                value={editedStory}
+                onChange={(e) => setEditedStory(e.target.value)}
+                className="w-full h-16 px-2 text-xs bg-background border border-border rounded"
+              />
+            </div>
+            <Button variant="hero" size="sm" onClick={handleEditVideo} disabled={!selectedVideo}>
+              Update Video
+            </Button>
           </div>
         </motion.div>
       </div>
