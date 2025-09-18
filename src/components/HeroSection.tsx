@@ -56,7 +56,7 @@ export const HeroSection = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [isStatsOpen, setIsStatsOpen]=useState(false)
+  const [isStatsOpen, setIsStatsOpen] = useState(false)
 
   // Fetch videos
   useEffect(() => {
@@ -108,131 +108,132 @@ export const HeroSection = () => {
       <motion.div
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 0.6 }}
-        className="absolute top-20 left-16 float"
+        className="absolute top-10 left-4 sm:top-20 sm:left-16 float"
       >
-        <Video className="w-20 h-20 text-primary glow" />
+        <Video className="w-10 h-10 sm:w-20 sm:h-20 text-primary glow" />
       </motion.div>
 
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 0.6 }}
-        className="absolute bottom-32 right-16 float-delayed"
+        className="absolute bottom-16 right-4 sm:bottom-32 sm:right-16 float-delayed"
       >
-        <Sparkles className="w-16 h-16 text-accent pulse-glow" />
+        <Sparkles className="w-8 h-8 sm:w-16 sm:h-16 text-accent pulse-glow" />
       </motion.div>
 
       <motion.div
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 0.4 }}
-        className="absolute top-1/3 left-8 float"
+        className="absolute top-1/4 left-2 sm:top-1/3 sm:left-8 float"
       >
-        <Star className="w-12 h-12 text-primary-glow" />
+        <Star className="w-6 h-6 sm:w-12 sm:h-12 text-primary-glow" />
       </motion.div>
 
       {/* Main Content */}
-      <div className="relative z-10 text-center max-w-6xl mx-auto px-6 pt-20">
+      <div className="relative z-10 text-center max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
             Turn Your{" "}
-            <span className="gradient-text animate-gradient">
-              Memories
-            </span>
+            <span className="gradient-text animate-gradient">Memories</span>
             <br />
             Into{" "}
-            <span className="gradient-text animate-gradient">
-              Stories
-            </span>
+            <span className="gradient-text animate-gradient">Stories</span>
           </h1>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-xl md:text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed"
+            className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 max-w-2xl sm:max-w-3xl mx-auto leading-relaxed"
           >
             Upload your footage, let AI transcribe and organize it, then create
-            beautiful stories with simple prompts powered by advanced machine learning.
+            beautiful stories with simple prompts powered by advanced machine
+            learning.
           </motion.p>
         </motion.div>
 
-        {/* Enhanced Action Buttons */}
+        {/* Action Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center items-center mb-8 sm:mb-16 w-full"
         >
           <Button
             variant="hero"
             size="lg"
-            className="hover-lift hover-glow"
+            className="hover-lift hover-glow w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
             onClick={() => navigate("/upload")}
           >
-            <Upload className="w-6 h-6 mr-3" />
+            <Upload className="w-5 h-5 mr-2 sm:mr-3" />
             Start Creating Stories
           </Button>
 
           <Button
             variant="outline"
             size="lg"
-            className="hover-lift"
+            className="hover-lift w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
             onClick={() =>
-              document
-                .getElementById("features")
-                ?.scrollIntoView({ behavior: "smooth" })
+              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })
             }
           >
-            <Search className="w-6 h-6 mr-3" />
+            <Search className="w-5 h-5 mr-2 sm:mr-3" />
             Explore Features
           </Button>
         </motion.div>
 
-        {/* Enhanced Video Showcase */}
+
+        {/* Video Showcase */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="w-full max-w-5xl mx-auto relative"
+          className="w-full max-w-5xl mx-auto relative px-2 sm:px-0"
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-8">
+          <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-white mb-6 sm:mb-8">
             Featured AI-Generated Stories
           </h2>
 
           {loading ? (
-            <div className="glass-card p-12 animate-pulse">
+            <div className="glass-card p-8 sm:p-12 animate-pulse">
               <div className="flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div>
-                <span className="ml-3 text-white/70">Loading amazing stories...</span>
+                <div className="animate-spin w-6 h-6 sm:w-8 sm:h-8 border-2 border-primary border-t-transparent rounded-full"></div>
+                <span className="ml-2 sm:ml-3 text-white/70 text-sm sm:text-base">
+                  Loading amazing stories...
+                </span>
               </div>
             </div>
           ) : videos.length === 0 ? (
-            <div className="glass-card p-12">
+            <div className="glass-card p-8 sm:p-12">
               <div className="text-center">
-                <Video className="w-16 h-16 text-primary mx-auto mb-4 opacity-50" />
-                <p className="text-white/70 text-lg">No videos available yet.</p>
-                <p className="text-white/50 text-sm mt-2">Be the first to create an AI story!</p>
+                <Video className="w-12 h-12 sm:w-16 sm:h-16 text-primary mx-auto mb-4 opacity-50" />
+                <p className="text-white/70 text-base sm:text-lg">
+                  No videos available yet.
+                </p>
+                <p className="text-white/50 text-xs sm:text-sm mt-2">
+                  Be the first to create an AI story!
+                </p>
               </div>
             </div>
           ) : (
-            <div ref={sliderRef} className="keen-slider mb-48">
+            <div ref={sliderRef} className="keen-slider mb-12 sm:mb-24">
               {videos.slice(0, 3).map((video, index) => (
                 <motion.div
                   key={video._id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1 * index }}
-                  className="keen-slider__slide group"
+                  className="keen-slider__slide group w-full sm:w-auto px-2"
                 >
-                  <div className="glass-card p-6 hover-lift hover-glow cursor-pointer relative">
-
+                  <div className="glass-card p-4 sm:p-6 hover-lift hover-glow cursor-pointer relative w-full">
                     <div className="relative mb-4 rounded-xl overflow-hidden">
                       <video
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-48 sm:h-56 md:h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                         controls
                         src={video.storyUrl}
                       >
@@ -240,35 +241,37 @@ export const HeroSection = () => {
                       </video>
 
                       {/* Status Badge */}
-                      <div className="absolute top-3 right-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${video.status === 'generated'
-                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                            : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                          }`}>
+                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+                        <span
+                          className={`px-2 py-0.5 sm:px-2 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${video.status === "generated"
+                            ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                            : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                            }`}
+                        >
                           {video.status}
                         </span>
                       </div>
                     </div>
 
                     {/* Video Info */}
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-semibold text-white group-hover:text-primary-glow transition-colors line-clamp-2">
+                    <div className="space-y-2 sm:space-y-3">
+                      <h3 className="text-sm sm:text-lg font-semibold text-white line-clamp-2">
                         {video.title || "Untitled Story"}
                       </h3>
 
                       {video.story && (
-                        <p className="text-sm text-white/60 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-white/60 line-clamp-2">
                           {video.story}
                         </p>
                       )}
 
                       {/* Tags */}
                       {video.tags && video.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
                           {video.tags.slice(0, 3).map((tag, tagIndex) => (
                             <span
                               key={tagIndex}
-                              className="px-2 py-1 bg-primary/20 text-primary-glow text-xs rounded-full border border-primary/30"
+                              className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-primary/20 text-primary-glow text-[10px] sm:text-xs rounded-full border border-primary/30"
                             >
                               #{tag}
                             </span>
@@ -291,11 +294,12 @@ export const HeroSection = () => {
       <motion.div
         animate={{ y: [0, 15, 0] }}
         transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/60 text-center"
+        className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 text-white/60 text-center px-2"
       >
-        <div className="text-sm mb-2">Discover More</div>
-        <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-auto"></div>
+        <div className="text-xs sm:text-sm mb-1 sm:mb-2">Discover More</div>
+        <div className="w-px h-6 sm:h-8 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-auto"></div>
       </motion.div>
     </section>
+
   );
 };
