@@ -116,7 +116,7 @@ export const VideoEditor = () => {
   }, []);
 
   // Select a video
-  const selectVideo = (video: VideoType) => {
+  const selectVideo = async (video: VideoType) => {
     setSelectedVideo(video);
     setEditedTitle(video.title || "");
     setEditedStory(video.story || "");
@@ -124,7 +124,18 @@ export const VideoEditor = () => {
     //  setEditedEmotions(video.emotions || []);
     setEditedAudioName(video.audioName || "");
     setEditedVideoUrl(video.storyUrl || "");
-  };
+    try {
+   const res = await axios.get(`${BASE_URL}/api/story/${video._id}`);
+    if (res.data?.success) {
+      setEditedStory(res.data.story);
+    } else {
+      setEditedStory(video.story || ""); 
+    }
+  } catch (err) {
+    console.error("❌ Failed to fetch story:", err);
+    setEditedStory(video.story || ""); 
+  }
+};
 
   // Save edits (PUT)
   const handleEditVideo = async () => {

@@ -56,21 +56,22 @@ export const HeroSection = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [isStatsOpen, setIsStatsOpen]=useState(false)
 
   // Fetch videos
-useEffect(() => {
-  setLoading(true);
+  useEffect(() => {
+    setLoading(true);
 
-  axios
-    .get(`${BASE_URL}/api/apivideo/all-generate-video`)
-    .then((res) => {
-      const arr = Array.isArray(res.data.videos) ? res.data.videos : [];
-      // ✅ Sort videos by rankScore (highest first)
-      setVideos(arr.sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0)));
-    })
-    .catch((err) => console.error("Failed to fetch videos:", err))
-    .finally(() => setLoading(false));
-}, []);
+    axios
+      .get(`${BASE_URL}/api/apivideo/all-generate-video`)
+      .then((res) => {
+        const arr = Array.isArray(res.data.videos) ? res.data.videos : [];
+        // ✅ Sort videos by rankScore (highest first)
+        setVideos(arr.sort((a, b) => (b.rankScore || 0) - (a.rankScore || 0)));
+      })
+      .catch((err) => console.error("Failed to fetch videos:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Keen Slider
   const [sliderRef] = useKeenSlider<HTMLDivElement>(
@@ -111,7 +112,7 @@ useEffect(() => {
       >
         <Video className="w-20 h-20 text-primary glow" />
       </motion.div>
-      
+
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 0.6 }}
@@ -141,7 +142,7 @@ useEffect(() => {
             <span className="gradient-text animate-gradient">
               Memories
             </span>
-            <br /> 
+            <br />
             Into{" "}
             <span className="gradient-text animate-gradient">
               Stories
@@ -175,7 +176,7 @@ useEffect(() => {
             <Upload className="w-6 h-6 mr-3" />
             Start Creating Stories
           </Button>
-          
+
           <Button
             variant="outline"
             size="lg"
@@ -187,7 +188,7 @@ useEffect(() => {
             }
           >
             <Search className="w-6 h-6 mr-3" />
-            Explore Features  
+            Explore Features
           </Button>
         </motion.div>
 
@@ -196,12 +197,12 @@ useEffect(() => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="w-full max-w-5xl mx-auto"
+          className="w-full max-w-5xl mx-auto relative"
         >
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-8">
             Featured AI-Generated Stories
           </h2>
-          
+
           {loading ? (
             <div className="glass-card p-12 animate-pulse">
               <div className="flex items-center justify-center">
@@ -218,8 +219,8 @@ useEffect(() => {
               </div>
             </div>
           ) : (
-            <div ref={sliderRef} className="keen-slider">
-              {videos.slice(0, 6).map((video, index) => (
+            <div ref={sliderRef} className="keen-slider mb-48">
+              {videos.slice(0, 3).map((video, index) => (
                 <motion.div
                   key={video._id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -227,34 +228,23 @@ useEffect(() => {
                   transition={{ delay: 0.1 * index }}
                   className="keen-slider__slide group"
                 >
-                  <div className="glass-card p-6 hover-lift hover-glow cursor-pointer relative overflow-hidden">
-                    {/* Video Thumbnail/Player */}
+                  <div className="glass-card p-6 hover-lift hover-glow cursor-pointer relative">
+
                     <div className="relative mb-4 rounded-xl overflow-hidden">
                       <video
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                        // poster={video.thumbnail}
-                        // preload="metadata"
-                         controls
-                        // onClick={() => window.open(video.storyUrl, "_blank")}
+                        controls
                         src={video.storyUrl}
                       >
                         <source src={video.storyUrl} type="video/mp4" />
                       </video>
-                      
-                      {/* Play Overlay */}
-                      {/* <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="bg-white/20 backdrop-blur border border-white/30 rounded-full p-4">
-                          <Play className="w-8 h-8 text-white" />
-                        </div>
-                      </div> */}
-                      
+
                       {/* Status Badge */}
                       <div className="absolute top-3 right-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          video.status === 'generated' 
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${video.status === 'generated'
                             ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                             : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                        }`}>
+                          }`}>
                           {video.status}
                         </span>
                       </div>
@@ -265,18 +255,18 @@ useEffect(() => {
                       <h3 className="text-lg font-semibold text-white group-hover:text-primary-glow transition-colors line-clamp-2">
                         {video.title || "Untitled Story"}
                       </h3>
-                      
+
                       {video.story && (
                         <p className="text-sm text-white/60 line-clamp-2">
                           {video.story}
                         </p>
                       )}
-                      
+
                       {/* Tags */}
                       {video.tags && video.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {video.tags.slice(0, 3).map((tag, tagIndex) => (
-                            <span 
+                            <span
                               key={tagIndex}
                               className="px-2 py-1 bg-primary/20 text-primary-glow text-xs rounded-full border border-primary/30"
                             >
@@ -285,8 +275,9 @@ useEffect(() => {
                           ))}
                         </div>
                       )}
-                      
-                      <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+                      <div>
+                        <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+                      </div>
                     </div>
                   </div>
                 </motion.div>

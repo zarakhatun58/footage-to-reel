@@ -32,16 +32,31 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
     views: media.views || 0,
     rank: media.rankScore || 0,
   });
+  const shareRef = useRef<HTMLDivElement | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shortUrl, setShortUrl] = useState("");
   const [copySuccess, setCopySuccess] = useState("");
+
+useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(event.target as Node)) {
+        setShareOpen(false);
+      }
+    }
+    if (shareOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [shareOpen]);
 
  const updateLocalStorage = (updatedStats: typeof stats) => {
     const savedVideos = localStorage.getItem("videos");
     if (savedVideos) {
       const videos = JSON.parse(savedVideos);
       const updated = videos.map((v: any) =>
-        v._id === media.id ? { ...v, ...updatedStats } : v
+        v.id === media._id ? { ...v, ...updatedStats } : v
       );
       localStorage.setItem("videos", JSON.stringify(updated));
     }
@@ -92,7 +107,7 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
 
   const handleViewCount = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/media/${media.id}/view`, {
+      const res = await fetch(`${BASE_URL}/api/media/${media._id}/view`, {
         method: "POST",
       });
       const data = await res.json();
@@ -108,7 +123,7 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
 
   const handleLike = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/media/${media.id}/like`, {
+      const res = await fetch(`${BASE_URL}/api/media/${media._id}/like`, {
         method: "POST",
       });
       const data = await res.json();
@@ -124,7 +139,7 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
 
   const handleShareClick = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/media/${media.id}/share`, {
+      const res = await fetch(`${BASE_URL}/api/media/${media._id}/share`, {
         method: "POST",
       });
       const data = await res.json();
@@ -170,20 +185,20 @@ export const MediaStatsBar: React.FC<MediaStatsBarProps> = ({ media, BASE_URL })
           {stats.likes}
         </button>
 
-        <div className="relative">
+        <div className="relative"  ref={shareRef}>
           <button onClick={handleShareClick} className="flex items-center gap-1 text-[#ffffff] hover:text-[#ffffff] transition-colors" aria-haspopup="true" aria-expanded={shareOpen}>
             <Share2 className="w-4 h-4" />
           </button>
 
           {shareOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20" role="menu">
-              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('facebook')}>Facebook</button>
-              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('twitter')}>Twitter</button>
-              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('linkedin')}>LinkedIn</button>
-              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('whatsapp')}>WhatsApp</button>
-              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100" onClick={() => shareOnSocial('youtube')}>YouTube</button>
+            <div className="absolute mt-2 bottom-[-90%] w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 text-purple-500" role="menu">
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-xs" onClick={() => shareOnSocial('facebook')}>Facebook</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-xs" onClick={() => shareOnSocial('twitter')}>Twitter</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-xs" onClick={() => shareOnSocial('linkedin')}>LinkedIn</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-xs" onClick={() => shareOnSocial('whatsapp')}>WhatsApp</button>
+              <button className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-xs" onClick={() => shareOnSocial('youtube')}>YouTube</button>
 
-              <button className="block w-full px-4 py-2 text-left hover:bg-transparent flex items-center justify-between" onClick={copyToClipboard}>
+              <button className="block w-full px-4 py-2 text-left hover:bg-transparent flex items-center justify-between text-xs" onClick={copyToClipboard}>
                 Copy Link
                 <Copy className="w-4 h-4 ml-2" />
               </button>
