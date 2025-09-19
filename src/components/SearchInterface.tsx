@@ -206,7 +206,7 @@ export const SearchInterface = () => {
 
       {/* Search Bar */}
       <Card className="p-6">
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
@@ -267,7 +267,7 @@ export const SearchInterface = () => {
 
       {searchResults.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h3 className="text-xl font-semibold">
               Found {searchResults.length} moments for "{searchQuery}"
             </h3>
@@ -279,7 +279,7 @@ export const SearchInterface = () => {
 
           {searchResults.map((result) => (
             <Card key={result.id} className="p-6 hover:shadow-elegant transition-all duration-300">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
 
                 {/* Content */}
                 <div className="flex-1 space-y-3">
@@ -289,7 +289,7 @@ export const SearchInterface = () => {
                         <img
                           src={result.thumbnail}
                           alt={result.videoName}
-                          className="w-full max-h-48 object-cover rounded-lg shadow"
+                          className="w-full sm:w-48 max-h-48 object-cover rounded-lg shadow"
                         />
                       ) : (
                         <video

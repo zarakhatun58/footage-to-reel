@@ -178,7 +178,6 @@ useEffect(() => {
 
   return (
     <div className="max-w-xl mx-auto bg-transparent ">
-
       <div className="flex gap-3 items-center justify-between text-sm mt-4 text-[#ffffff]">
         <button onClick={handleLike} className="flex items-center gap-1 hover:text-[#ffffff] transition-colors" aria-label="Like video">
           <ThumbsUp className="w-4 h-4" />

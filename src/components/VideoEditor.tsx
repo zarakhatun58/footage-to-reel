@@ -232,7 +232,7 @@ export const VideoEditor = () => {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="flex items-center justify-between p-4 border-b border-border bg-card/50"
+        className="flex items-center justify-between p-3 sm:p-4 border-b border-border bg-card/50 flex-wrap gap-2"
       >
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm">
@@ -268,12 +268,12 @@ export const VideoEditor = () => {
         </div>
       </motion.div>
 
-      <div className="flex flex-1 overflow-hidden">
+       <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
         {/* Left Sidebar */}
         <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="w-64 border-r border-border bg-card/30 overflow-y-auto"
+          className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-card/30 overflow-y-auto"
         >
           <div className="p-4">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
@@ -336,12 +336,12 @@ export const VideoEditor = () => {
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="flex-1 flex items-center justify-center bg-black/20 relative"
+            className="flex-1 flex items-center justify-center bg-black/20 relative p-2"
           >
-            <div className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden border border-border">
+            <div className="relative w-[90%] max-w-3xl aspect-video bg-black rounded-lg overflow-hidden border border-border">
               {/* Placeholder */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <div className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden border border-border">
+                <div className="relative w-full max-w-3xl aspect-video bg-black rounded-lg overflow-hidden border border-border">
                   {selectedVideo ? (
                     <video
                       ref={videoRef}
@@ -395,10 +395,10 @@ export const VideoEditor = () => {
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="h-48 border-t border-border bg-card/30 p-4"
+           className="h-40 sm:h-48 border-t border-border bg-card/30 p-2 sm:p-4"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold">Timeline</h3>
+              <h3 className="text-xs sm:text-sm font-semibold mb-2">Timeline</h3>
               <div className="text-xs text-muted-foreground">
                 {Math.floor(currentTime / 60)}:
                 {String(Math.floor(currentTime % 60)).padStart(2, "0")} /{" "}
@@ -469,7 +469,7 @@ export const VideoEditor = () => {
         <motion.div
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="w-64 border-l border-border bg-card/30 overflow-y-auto"
+         className="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-border bg-card/30 overflow-y-auto p-4"
         >
           <div className="p-4">
             <h3 className="text-sm font-semibold mb-3">Properties</h3>

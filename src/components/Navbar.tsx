@@ -65,7 +65,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
     };
 
     const handleSectionChange = (section: string) => {
-        if (section === "upload" && !user) {
+        if ((section === "upload" || section === "editor") && !user) {
             setShowAuthDialog(true);
             return;
         }
@@ -109,7 +109,13 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
                                     className="flex items-center space-x-2 text-[#ffffff] hover:text-primary transition-colors"
-                                    onClick={() => navigate(item.path)}
+                                    onClick={() => {
+                                        if ((item.label === "Upload" || item.label === "Editor") && !user) {
+                                            setShowAuthDialog(true);
+                                            return;
+                                        }
+                                        navigate(item.path);
+                                    }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -117,7 +123,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     <span>{item.label}</span>
                                 </motion.button>
                             ))}
-            {/* <ThemeToggle /> */}
+                            {/* <ThemeToggle /> */}
                             {user ? (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -192,6 +198,10 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     transition={{ delay: index * 0.1 }}
                                     className="flex items-center space-x-3 w-full px-4 py-3 text-left text-muted-foreground hover:text-primary hover:bg-white/5 transition-colors rounded-lg"
                                     onClick={() => {
+                                        if ((item.label === "Upload" || item.label === "Editor") && !user) {
+                                            setShowAuthDialog(true);
+                                            return;
+                                        }
                                         navigate(item.path);
                                         setIsMenuOpen(false);
                                     }}
@@ -200,7 +210,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     <span>{item.label}</span>
                                 </motion.button>
                             ))}
-                              <ThemeToggle />
+                            <ThemeToggle />
                         </motion.div>
                     )}
                 </div>

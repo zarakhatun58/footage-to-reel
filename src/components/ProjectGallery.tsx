@@ -180,7 +180,7 @@ export const ProjectGallery = () => {
                                 {/* Content */}
                                 <div className="p-4">
                                     <div className="flex items-start justify-between mb-2">
-                                        <h3 className="font-semibold text-lg truncate flex-1">
+                                        <h3 className="font-semibold text-sm truncate flex-1">
                                             {video.story ? video.story.split("\n")[0] : video.filename}
                                         </h3>
                                         <DropdownMenu>
@@ -204,7 +204,7 @@ export const ProjectGallery = () => {
                                     </p>
 
                                     {/* Stats */}
-                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                    <div className="flex flex-wrap items-center justify-between text-sm text-muted-foreground gap-y-2">
                                         <MediaStatsBar media={video} BASE_URL={BASE_URL} />
                                         <div className="flex items-center space-x-1 pt-2">
                                             <Calendar className="w-3 h-3" />
@@ -225,19 +225,19 @@ export const ProjectGallery = () => {
                                 transition={{ delay: index * 0.05 }}
                                 className="glass-card p-4 hover:bg-accent/30 transition-colors cursor-pointer"
                             >
-                                <div className="flex items-center space-x-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center sm:space-x-4 space-y-3 sm:space-y-0">
                                     {/* Thumbnail */}
                                     {/* Thumbnail */}
-                                    <div className="relative w-32 h-20 bg-black overflow-hidden rounded flex-shrink-0 group">
+                                    <div className="relative w-full h-40 sm:w-32 sm:h-20 bg-black overflow-hidden rounded flex-shrink-0 group">
                                         {video.storyUrl ? (
                                             <video
-                                            src={video.storyUrl}
-                                            playsInline
-                                            preload="metadata"
-                                            controls
-                                            className="w-full h-full object-cover"
+                                                src={video.storyUrl}
+                                                playsInline
+                                                preload="metadata"
+                                                controls
+                                                className="w-full h-full object-cover"
 
-                                        />
+                                            />
                                         ) : (
                                             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
                                                 <Play className="w-6 h-6 text-white/70" />
@@ -248,7 +248,7 @@ export const ProjectGallery = () => {
                                     {/* Content */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between mb-1">
-                                            <h3 className="font-semibold text-lg truncate">
+                                            <h3 className="font-semibold text-sm truncate">
                                                 {video.story ? video.story.split("\n")[0] : video.filename}
                                             </h3>
                                             <Badge className={getStatusColor(video.status)} variant="secondary">
@@ -258,16 +258,13 @@ export const ProjectGallery = () => {
                                         <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
                                             {video.story || "No description available"}
                                         </p>
-                                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                                             <div className="flex items-center space-x-1">
-                                                <Eye className="w-3 h-3" />
-                                                <span>{formatViews(video.views)}</span>
+                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                    <MediaStatsBar media={video} BASE_URL={BASE_URL} />
+                                                </div>
                                             </div>
-                                            <div className="flex items-center space-x-1">
-                                                <Heart className="w-3 h-3" />
-                                                <span>{video.likes}</span>
-                                            </div>
-                                            <div className="flex items-center space-x-1">
+                                            <div className="flex items-center space-x-1 pt-3">
                                                 <Calendar className="w-3 h-3" />
                                                 <span>{new Date(video.createdAt || Date.now()).toLocaleDateString()}</span>
                                             </div>

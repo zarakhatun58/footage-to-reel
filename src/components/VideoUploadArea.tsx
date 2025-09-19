@@ -717,9 +717,9 @@ const handleDeleteVideo = async (id: string) => {
 
         return (
           <div className="mt-6">
-            <div className="border rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-4">
+            <div className="border rounded-lg shadow-md p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* ---------- Left column: previews ---------- */}
-              <div className="flex flex-col gap-3 w-full md:w-[30%]">
+              <div className="flex flex-col gap-3">
                 {imageMedia?.storyUrl && (
                   <img
                     src={imageMedia.storyUrl}
@@ -754,7 +754,7 @@ const handleDeleteVideo = async (id: string) => {
               </div>
 
               {/* ---------- Right column: story + actions ---------- */}
-              <div className="flex flex-col gap-3 w-full md:w-[70%]">
+              <div className="flex flex-col gap-3">
                 <Textarea
                   className="w-full"
                   value={mediaWithData?.story || ''}

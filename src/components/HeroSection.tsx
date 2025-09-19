@@ -130,14 +130,14 @@ export const HeroSection = () => {
       </motion.div>
 
       {/* Main Content */}
-      <div className="relative z-10 text-center max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20">
+       <div className="relative z-10 text-center w-full max-w-6xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
-          <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+           <h1 className="text-2xl sm:text-5xl md:text-6xl font-bold mb-4 leading-snug sm:leading-tight">
             Turn Your{" "}
             <span className="gradient-text animate-gradient">Memories</span>
             <br />
@@ -233,7 +233,7 @@ export const HeroSection = () => {
                   <div className="glass-card p-4 sm:p-6 hover-lift hover-glow cursor-pointer relative w-full">
                     <div className="relative mb-4 rounded-xl overflow-hidden">
                       <video
-                        className="w-full h-48 sm:h-56 md:h-64 object-cover group-hover:scale-105 transition-transform duration-500"
+                       className="w-full h-40 sm:h-48 md:h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                         controls
                         src={video.storyUrl}
                       >

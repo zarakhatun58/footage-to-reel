@@ -278,7 +278,7 @@ const autoGenerateStoryVideo = async (mediaId: string) => {
                   variant="ghost"
                   size="sm"
                   onClick={() => useTemplate(template)}
-                  className="justify-start text-left h-auto p-3 hover:bg-gradient-card"
+                  className="justify-start text-left h-auto p-3 hover:bg-gradient-card whitespace-normal break-words"
                 >
                   <Sparkles className="w-4 h-4 mr-2 flex-shrink-0" />
                   <span className="text-sm">{template}</span>
