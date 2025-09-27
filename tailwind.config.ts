@@ -128,7 +128,9 @@ export default {
 				'gradient-ai': 'var(--gradient-ai)',
 				'gradient-story': 'var(--gradient-story)',
 				'gradient-hero': 'var(--gradient-hero)',
-				'gradient-card': 'var(--gradient-card)'
+				'gradient-card': 'var(--gradient-card)',
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-secondary': 'var(--gradient-secondary)',
 			},
 			boxShadow: {
 				'ai': 'var(--shadow-ai)',

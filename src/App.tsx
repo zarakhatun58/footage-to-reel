@@ -18,6 +18,7 @@ import { Navbar } from "./components/Navbar";
 import { VideoUploadArea } from "./components/VideoUploadArea";
 import { ThemeProvider } from "./components/ThemeProvider";
 import {VideoEditor} from "./components/VideoEditor";
+import Footer from "./components/Footer";
 
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const AppWrapper = () => {
           <Route path="/projects" element={<ProjectGallery />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <Footer/>
         </BrowserRouter>
   );
 };

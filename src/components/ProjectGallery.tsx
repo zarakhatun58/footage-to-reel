@@ -150,7 +150,7 @@ export const ProjectGallery = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
-                                className="glass-card overflow-hidden hover:scale-105 transition-transform group cursor-pointer"
+                                className="glass-card overflow-hidden hover:scale-105 transition-transform group cursor-pointer shadow-lg"
                             >
                                 {/* Thumbnail */}
                                 <div className="relative aspect-video bg-black overflow-hidden rounded group">
@@ -193,7 +193,7 @@ export const ProjectGallery = () => {
                                                 <DropdownMenuItem><Edit className="w-4 h-4 mr-2" /> Edit</DropdownMenuItem>
                                                 <DropdownMenuItem><Copy className="w-4 h-4 mr-2" /> Duplicate</DropdownMenuItem>
                                                 <DropdownMenuItem><Download className="w-4 h-4 mr-2" /> Download</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600">
+                                                <DropdownMenuItem className="text-primary">
                                                     <Trash2 className="w-4 h-4 mr-2" /> Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>

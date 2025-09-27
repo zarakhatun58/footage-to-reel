@@ -821,38 +821,6 @@ const handleDeleteVideo = async (id: string) => {
           </button>
         </div>
       )}
-
-      {/* all - video  */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {videos.map(video => (
-          <div
-            key={video._id}
-            className="border rounded shadow hover:shadow-lg transition-shadow relative"
-          >
-            <video
-              controls
-              className="w-full h-48 object-cover rounded-t"
-              src={video.storyUrl}
-              preload="metadata"
-            >
-              Your browser does not support the video tag.
-            </video>
-
-            <div className="p-3">
-              <p className="truncate font-medium">{video.title || "Untitled Video"}</p>
-              <MediaStatsBar media={video} BASE_URL={BASE_URL} />
-            </div>
-            <button
-              onClick={() => handleDeleteVideo(video._id)}
-              className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-              title="Delete Video"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-
     </div>
   );
 };

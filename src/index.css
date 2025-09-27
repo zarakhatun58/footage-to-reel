@@ -5,56 +5,56 @@
 /* Video AI Platform Design System - Purple/Pink Gradient Theme */
 
 @layer base {
-  :root {
+ :root {
     /* Core Colors */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 95%;
+    --background: 0 0% 100%;
+    --foreground: 220 13% 18%;
 
     /* Cards & Surfaces */
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 18%;
 
     /* Interactive Elements */
-    --popover: 240 5.9% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 18%;
 
-    /* Brand Colors */
-    --primary: 270 100% 70%;
+    /* Brand Colors - Green Theme */
+    --primary: 177 70% 41%;        /* green base */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 300 100% 75%;
-
+    --primary-glow: 177 80% 55%;   /* lighter glow */
+    
     /* Secondary Colors */
-    --secondary: 240 5.9% 10%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 220 13% 18%;
 
     /* Muted Elements */
-    --muted: 240 5.9% 10%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
     /* Accent Colors */
-    --accent: 300 100% 75%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 220 13% 18%;
 
     /* Status Colors */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 240 5.9% 10%;
-    --input: 240 5.9% 10%;
-    --ring: 270 100% 70%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 177 70% 41%; /* updated ring to green */
 
     /* Glass & Effects */
-    --glass: 240 10% 3.9% / 0.1;
-    --glass-border: 270 100% 70% / 0.2;
-    --glow: 270 100% 70% / 0.4;
-    --shadow-color: 270 100% 70% / 0.3;
+    --glass: 0 0% 100% / 0.8;
+    --glass-border: 220 13% 91% / 0.5;
+    --glow: 177 70% 41% / 0.3;
+    --shadow-color: 177 70% 41% / 0.1;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(270 100% 70%), hsl(300 100% 75%), hsl(330 100% 80%));
-    --gradient-secondary: linear-gradient(135deg, hsl(240 10% 3.9%), hsl(240 5.9% 10%));
-    --gradient-hero: linear-gradient(135deg, hsl(270 100% 70% / 0.6), hsl(240 10% 3.9% / 0.8));
-    --gradient-glow: radial-gradient(circle at center, hsl(270 100% 70% / 0.4), transparent 70%);
+    --gradient-primary: linear-gradient(135deg, hsl(177 70% 41%), hsl(177 80% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 40% 98%), hsl(220 60% 99%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 40% 98%), hsl(0 0% 100%));
+    --gradient-glow: radial-gradient(circle at center, hsl(177 70% 41% / 0.1), transparent 70%);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -65,26 +65,26 @@
   }
 
   .dark {
-    /* Keep same values for consistent dark theme */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 95%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 95%;
-    --popover: 240 5.9% 10%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 270 100% 70%;
+    /* Light theme values for consistency */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 18%;
+    --primary: 0 84% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5.9% 10%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 240 5.9% 10%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 300 100% 75%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 95%;
-    --border: 240 5.9% 10%;
-    --input: 240 5.9% 10%;
-    --ring: 270 100% 70%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 220 13% 18%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 220 13% 18%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 0 84% 60%;
   }
 }
 
@@ -95,7 +95,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background: linear-gradient(135deg, hsl(var(--background)), hsl(240 5.9% 10%));
+    background: hsl(var(--background));
     min-height: 100vh;
   }
 
@@ -207,5 +207,13 @@
 
   .scrollbar-purple::-webkit-scrollbar-thumb:hover {
     @apply bg-primary/70;
+  }
+
+  /* Grid Pattern Background */
+  .bg-grid-pattern {
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
   }
 }

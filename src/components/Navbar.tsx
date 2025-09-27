@@ -41,11 +41,11 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
     const { user, setUser } = useAuth();
 
     const navItems = [
-        { icon: Video, label: "Editor", path: "/editor" },
-        { icon: FolderOpen, label: "Projects", path: "/projects" },
         { icon: Upload, label: "Upload", path: "/upload" },
         { icon: PenTool, label: "Stories", path: "/story-generator" },
         { icon: Search, label: 'Search', path: "/search" },
+        { icon: Video, label: "Editor", path: "/editor" },
+        { icon: FolderOpen, label: "Projects", path: "/projects" },
     ];
 
     const toggleMobileMenu = () => {
@@ -73,13 +73,13 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
     };
 
     return (
-        <div>
+        <div >
             <motion.nav
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/10"
+                className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/10 bg-[#ffffff]"
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
                         <motion.div
@@ -108,7 +108,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="flex items-center space-x-2 text-[#ffffff] hover:text-primary transition-colors"
+                                    className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
                                     onClick={() => {
                                         if ((item.label === "Upload" || item.label === "Editor") && !user) {
                                             setShowAuthDialog(true);
@@ -164,7 +164,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)}>
+                                <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)} className="text-gray-600 hover:text-primary bg-gradient-primary hover:opacity-90 transition-opacity">
                                     Sign In
                                 </Button>
                             )}
