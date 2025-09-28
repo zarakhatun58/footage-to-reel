@@ -77,7 +77,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
             <motion.nav
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/10 bg-[#ffffff]"
+                className="fixed top-0 left-0 right-0 z-50 border-b border-teal-200 bg-[#ffffff] shadow-lg"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
                     <div className="flex items-center justify-between h-16">
@@ -88,13 +88,13 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                             onClick={() => navigate("/")}
                         >
                             <div className="relative">
-                                <Sparkles className="w-8 h-8 text-primary" />
+                                <Sparkles className="w-8 h-8 text-teal-400" />
                                 <motion.div
                                     className="absolute inset-0"
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                                 >
-                                    <Play className="w-8 h-8 text-primary/50" />
+                                    <Play className="w-8 h-8 text-teal-300" />
                                 </motion.div>
                             </div>
                             <span className="text-xl font-bold gradient-text">VideoFlow</span>
@@ -108,7 +108,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                                    className="flex items-center space-x-2 text-gray-600 hover:text-teal-300 transition-colors"
                                     onClick={() => {
                                         if ((item.label === "Upload" || item.label === "Editor") && !user) {
                                             setShowAuthDialog(true);
@@ -119,7 +119,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    <item.icon className="w-4 h-4" />
+                                    <item.icon className="w-4 h-4 " />
                                     <span>{item.label}</span>
                                 </motion.button>
                             ))}
@@ -164,7 +164,10 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)} className="text-gray-600 hover:text-primary bg-gradient-primary hover:opacity-90 transition-opacity">
+                                <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)} className="border border-teal-500 text-teal-500 bg-white 
+             hover:bg-teal-500 hover:text-white 
+             active:bg-teal-600 
+             transition-colors rounded-sm">
                                     Sign In
                                 </Button>
                             )}
@@ -177,7 +180,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                 size="sm"
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                             >
-                                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                                {isMenuOpen ? <X className="w-5 h-5 text-teal-300" /> : <Menu className="w-5 h-5 text-teal-300" />}
                             </Button>
                         </div>
                     </div>
@@ -196,7 +199,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="flex items-center space-x-3 w-full px-4 py-3 text-left text-muted-foreground hover:text-primary hover:bg-white/5 transition-colors rounded-lg"
+                                    className="flex items-center space-x-3 w-full px-4 py-3 text-left text-muted-foreground text-gray-600 hover:text-teal-300 hover:bg-white/5 transition-colors rounded-lg"
                                     onClick={() => {
                                         if ((item.label === "Upload" || item.label === "Editor") && !user) {
                                             setShowAuthDialog(true);
@@ -210,7 +213,7 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                     <span>{item.label}</span>
                                 </motion.button>
                             ))}
-                            <ThemeToggle />
+                            {/* <ThemeToggle /> */}
                         </motion.div>
                     )}
                 </div>

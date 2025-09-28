@@ -10,15 +10,16 @@ import {
   FileText,
   Share2,
   Layers,
-  ArrowRight
+  ArrowRight,
+  User
 } from "lucide-react";
 import { Button } from "./ui/button";
 
 const stats = [
-  { label: "Stories Created", value: "10,000+", icon: Video },
-  { label: "Hours Processed", value: "50,000+", icon: Zap },
-  { label: "Happy Creators", value: "2,500+", icon: Sparkles },
-  { label: "Languages Supported", value: "25+", icon: FileText }
+  { label: "Stories Created", value: "10,000+", icon:  Sparkles},
+  { label: "Video Published", value: "50,000+", icon:  Video},
+  { label: "Views Generated", value: "2,500+", icon: Zap },
+  { label: "User Satisfaction", value: "25+", icon: User }
 ];
 
 export const FeaturesSection = () => {
@@ -27,21 +28,20 @@ export const FeaturesSection = () => {
   return (
 <section
   id="features"
-  className="relative overflow-hidden bg-white text-white"
+  className="relative overflow-hidden bg-white"
 >
-  <div className="max-w-7xl mx-auto relative z-10 py-8 px-6">
+  <div className="max-w-7xl relative z-10 py-8 border border-gray-200 mx-12 my-2 rounded-lg">
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="glass-card p-8 md:p-12 relative overflow-hidden"
-      style={{ background: "var(--gradient-primary)" }}
+      className="glass-card p-8 md:p-8 relative overflow-hidden"
     >
       <div className="text-center mb-8">
-        <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+        <h3 className="text-2xl md:text-3xl font-bold text-teal-300 mb-4">
           Trusted by Creators Worldwide
         </h3>
-        <p className="text-white/80">
+        <p className="text-gray-600">
           Join thousands of content creators who are already telling their stories with AI
         </p>
       </div>
@@ -58,12 +58,12 @@ export const FeaturesSection = () => {
             className="text-center group cursor-pointer"
           >
             <div className="mb-3">
-              <stat.icon className="w-8 h-8 text-white mx-auto group-hover:text-primary-glow transition-all" />
+              <stat.icon className="w-8 h-8 text-red-300 mx-auto group-hover:text-primary-glow transition-all" />
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-primary-glow transition-colors">
+            <div className="text-2xl md:text-3xl font-bold text-teal-200 mb-1 group-hover:text-primary-glow transition-colors">
               {stat.value}
             </div>
-            <div className="text-sm text-white/70">{stat.label}</div>
+            <div className="text-sm text-gray-600">{stat.label}</div>
           </motion.div>
         ))}
       </div>

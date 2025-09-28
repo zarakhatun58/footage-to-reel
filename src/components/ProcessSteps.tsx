@@ -8,13 +8,15 @@ import {
   Share2,
   Edit3,
   Search,
+  Mic,
   MessageSquare,
   Play,
   Camera,
   Eye,
   ThumbsUp,
   TrendingUp,
-  ArrowRight
+  ArrowRight,
+  Folder
 } from "lucide-react";
 import AnimatedWorkflowDemo from "./AnimatedWorkflowDemo";
 import { useEffect, useState } from "react";
@@ -24,94 +26,72 @@ const ProcessSteps = () => {
 
   const steps = [
     {
+      title: "Upload Media",
+      description: "First, import images or videos from Google Photos or your device gallery.",
       icon: Camera,
-      title: "Upload from Gallery",
-      description: "Import photos and videos from Google Photos, device gallery, or cloud storage",
-      color: "bg-gradient-to-br from-blue-500 to-blue-600",
+      color: "from-blue-500 to-cyan-500",
       step: "01",
       delay: 0.1
     },
     {
-      icon: FileText,
-      title: "Generate Transcript",
-      description: "AI automatically transcribes audio content and extracts key dialogues",
-      color: "bg-gradient-to-br from-purple-500 to-purple-600",
+      title: "AI Transcript",
+      description: "Automatically generate a transcript from your media using AI speech-to-text.",
+      icon: Mic,
+      color: "from-purple-500 to-violet-500",
       step: "02",
       delay: 0.2
     },
     {
+      title: "Emotion Tagging",
+      description: "The AI analyzes your content to detect emotions and moods.",
       icon: Heart,
-      title: "Tag Emotions",
-      description: "Smart emotion detection analyzes sentiment and mood throughout your content",
-      color: "bg-gradient-to-br from-pink-500 to-pink-600",
+      color: "from-pink-500 to-rose-500",
       step: "03",
       delay: 0.3
     },
     {
-      icon: MessageSquare,
-      title: "Create Story by Prompt",
-      description: "Generate custom stories using AI prompts or let AI create automatically",
-      color: "bg-gradient-to-br from-orange-500 to-orange-600",
+      title: "Generate Story",
+      description: "AI creates a compelling narrative from your content, which you can search by prompts.",
+      icon: Sparkles,
+      color: "from-amber-500 to-orange-500",
       step: "04",
       delay: 0.4
     },
     {
-      icon: Sparkles,
-      title: "Generate AI Story",
-      description: "Transform content into compelling narratives with perfect pacing and flow",
-      color: "bg-gradient-to-br from-green-500 to-green-600",
-      step: "05",
+      title: "Create Video",
+      description: "Professionally edit the video and apply transitions for a polished result.",
+      icon: Video,
+      color: "from-emerald-500 to-teal-500",
+       step: "05",
       delay: 0.5
     },
     {
-      icon: Video,
-      title: "Generate Video",
-      description: "AI automatically creates professional videos with smart editing and transitions",
-      color: "bg-gradient-to-br from-teal-500 to-teal-600",
+      title: "Social Share",
+      description: "Publish your video with analytics to track its performance on social media.",
+      icon: Share2,
+      color: "from-red-500 to-pink-500",
       step: "06",
       delay: 0.6
     },
     {
-      icon: Share2,
-      title: "Social Media Sharing",
-      description: "Share across platforms with built-in analytics for likes, views, and engagement",
-      color: "bg-gradient-to-br from-red-500 to-red-600",
+      title: "Track Performance",
+      description: "Gain insights into views, likes, and engagement metrics for your shared content.",
+      icon: TrendingUp,
+      color: "from-indigo-500 to-purple-500",
       step: "07",
       delay: 0.7
     },
     {
-      icon: TrendingUp,
-      title: "Track Performance",
-      description: "Monitor likes, views, shares, and ranking with detailed analytics dashboard",
-      color: "bg-gradient-to-br from-indigo-500 to-indigo-600",
+      title: "Smart Editor",
+      description: "Use advanced editing tools to refine and enhance your videos further.",
+      icon: Edit3,
+      color: "from-violet-500 to-purple-600",
       step: "08",
       delay: 0.8
-    },
-    {
-      icon: Edit3,
-      title: "Smart Video Editor",
-      description: "Advanced editing tools with AI-powered suggestions and real-time preview",
-      color: "bg-gradient-to-br from-violet-500 to-violet-600",
-      step: "09",
-      delay: 0.9
-    },
-    {
-      icon: Search,
-      title: "Smart Search",
-      description: "Find videos by transcript, emotions, tags, or story content instantly",
-      color: "bg-gradient-to-br from-amber-500 to-amber-600",
-      step: "10",
-      delay: 1.0
-    },
-    {
-      icon: Play,
-      title: "Play & Share Stories",
-      description: "Interactive story player with engagement features and easy sharing options",
-      color: "bg-gradient-to-br from-emerald-500 to-emerald-600",
-      step: "11",
-      delay: 1.1
     }
   ];
+
+
   const [activeStep, setActiveStep] = useState(0);
   const current = steps[activeStep];
   const CurrentIcon = current.icon;
@@ -128,6 +108,31 @@ const ProcessSteps = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white" />
 
       <div className="container mx-auto px-4 relative">
+         <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.2 }}
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-8 my-8"
+        >
+          <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
+            <Upload className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Upload Your Media</h4>
+            <p className="text-gray-600">Start creating amazing stories by uploading your videos, photos, and audio files</p>
+          </div>
+
+          <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl">
+            <Folder className="w-12 h-12 text-green-600 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Gallery Views</h4>
+            <p className="text-gray-600">Built-in Photos, Videos, Stories and Memories</p>
+          </div>
+
+          <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl">
+            <Search className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Smart Discovery</h4>
+            <p className="text-gray-600">Find content by emotion, transcript, or story theme</p>
+          </div>
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -136,7 +141,7 @@ const ProcessSteps = () => {
           className="text-center mb-20"
         >
           <h2 className="text-5xl md:text-6xl font-bold mb-8 text-gray-900">
-            How AI Video Stories Works?
+            How AI <span className="gradient-text">Video Stories</span> Works?
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
             Complete workflow from upload to viral content - discover how our innovative AI transforms
@@ -146,57 +151,10 @@ const ProcessSteps = () => {
           {/* Animated Workflow Demo */}
           <AnimatedWorkflowDemo />
         </motion.div>
-        {/* Interactive Features */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1.2 }}
-          viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16"
-        >
-          <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
-            <Eye className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Real-time Analytics</h4>
-            <p className="text-gray-600">Track views, engagement, and performance metrics</p>
-          </div>
+     
 
-          <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl">
-            <ThumbsUp className="w-12 h-12 text-green-600 mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Social Engagement</h4>
-            <p className="text-gray-600">Built-in likes, shares, and viral ranking system</p>
-          </div>
-
-          <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl">
-            <Search className="w-12 h-12 text-purple-600 mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Smart Discovery</h4>
-            <p className="text-gray-600">Find content by emotion, transcript, or story theme</p>
-          </div>
-        </motion.div>
-        {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1.4 }}
-          viewport={{ once: true }}
-          className="text-center mt-16"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-red-500 to-red-600 text-white px-12 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 group"
-            onClick={() => window.location.href = '/upload'}
-          >
-            Start Creating Now
-            <ArrowRight className="inline w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-          </motion.button>
-
-          <p className="text-gray-500 mt-4 text-sm">
-            Join thousands of creators transforming their content into viral stories
-          </p>
-        </motion.div>
-        <FeaturesSection />
         {/* Steps Grid */}
-        <section className="max-w-7xl mx-auto py-16 rounded-3xl shadow-2xl ">
+        <section className="max-w-7xl mx-8 py-16 rounded-3xl border border-gray-200">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-12 relative">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -231,10 +189,10 @@ const ProcessSteps = () => {
                   <motion.div
                     animate={{ scale: isActive ? 1.1 : 1 }}
                     transition={{ duration: 0.4 }}
-                    className={`relative w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg bg-gradient-to-br ${step.color} ${isActive ? "ring-4 ring-offset-2 ring-primary z-10" : "z-10"
+                    className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg bg-gradient-to-br ${step.color} ${isActive ? "ring-4 ring-offset-2 ring-primary z-10" : "z-10"
                       }`}
                   >
-                    <Icon className="w-7 h-7" />
+                    <Icon className="w-6 h-6" />
                   </motion.div>
 
                   {/* Title */}
@@ -247,7 +205,51 @@ const ProcessSteps = () => {
             })}
           </div>
         </section>
+        {/* <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-16 pt-8 border-t border-gray-200"
+        >
+          <p className="text-sm text-gray-500 mb-6 text-center">More than 50+ creators trusted us worldwide</p>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-2xl mx-auto">
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-teal-300 mb-1 sm:mb-2">10K+</div>
+              <div className="text-xs sm:text-sm text-gray-600">Stories Created</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-teal-300 mb-1 sm:mb-2">50M+</div>
+              <div className="text-xs sm:text-sm text-gray-600">Views Generated</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-teal-300 mb-1 sm:mb-2">95%</div>
+              <div className="text-xs sm:text-sm text-gray-600">User Satisfaction</div>
+            </div>
+          </div>
+        </motion.div> */}
+
+        {/* <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.4 }}
+          viewport={{ once: true }}
+          className="text-center my-8 mx-8 border border-gray-200 rounded-md p-8"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-teal-300 to-red-600 text-white px-12 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 group"
+            onClick={() => window.location.href = '/upload'}
+          >
+            Start Creating Now
+            <ArrowRight className="inline w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
+          </motion.button>
+
+          <p className="text-gray-500 mt-4 text-md">
+            Join thousands of creators transforming their content into viral stories
+          </p>
+        </motion.div> */}
       </div>
     </section>
   );

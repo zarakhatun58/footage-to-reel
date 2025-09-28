@@ -175,11 +175,10 @@ const AnimatedWorkflowDemo = () => {
         setTypedText("");
     };
     return (
-        <div className="relative w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="relative w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 px-4 sm:px-6 lg:px-8">
 
             {/* Left: Animated Workflow */}
-            <div className="flex-1 min-w-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
-                {/* Demo Screen */}
+            <div className="flex-1 min-w-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200 pb-8">        
                 <div className="aspect-video bg-gradient-to-br from-white to-gray-50 relative overflow-hidden">
                     {/* Animated Background */}
                     <div className="absolute inset-0">
@@ -196,7 +195,7 @@ const AnimatedWorkflowDemo = () => {
                     </div>
 
                     {/* Central Animation */}
-                    <div className="relative z-10 h-full flex items-center justify-center p-8 sm:p-12 ">
+                    <div className="relative z-10 h-full flex items-center justify-center p-2 sm:p-12 ">
                         {/* Central Icon */}
                         <motion.div
                             key={currentStep}
@@ -204,7 +203,7 @@ const AnimatedWorkflowDemo = () => {
                             animate={{ scale: 1, rotate: 0, opacity: 1 }}
                             exit={{ scale: 0, rotate: 180, opacity: 0 }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
-                            className={`w-28 h-28 bg-gradient-to-br ${currentStepData?.color} rounded-3xl flex items-center justify-center shadow-2xl relative mb-24`}
+                            className={`w-24 h-24 bg-gradient-to-br ${currentStepData?.color} rounded-3xl flex items-center justify-center shadow-2xl relative mb-12`}
                         >
                             <CurrentIcon className="w-16 h-16 text-white" />
                         </motion.div>
@@ -212,7 +211,7 @@ const AnimatedWorkflowDemo = () => {
                         {/* Outer Circular Icons */}
                         {steps.map((step, index) => {
                             const angle = (index / steps.length) * 2 * Math.PI; // distribute around circle
-                            const radius = 150; // distance from center
+                            const radius = 140; // distance from center
                             const x = radius * Math.cos(angle);
                             const y = radius * Math.sin(angle);
                             const isActive = index === currentStep;
@@ -236,13 +235,13 @@ const AnimatedWorkflowDemo = () => {
                     </div>
 
                     {/* Progress */}
-                    <div className="absolute bottom-6 left-6 right-6">
+                    <div className="absolute bottom-2 left-6 right-6">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex space-x-2">
                                 {steps.map((_, index) => (
                                     <motion.div
                                         key={index}
-                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentStep ? 'bg-primary shadow-lg' : 'bg-gray-300'}`}
+                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentStep ? 'bg-teal-300 shadow-lg' : 'bg-gray-300'}`}
                                         animate={{ scale: index === currentStep ? 1.2 : 1 }}
                                     />
                                 ))}
@@ -258,6 +257,7 @@ const AnimatedWorkflowDemo = () => {
                         </div>
 
                         {/* Current Step Info */}
+                         <div style={{marginTop:"20px"}}> 
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={currentStep}
@@ -274,6 +274,7 @@ const AnimatedWorkflowDemo = () => {
                                 </div>
                             </motion.div>
                         </AnimatePresence>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -281,7 +282,7 @@ const AnimatedWorkflowDemo = () => {
             {/* Right: Female AI Assistant */}
             <div className="hidden lg:flex flex-col items-center justify-start w-full lg:w-80 flex-shrink-0 bg-white/80 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-xl space-y-6 border border-gray-200">
                 {/* Avatar */}
-                <div className="w-48 h-48 rounded-full overflow-hidden border-8 border-[#2ec4bc] flex items-center justify-center">
+                <div className="w-36 h-36 rounded-full overflow-hidden border-8 border-[#2ec4bc] flex items-center justify-center">
                     <img src={femaleAI} alt="AI Assistant" className="w-full h-full object-cover" />
                 </div>
 

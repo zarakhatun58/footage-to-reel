@@ -53,7 +53,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-         <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors">
+         <div className="min-h-screen bg-white text-gray-900 transition-colors">
               <AppWrapper />
             </div>
         </TooltipProvider>
