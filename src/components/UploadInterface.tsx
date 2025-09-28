@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { 
-  Upload, 
-  File, 
-  Video, 
-  Image, 
-  Music, 
-  X, 
-  CheckCircle, 
+import {
+  Upload,
+  File,
+  Video,
+  Image,
+  Music,
+  X,
+  CheckCircle,
   AlertCircle,
   Play,
   Folder,
@@ -17,9 +17,13 @@ import {
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { UploadedMedia } from "./VideoUploadArea";
+import { BASE_URL } from "@/services/apis";
+import { Textarea } from "./ui/textarea";
+import AudioUploadModal from "./AudioUpload";
 
 interface UploadFile {
- id: string;
+  id: string;
   name: string;
   size: number;
   type: string;
@@ -38,6 +42,12 @@ interface UploadFile {
 export const UploadInterface = () => {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
+  const [mediaId, setMediaId] = useState<string>('');
+  const [loadingVideo, setLoadingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [storyAudioUrl, setStoryAudioUrl] = useState('');
+const [storyText, setStoryText] = useState('');
 
   const getFileIcon = (type: string) => {
     if (type.startsWith('video/')) return Video;
@@ -95,42 +105,232 @@ export const UploadInterface = () => {
   };
 
   const processFiles = (fileList: File[]) => {
-    const newFiles: UploadFile[] = fileList.map(file => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      progress: 0,
-      status: "uploading" as const,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
-    }));
+    const newFiles: UploadFile[] = fileList.map(file => {
+      const tempId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+
+      // Add placeholder to uploadedMedia
+      setUploadedMedia((prev: any) => [
+        ...prev,
+        {
+          id: tempId,
+          name: file.name,
+          size: file.size,
+          type: file.type.startsWith('video') ? 'video' : file.type.startsWith('audio') ? 'audio' : file.type.startsWith('image') ? 'image' : 'unknown',
+          transcriptionStatus: 'processing',
+          thumbnail: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+          transcript: '',
+          tags: [],
+          emotions: '',
+          story: '',
+          images: []
+        }
+      ]);
+
+      return {
+        id: tempId,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        progress: 0,
+        status: "uploading" as const,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+      };
+    });
 
     setFiles(prev => [...prev, ...newFiles]);
 
     // Simulate upload progress
     newFiles.forEach(file => {
-      simulateUpload(file.id);
+      simulateUpload(file.id, fileList.find(f => f.name === file.name)!);
     });
   };
 
-  const simulateUpload = (fileId: string) => {
-    const interval = setInterval(() => {
-      setFiles(prev => prev.map(file => {
-        if (file.id === fileId) {
-          const newProgress = Math.min(file.progress + Math.random() * 20, 100);
-          const newStatus = newProgress === 100 ? "completed" : "uploading";
-          
-          if (newProgress === 100) {
-            clearInterval(interval);
-          }
-          
-          return { ...file, progress: newProgress, status: newStatus };
+
+
+  const simulateUpload = async (fileId: string, file: File) => {
+    const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('audio') ? 'audio' : file.type.startsWith('image') ? 'image' : 'unknown';
+    const formData = new FormData();
+    formData.append(type === 'image' ? 'images' : type === 'video' ? 'video' : 'voiceover', file);
+
+    const previewUrl = URL.createObjectURL(file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress } : f));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const result = JSON.parse(xhr.responseText);
+        const uploadedItem = result.uploaded?.[0];
+
+        if (uploadedItem) {
+          setUploadedMedia(prev => prev.map(m => m.id === fileId ? {
+            ...m,
+            id: uploadedItem._id || fileId,
+            transcriptionStatus: uploadedItem.status || 'completed',
+            thumbnail: uploadedItem.thumbnail || previewUrl,
+            transcript: uploadedItem.transcript || '',
+            tags: uploadedItem.tags || [],
+            emotions: uploadedItem.emotions || ''
+          } : m));
+          setMediaId(uploadedItem._id);
         }
-        return file;
-      }));
-    }, 500);
+
+        setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "completed", progress: 100 } : f));
+      } else {
+        setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "error" } : f));
+      }
+    };
+
+    xhr.onerror = () => {
+      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "error" } : f));
+    };
+
+    xhr.open('POST', `${BASE_URL}/api/uploads`);
+    xhr.send(formData);
   };
 
+    const generateStory = async () => {
+      // ✅ Find the first media with a transcript
+      const mediaWithTranscript = uploadedMedia.find(
+        m => m.transcript && m.transcript.trim() !== ''
+      );
+  
+      if (!mediaWithTranscript) {
+        alert('❌ No transcript found. Please upload media that has a transcript first.');
+        return;
+      }
+  
+     
+      const prompt = 'Create a motivational story about learning to code.'; 
+  
+      try {
+        const res = await fetch(`${BASE_URL}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transcript: mediaWithTranscript.transcript,
+            prompt
+          })
+        });
+  
+        const result = await res.json();
+  
+        if (!res.ok || !result.story) {
+          throw new Error(result.error || 'Story generation failed');
+        }
+  
+        // ✅ Update UI with story
+        setStoryText(result.story);
+  
+        if (result.storyAudioUrl) {
+          setStoryAudioUrl(result.storyAudioUrl);
+        }
+  
+        setUploadedMedia(prev =>
+          prev.map(m =>
+            m.id === mediaWithTranscript.id
+              ? { ...m, story: result.story, prompt }
+              : m
+          )
+        );
+  
+        console.log('✅ Story generated:', result.story);
+  
+      } catch (error) {
+        console.error('Story generation error:', error);
+        alert('❌ Failed to generate story');
+      } finally {
+        stop(); 
+      }
+    };
+
+  const generateVideoClip = async () => {
+    // Find the uploaded media record
+    const media = uploadedMedia.find((m) => m.id === mediaId);
+    if (!media) {
+      alert("Media not found.");
+      return;
+    }
+
+    // Extract all image filenames
+    const imageNames = Array.isArray(media.images)
+      ? media.images.map((imgUrl) => imgUrl.split("/").pop()).filter(Boolean)
+      : [];
+
+    // Extract audio filename (optional now)
+    const audioName = media.voiceUrl ? media.voiceUrl.split("/").pop() : null;
+
+    if (imageNames.length === 0) {
+      alert("Missing required image(s).");
+      return;
+    }
+
+    setLoadingVideo(true);
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/apivideo/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageNames,
+          audioName, // can be null, backend handles fallback
+          mediaId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Video generation failed.");
+      }
+
+      setUploadedMedia((prev) =>
+        prev.map((m) =>
+          m.id === mediaId
+            ? {
+              ...m,
+              type: "video",
+              storyUrl: data.videoUrl,
+              transcriptionStatus: "completed",
+              title: data.title || m.title,
+              thumbnailUrl: data.thumbnailUrl,
+            }
+            : m
+        )
+      );
+
+      // Upload final video to backend
+      if (!data.videoUrl) {
+        throw new Error("Video URL is missing. Cannot upload final video.");
+      }
+      const uploadRes = await fetch(`${BASE_URL}/api/apivideo/upload-final`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mediaId,
+          videoUrl: data.videoUrl,
+          title: media.title,
+          userId: media.id,
+        }),
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
+
+      alert("✅ Video generated and uploaded successfully!");
+    } catch (error) {
+      console.error("❌ Video generation error:", error);
+      alert("❌ Video generation failed. Please try again.");
+    } finally {
+
+      setLoadingVideo(false);
+    }
+  };
   const removeFile = (fileId: string) => {
     setFiles(prev => prev.filter(file => file.id !== fileId));
   };
@@ -176,11 +376,10 @@ export const UploadInterface = () => {
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
-                isDragActive 
-                  ? 'border-primary bg-primary/5' 
+              className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${isDragActive
+                  ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50 hover:bg-accent/30'
-              }`}
+                }`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
@@ -193,7 +392,7 @@ export const UploadInterface = () => {
                 onChange={handleFileSelect}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              
+
               <motion.div
                 animate={{ y: isDragActive ? -10 : 0 }}
                 transition={{ type: "spring", stiffness: 300 }}
@@ -201,14 +400,14 @@ export const UploadInterface = () => {
                 <div className="w-24 h-24 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
                   <Upload className="w-12 h-12 text-primary" />
                 </div>
-                
+
                 <h3 className="text-xl font-semibold mb-2">
                   {isDragActive ? 'Drop your files here' : 'Drag & drop your files here'}
                 </h3>
                 <p className="text-muted-foreground mb-6">
                   or click to browse your device
                 </p>
-                
+
                 <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Video className="w-4 h-4 text-blue-500" />
@@ -238,7 +437,7 @@ export const UploadInterface = () => {
                   {files.map((file) => {
                     const FileIcon = getFileIcon(file.type);
                     const colorClass = getFileTypeColor(file.type);
-                    
+
                     return (
                       <motion.div
                         key={file.id}
@@ -247,21 +446,21 @@ export const UploadInterface = () => {
                         className="flex items-center space-x-4 p-3 bg-background rounded-lg border border-border"
                       >
                         {file.preview ? (
-                          <img 
-                            src={file.preview} 
+                          <img
+                            src={file.preview}
                             alt={file.name}
                             className="w-12 h-12 object-cover rounded"
                           />
                         ) : (
                           <FileIcon className={`w-12 h-12 ${colorClass}`} />
                         )}
-                        
+
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{file.name}</p>
                           <p className="text-sm text-muted-foreground">
                             {formatFileSize(file.size)}
                           </p>
-                          
+
                           {file.status === "uploading" && (
                             <div className="mt-2">
                               <Progress value={file.progress} className="h-2" />
@@ -271,7 +470,7 @@ export const UploadInterface = () => {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           {file.status === "completed" && (
                             <CheckCircle className="w-5 h-5 text-green-500" />
@@ -279,7 +478,7 @@ export const UploadInterface = () => {
                           {file.status === "error" && (
                             <AlertCircle className="w-5 h-5 text-red-500" />
                           )}
-                          
+
                           <Button
                             variant="ghost"
                             size="sm"
@@ -340,6 +539,110 @@ export const UploadInterface = () => {
           </TabsContent>
         </Tabs>
 
+        {uploadedMedia.length > 0 && (() => {
+          const imageMedia = uploadedMedia.find(m => m.type === 'image');
+          const videoMedia = uploadedMedia.find(m => m.type === 'video');
+          const audioMedia = uploadedMedia.find(m => m.type === 'audio');
+
+          // ✅ Find the first media object that actually has transcript/tags/emotions
+          const mediaWithData =
+            uploadedMedia.find(
+              m => (m.transcript && m.transcript.trim() !== '') ||
+                (m.tags && m.tags.length > 0) ||
+                (Array.isArray(m.emotions) && m.emotions.length > 0) ||
+                (typeof m.emotions === 'string' && m.emotions.trim() !== '')
+            ) || uploadedMedia[0];
+
+          return (
+            <div className="mt-6">
+              <div className="border rounded-lg shadow-md p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* ---------- Left column: previews ---------- */}
+                {loadingVideo && (
+                  <div className="mt-2">
+                    <Progress value={videoProgress} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Math.round(videoProgress)}% generating video
+                    </p>
+                  </div>
+                )}
+                <div className="flex flex-col gap-3">
+                  {imageMedia?.storyUrl && (
+                    <img
+                      src={imageMedia.storyUrl}
+                      alt="Uploaded Image"
+                      className="rounded-md w-64 object-cover"
+                    />
+                  )}
+
+                  {videoMedia?.storyUrl && (
+                    <video controls src={videoMedia.storyUrl} className="rounded-md w-64" />
+                  )}
+
+                  {audioMedia?.storyUrl && (
+                    <audio controls className="w-full">
+                      <source src={audioMedia.storyUrl} type="audio/mp3" />
+                      Your browser does not support the audio tag.
+                    </audio>
+                  )}
+
+                  {/* ---------- Metadata ---------- */}
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Transcript:</strong> {mediaWithData?.transcript || 'Not available'}</p>
+                    <p><strong>Tags:</strong> {mediaWithData?.tags?.join(', ') || 'Not generated'}</p>
+                    <p><strong>Emotions:</strong> {
+                      mediaWithData?.emotions
+                        ? Array.isArray(mediaWithData.emotions)
+                          ? mediaWithData.emotions.join(', ')
+                          : mediaWithData.emotions
+                        : 'Not detected'
+                    }</p>
+                  </div>
+                </div>
+
+                {/* ---------- Right column: story + actions ---------- */}
+                <div className="flex flex-col gap-3">
+                  <Textarea
+                    className="w-full"
+                    value={mediaWithData?.story || ''}
+                    onChange={e =>
+                      setUploadedMedia(prev =>
+                        prev.map(m =>
+                          m.id === mediaWithData.id ? { ...m, story: e.target.value } : m
+                        )
+                      )
+                    }
+
+                    rows={6}
+                    placeholder="Story will appear here..."
+                  />
+
+
+                  <div className="flex flex-wrap gap-3">
+                     <Button onClick={generateStory}>Generate Story</Button>
+                    {mediaWithData && (
+                      <AudioUploadModal
+                        media={mediaWithData}
+                        setUploadedMedia={setUploadedMedia}
+                      />
+                    )}
+
+                    <Button
+                      onClick={generateVideoClip}
+                      disabled={!mediaWithData?.story || loadingVideo}
+                    >
+                      {loadingVideo ? 'Generating Video...' : 'Generate Video Clip'}
+                    </Button>
+                  </div>
+
+                  <div className="text-sm font-semibold truncate">{mediaWithData?.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Status: {mediaWithData?.transcriptionStatus}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
         {/* Recent Projects */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -351,7 +654,7 @@ export const UploadInterface = () => {
             <Folder className="w-5 h-5 mr-2" />
             Recent Projects
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {recentProjects.map((project, index) => (
               <motion.div

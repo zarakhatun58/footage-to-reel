@@ -21,8 +21,11 @@ import {
 import AnimatedWorkflowDemo from "./AnimatedWorkflowDemo";
 import { useEffect, useState } from "react";
 import { FeaturesSection } from "./FeaturesSection";
+import { useNavigate } from "react-router-dom";
 
 const ProcessSteps = () => {
+
+  const navigate = useNavigate();
 
   const steps = [
     {
@@ -115,19 +118,19 @@ const ProcessSteps = () => {
           viewport={{ once: true }}
           className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-8 my-8"
         >
-          <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
+          <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl cursor-pointer" onClick={() => navigate('/upload')}>
             <Upload className="w-12 h-12 text-blue-600 mx-auto mb-4" />
             <h4 className="text-lg font-semibold text-gray-900 mb-2">Upload Your Media</h4>
             <p className="text-gray-600">Start creating amazing stories by uploading your videos, photos, and audio files</p>
           </div>
 
-          <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl">
-            <Folder className="w-12 h-12 text-green-600 mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Gallery Views</h4>
+          <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl cursor-pointer" onClick={() => navigate('/projects')}>
+            <Video className="w-12 h-12 text-green-600 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Generate Videos</h4>
             <p className="text-gray-600">Built-in Photos, Videos, Stories and Memories</p>
           </div>
 
-          <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl">
+          <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl cursor-pointer" onClick={() => navigate('/search')}>
             <Search className="w-12 h-12 text-purple-600 mx-auto mb-4" />
             <h4 className="text-lg font-semibold text-gray-900 mb-2">Smart Discovery</h4>
             <p className="text-gray-600">Find content by emotion, transcript, or story theme</p>

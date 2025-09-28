@@ -98,7 +98,7 @@ const [isOpen, setIsOpen] = useState(false);
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded shadow transition"
+        className="bg-red-300 hover:bg-teal-300 text-white font-semibold px-4 py-2 rounded-md shadow transition"
       >
         Audio
       </button>
@@ -124,7 +124,7 @@ const [isOpen, setIsOpen] = useState(false);
                   key={opt}
                   className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all duration-200
                     ${option === opt
-                      ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-lg scale-105'
+                      ? 'bg-gradient-primary text-white shadow-lg scale-105'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
@@ -156,14 +156,14 @@ const [isOpen, setIsOpen] = useState(false);
                   {!isRecording ? (
                     <button
                       onClick={startRecording}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 rounded shadow"
+                      className="flex-1 bg-teal-300 hover:bg-red-300 text-white font-semibold py-1.5 rounded shadow"
                     >
                       Start Recording
                     </button>
                   ) : (
                     <button
                       onClick={stopRecording}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-1.5 rounded shadow"
+                      className="flex-1 bg-teal-300 hover:bg-red-300 text-white font-semibold py-1.5 rounded shadow"
                     >
                       Stop & Upload
                     </button>
@@ -174,7 +174,7 @@ const [isOpen, setIsOpen] = useState(false);
               {option === 'auto' && (
                 <button
                   onClick={autoGenerateAudio}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1.5 rounded shadow"
+                  className="w-full bg-teal-600 hover:bg-red-400 text-white font-semibold py-1.5 rounded shadow"
                 >
                   Generate Audio
                 </button>

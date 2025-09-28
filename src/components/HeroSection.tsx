@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Folder, Play, Sparkles } from "lucide-react";
 
 const HeroSection = () => {
   return (
@@ -58,10 +58,10 @@ const HeroSection = () => {
             variant="outline"
             size="lg"
             className="border-2 border-gray-300 text-gray-700 hover:border-teal-300 px-8 py-4 text-lg font-semibold transition-all duration-300 group"
-            onClick={() => window.location.href = '/demo'}
+            onClick={() => window.location.href = '/gallery'}
           >
-            <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-            Watch Demo
+            <Folder className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+            View Gallery
           </Button>
         </motion.div>
 
