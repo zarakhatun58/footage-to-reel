@@ -65,7 +65,7 @@ const ProcessSteps = () => {
       description: "Professionally edit the video and apply transitions for a polished result.",
       icon: Video,
       color: "from-emerald-500 to-teal-500",
-       step: "05",
+      step: "05",
       delay: 0.5
     },
     {
@@ -111,12 +111,12 @@ const ProcessSteps = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white" />
 
       <div className="container mx-auto px-4 relative">
-         <motion.div
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.2 }}
           viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-8 my-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-auto sm:mx-8 my-2 sm:my-8 "
         >
           <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl cursor-pointer" onClick={() => navigate('/upload')}>
             <Upload className="w-12 h-12 text-blue-600 mx-auto mb-4" />
@@ -143,10 +143,10 @@ const ProcessSteps = () => {
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <h2 className="text-5xl md:text-6xl font-bold mb-8 text-gray-900">
+          <h2 className="text-2xl md:text-4xl font-bold mb-8 text-gray-900">
             How AI <span className="gradient-text">Video Stories</span> Works?
           </h2>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
+          <p className="text-sm sm:text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
             Complete workflow from upload to viral content - discover how our innovative AI transforms
             your photos and videos into engaging stories with social sharing and analytics.
           </p>
@@ -154,10 +154,18 @@ const ProcessSteps = () => {
           {/* Animated Workflow Demo */}
           <AnimatedWorkflowDemo />
         </motion.div>
-     
+
 
         {/* Steps Grid */}
-        <section className="max-w-7xl mx-8 py-16 rounded-3xl border border-gray-200">
+        <section className="max-w-7xl mx-8 mx-0 sm:mx-8 py-2 sm:py-16 px-2 sm:px-4 rounded-3xl border border-gray-200">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-sm md:text-base font-bold gradient-text">
+              Turning Moments into Stories
+            </h2>
+            <p className="mt-2 text-gray-500 text-sm sm:text-sm md:text-base">
+              Your creative journey from upload to storytelling
+            </p>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-12 relative">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -195,11 +203,11 @@ const ProcessSteps = () => {
                     className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg bg-gradient-to-br ${step.color} ${isActive ? "ring-4 ring-offset-2 ring-primary z-10" : "z-10"
                       }`}
                   >
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-6 h-6 sm:w-4 sm:h-4" />
                   </motion.div>
 
                   {/* Title */}
-                  <h4 className={`mt-3 font-semibold ${isActive ? "text-gray-900" : "text-gray-500"}`}>
+                  <h4 className={`mt-3 font-semibold text-sm sm:text-sm md:text-base ${isActive ? "gradient-text" : "text-gray-500"}`}>
                     {step.title}
                   </h4>
                   <p className="text-xs text-gray-400">{step.step}</p>

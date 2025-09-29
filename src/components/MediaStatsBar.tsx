@@ -1,7 +1,7 @@
 import { Eye, Share2, BarChart3, ThumbsUp, Download, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { UploadedMedia } from './VideoUploadArea';
-import { VideoType } from './HeroSection';
+import { VideoType } from './ProjectGallery';
 
 
 type MediaStatsBarProps = {
