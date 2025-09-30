@@ -12,17 +12,18 @@ const Gallery = () => {
             setLoading(true);
             setError(null);
 
-            // Replace with your actual API endpoint
+            const token = localStorage.getItem("authToken"); // ✅ must match stored key
+            if (!token) throw new Error("No auth token found, please login.");
+
             const res = await fetch(`${BASE_URL}/api/auth/google-photos`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`, // your JWT token
+                    Authorization: `Bearer ${token}`, 
                 },
             });
 
             if (!res.ok) throw new Error("Failed to fetch photos");
 
             const data = await res.json();
-            // Google Photos API returns mediaItems array
             setPhotos(data.mediaItems || []);
         } catch (err) {
             console.error(err);
@@ -42,11 +43,10 @@ const Gallery = () => {
 
     return (
         <div className="gallery grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 m-auto">
-            <h3 className="gradient-text mt-40">Visit You Gallery</h3>
             {photos.map((item) => (
                 <div key={item.id} className="photo border rounded overflow-hidden">
                     <img
-                        src={item.baseUrl + "=w400-h400"} // adjust size with URL params
+                        src={item.baseUrl + "=w400-h400"} 
                         alt={item.filename || "Google Photo"}
                         className="w-full h-full object-cover"
                     />
