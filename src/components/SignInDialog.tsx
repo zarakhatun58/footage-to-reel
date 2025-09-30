@@ -355,7 +355,8 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
                                         </Button>
                                     </form>
                                     <div className="m-2">
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                        {/* <GoogleLogin onSuccess={handleSuccess} onError={handleError} /> */}
+                                          <GoogleLoginUnified onClose={() => setIsModalOpen(false)} />
                                     </div>
 
                                 </CardContent>

@@ -1,7 +1,7 @@
-// GoogleLoginUnified.tsx
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '@/services/apis';
+import React, { useEffect } from 'react';
 
 const GOOGLE_CLIENT_ID = '495282347288-bj7l1q7f0c5kbk23623sppibg1tml4dp.apps.googleusercontent.com';
 const REDIRECT_URI = 'https://footage-flow-server.onrender.com/api/auth/google/callback';
@@ -13,11 +13,9 @@ export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
   // Redirect user to Google OAuth consent page
   const handleLogin = () => {
     const scope = encodeURIComponent(
-      'openid profile email https://www.googleapis.com/auth/photoslibrary.readonly'
+      "openid profile email https://www.googleapis.com/auth/photoslibrary.readonly"
     );
-
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
-
     window.location.href = url;
   };
 
@@ -39,19 +37,25 @@ export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
         token,
       };
 
+      // Store user in AuthContext and localStorage
       localStorage.setItem('authToken', token);
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
       setUser(normalizedUser);
 
       if (onClose) onClose();
-      navigate('/');
+      navigate('/'); // Redirect after login
     } catch (err: any) {
       console.error('Google login failed:', err);
       alert(err.response?.data?.error || 'Google login failed');
     }
   };
 
-  // Automatically handle redirect if ?code exists
-  useAuthEffectOnce(handleCallback);
+  // Run callback only if URL has `?code=`
+  useEffect(() => {
+    if (window.location.search.includes('code=')) {
+      handleCallback();
+    }
+  }, []);
 
   return (
     <button
@@ -61,14 +65,6 @@ export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
       Sign in with Google
     </button>
   );
-};
-
-// Hook to run effect once (like componentDidMount)
-import { useEffect } from 'react';
-const useAuthEffectOnce = (fn: () => void) => {
-  useEffect(() => {
-    fn();
-  }, []);
 };
 
 export default GoogleLoginUnified;

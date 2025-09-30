@@ -20,6 +20,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { VideoEditor } from "./components/VideoEditor";
 import Footer from "./components/Footer";
 import Gallery from "./pages/Gallery";
+import ProtectedRoute from "./context/ProtectedRoute";
 
 
 const queryClient = new QueryClient();
@@ -32,16 +33,26 @@ const AppWrapper = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/story-generator" element={<StoryGenerator />} />
+        {/* <Route path="/story-generator" element={<StoryGenerator />} /> */}
         <Route path="/search" element={<SearchInterface />} />
         <Route path="/savedEntries" element={<SavedEntries />} />
-        <Route path="/editor" element={<VideoEditor />} />
-        <Route path="/upload" element={<UploadInterface />} />
+        {/* <Route path="/editor" element={<VideoEditor />} />
+        <Route path="/upload" element={<UploadInterface />} /> */}
         {/* <Route path="/upload" element={<VideoUploadArea />} /> */}
-        <Route path="/projects" element={<ProjectGallery />} />
-        <Route path="/gallery" element={<Gallery />} />
+        {/* <Route path="/projects" element={<ProjectGallery />} />
+        <Route path="/gallery" element={<Gallery />} /> */}
         <Route path="*" element={<NotFound />} />
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/story-generator" element={<StoryGenerator />} />
+          <Route path="/editor" element={<VideoEditor />} />
+          <Route path="/upload" element={<UploadInterface />} />
+          <Route path="/projects" element={<ProjectGallery />} />
+          <Route path="/gallery" element={<Gallery />} />
+        </Route>
       </Routes>
+
+
       <Footer />
     </BrowserRouter>
   );
