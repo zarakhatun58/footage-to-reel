@@ -26,6 +26,7 @@ import api, { BASE_URL } from "@/services/apis";
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { googleLogout } from "@react-oauth/google";
 import { useAuth } from "@/context/AuthContext";
+import GoogleLoginUnified from "./GoogleLoginUnified";
 
 type SignInDialogProps = {
     open: boolean;
@@ -304,7 +305,8 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
                                         </Button>
                                     </form>
                                     <div className="m-2">
-                                        <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
+                                        {/* <GoogleLogin onSuccess={handleSuccess} onError={handleError} /> */}
+                                        <GoogleLoginUnified/>
                                     </div>
                                 </CardContent>
                             </Card>

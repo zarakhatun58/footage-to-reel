@@ -23,7 +23,7 @@ import Gallery from "./pages/Gallery";
 
 
 const queryClient = new QueryClient();
-export const GOOGLE_CLIENT_ID = '584714840164-0ebm888scgf8vj8rhtvsfg32i80o2b3m.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = '495282347288-bj7l1q7f0c5kbk23623sppibg1tml4dp.apps.googleusercontent.com';
 
 const AppWrapper = () => {
   return (
