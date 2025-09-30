@@ -13,7 +13,7 @@ const Gallery = () => {
             setError(null);
 
             // Replace with your actual API endpoint
-            const res = await fetch(`${BASE_URL}/api/google-photos`, {
+            const res = await fetch(`${BASE_URL}/api/auth/google-photos`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`, // your JWT token
                 },
