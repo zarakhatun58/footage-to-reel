@@ -21,6 +21,7 @@ import { VideoEditor } from "./components/VideoEditor";
 import Footer from "./components/Footer";
 import Gallery from "./pages/Gallery";
 import ProtectedRoute from "./context/ProtectedRoute";
+import GoogleAuthCallback from "./pages/GoogleAuthCallback";
 
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const AppWrapper = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<GoogleAuthCallback />} />
         {/* <Route path="/story-generator" element={<StoryGenerator />} /> */}
         <Route path="/search" element={<SearchInterface />} />
         <Route path="/savedEntries" element={<SavedEntries />} />
