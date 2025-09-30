@@ -27,56 +27,64 @@ export const FeaturesSection = () => {
     { label: "Views Generated", value: "0", icon: Zap },
     { label: "User Satisfaction", value: "0", icon: User },
   ]);
-useEffect(() => {
-  const fetchStats = async () => {
-    try {
-      // Stories count
-      const storiesRes = await fetch(`${BASE_URL}/api/generate`);
-      const storiesData = await storiesRes.json();
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
 
-      // Videos count
-      const videosRes = await fetch(`${BASE_URL}/api/apivideo/all-generate-video`);
-      const videosData = await videosRes.json();
+        // Stories count
+        let storiesData = { count: 0 };
+        try {
+          const storiesRes = await fetch(`${BASE_URL}/api/generate`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+          if (storiesRes.ok) storiesData = await storiesRes.json();
+        } catch { }
 
-      // Total views (new endpoint)
-      const viewsRes = await fetch(`${BASE_URL}/api/media/views/total`);
-      const viewsData = await viewsRes.json();
+        // Videos count
+        let videosData = { count: 0 };
+        try {
+          const videosRes = await fetch(`${BASE_URL}/api/apivideo/all-generate-video`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+          if (videosRes.ok) videosData = await videosRes.json();
+        } catch { }
 
-      // User profile (or total users)
-      const userRes = await fetch(`${BASE_URL}/api/auth/profile`, {
-        credentials: "include",
-      });
-      const userData = await userRes.json();
+        // Views count
+        let viewsData = { totalViews: 0 };
+        try {
+          const viewsRes = await fetch(`${BASE_URL}/api/media/views/total`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+          if (viewsRes.ok) viewsData = await viewsRes.json();
+        } catch { }
 
-      setStats([
-        {
-          label: "Stories Created",
-          value: storiesData?.count ?? "0",
-          icon: Sparkles,
-        },
-        {
-          label: "Video Published",
-          value: videosData?.count ?? "0",
-          icon: Video,
-        },
-        {
-          label: "Views Generated",
-          value: viewsData?.totalViews ?? "0",
-          icon: Zap,
-        },
-        {
-          label: "User Satisfaction",
-          value: userData?.totalUsers ?? "0",
-          icon: User,
-        },
-      ]);
-    } catch (err) {
-      console.error("Failed to fetch stats", err);
-    }
-  };
+        // User count (example: total users)
+        let userData = { totalUsers: 0 };
+        try {
+          const userRes = await fetch(`${BASE_URL}/api/auth/profile`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+          if (userRes.ok) {
+            const data = await userRes.json();
+            userData.totalUsers = data?.totalUsers || 1; // fallback
+          }
+        } catch { }
 
-  fetchStats();
-}, []);
+        setStats([
+          { label: "Stories Created", value: String(storiesData?.count ?? "0"), icon: Sparkles },
+          { label: "Video Published", value: String(videosData?.count ?? "0"), icon: Video },
+          { label: "Views Generated", value: String(viewsData?.totalViews ?? "0"), icon: Zap },
+          { label: "User Satisfaction", value: String(userData?.totalUsers ?? "0"), icon: User },
+        ]);
+
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
 
 

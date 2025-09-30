@@ -1,4 +1,3 @@
-// components/ProfileDropdown.tsx
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,23 +12,27 @@ import { googleLogout } from "@react-oauth/google";
 import { User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export const ProfileDropdown  =() => {
-   const { user, setUser } = useAuth();
-     const navigate = useNavigate();
+export const ProfileDropdown = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-   const handleLogout = async () => {
-    localStorage.removeItem('authToken');
-    setUser(null);
-    navigate("/");
+  const handleLogout = () => {
+    // Call context logout to clear user and localStorage
+    logout();
+
+    // Sign out from Google OAuth if applicable
     googleLogout();
+
+    // Redirect to homepage
+    navigate("/");
   };
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
           <User className="w-4 h-4" />
-          Profile
+          {user?.username || "Profile"}
         </Button>
       </DropdownMenuTrigger>
 

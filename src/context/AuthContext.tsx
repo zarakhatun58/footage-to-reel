@@ -16,7 +16,7 @@ type AuthContextType = {
   login: (token: string, userData: Partial<User>) => void;
   logout: () => void;
   loading: boolean;
-  isAuthenticated: boolean; 
+  isAuthenticated: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,21 +38,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // ✅ Show saved user instantly (no API wait)
+      // Restore user from localStorage
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser);
           if (isMounted) setUser({ ...parsedUser, token: savedToken });
         } catch {
-          // corrupted data
           localStorage.removeItem('authUser');
         }
-      } else {
-        // fallback to token only
-        if (isMounted) setUser({ token: savedToken });
       }
 
-      // 🔄 Fetch fresh profile from API
+      // Fetch fresh profile from backend
       try {
         const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${savedToken}` },
@@ -62,8 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(fullUser);
           localStorage.setItem('authUser', JSON.stringify(fullUser));
         }
-      } catch (error) {
-        console.error('Failed to load user:', error);
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
         localStorage.removeItem('authToken');
         localStorage.removeItem('authUser');
         if (isMounted) setUser(null);
@@ -92,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, loading , isAuthenticated}}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, loading, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );
