@@ -47,7 +47,7 @@ export const UploadInterface = () => {
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [storyAudioUrl, setStoryAudioUrl] = useState('');
-const [storyText, setStoryText] = useState('');
+  const [storyText, setStoryText] = useState('');
 
   const getFileIcon = (type: string) => {
     if (type.startsWith('video/')) return Video;
@@ -194,60 +194,60 @@ const [storyText, setStoryText] = useState('');
     xhr.send(formData);
   };
 
-    const generateStory = async () => {
-      // ✅ Find the first media with a transcript
-      const mediaWithTranscript = uploadedMedia.find(
-        m => m.transcript && m.transcript.trim() !== ''
+  const generateStory = async () => {
+    // ✅ Find the first media with a transcript
+    const mediaWithTranscript = uploadedMedia.find(
+      m => m.transcript && m.transcript.trim() !== ''
+    );
+
+    if (!mediaWithTranscript) {
+      alert('❌ No transcript found. Please upload media that has a transcript first.');
+      return;
+    }
+
+
+    const prompt = 'Create a motivational story about learning to code.';
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: mediaWithTranscript.transcript,
+          prompt
+        })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.story) {
+        throw new Error(result.error || 'Story generation failed');
+      }
+
+      // ✅ Update UI with story
+      setStoryText(result.story);
+
+      if (result.storyAudioUrl) {
+        setStoryAudioUrl(result.storyAudioUrl);
+      }
+
+      setUploadedMedia(prev =>
+        prev.map(m =>
+          m.id === mediaWithTranscript.id
+            ? { ...m, story: result.story, prompt }
+            : m
+        )
       );
-  
-      if (!mediaWithTranscript) {
-        alert('❌ No transcript found. Please upload media that has a transcript first.');
-        return;
-      }
-  
-     
-      const prompt = 'Create a motivational story about learning to code.'; 
-  
-      try {
-        const res = await fetch(`${BASE_URL}/api/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            transcript: mediaWithTranscript.transcript,
-            prompt
-          })
-        });
-  
-        const result = await res.json();
-  
-        if (!res.ok || !result.story) {
-          throw new Error(result.error || 'Story generation failed');
-        }
-  
-        // ✅ Update UI with story
-        setStoryText(result.story);
-  
-        if (result.storyAudioUrl) {
-          setStoryAudioUrl(result.storyAudioUrl);
-        }
-  
-        setUploadedMedia(prev =>
-          prev.map(m =>
-            m.id === mediaWithTranscript.id
-              ? { ...m, story: result.story, prompt }
-              : m
-          )
-        );
-  
-        console.log('✅ Story generated:', result.story);
-  
-      } catch (error) {
-        console.error('Story generation error:', error);
-        alert('❌ Failed to generate story');
-      } finally {
-        stop(); 
-      }
-    };
+
+      console.log('✅ Story generated:', result.story);
+
+    } catch (error) {
+      console.error('Story generation error:', error);
+      alert('❌ Failed to generate story');
+    } finally {
+      stop();
+    }
+  };
 
   const generateVideoClip = async () => {
     // Find the uploaded media record
@@ -321,7 +321,9 @@ const [storyText, setStoryText] = useState('');
 
       const uploadData = await uploadRes.json();
       if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
-
+      console.log("🎯 media:", media);
+      console.log("🖼 media.images:", media.images);
+      console.log("🖼 imageNames extracted:", imageNames);
       alert("✅ Video generated and uploaded successfully!");
     } catch (error) {
       console.error("❌ Video generation error:", error);
@@ -377,8 +379,8 @@ const [storyText, setStoryText] = useState('');
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${isDragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50 hover:bg-accent/30'
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-primary/50 hover:bg-accent/30'
                 }`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -618,7 +620,7 @@ const [storyText, setStoryText] = useState('');
 
 
                   <div className="flex flex-wrap gap-3">
-                     <Button onClick={generateStory}>Generate Story</Button>
+                    <Button onClick={generateStory}>Generate Story</Button>
                     {mediaWithData && (
                       <AudioUploadModal
                         media={mediaWithData}

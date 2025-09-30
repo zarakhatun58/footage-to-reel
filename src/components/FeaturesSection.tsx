@@ -35,7 +35,7 @@ useEffect(() => {
       const storiesData = await storiesRes.json();
 
       // Videos count
-      const videosRes = await fetch(`${BASE_URL}/api/apivideo`);
+      const videosRes = await fetch(`${BASE_URL}/api/apivideo/all-generate-video`);
       const videosData = await videosRes.json();
 
       // Total views (new endpoint)
@@ -116,7 +116,7 @@ useEffect(() => {
                   <stat.icon className="w-8 h-8 text-red-300 mx-auto group-hover:text-primary-glow transition-all" />
                 </div>
                 <div className="text-2xl md:text-3xl font-bold text-teal-200 mb-1 group-hover:text-primary-glow transition-colors">
-                  {stat.value}
+                  {stat.value}+
                 </div>
                 <div className="text-sm text-gray-600">{stat.label}</div>
               </motion.div>
