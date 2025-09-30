@@ -34,6 +34,7 @@ type SignInDialogProps = {
 };
 
 const SignInDialog = ({ onClose, open }: SignInDialogProps) => {
+    const [isModalOpen, setIsModalOpen]=useState(false)
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [signUpName, setSignUpName] = useState("");
@@ -306,7 +307,7 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
                                     </form>
                                     <div className="m-2">
                                         {/* <GoogleLogin onSuccess={handleSuccess} onError={handleError} /> */}
-                                        <GoogleLoginUnified/>
+                                      <GoogleLoginUnified onClose={() => setIsModalOpen(false)} />
                                     </div>
                                 </CardContent>
                             </Card>
