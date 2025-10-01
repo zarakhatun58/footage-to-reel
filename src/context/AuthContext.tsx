@@ -17,6 +17,7 @@ type AuthContextType = {
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
+  
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

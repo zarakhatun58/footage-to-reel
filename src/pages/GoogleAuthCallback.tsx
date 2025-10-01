@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 
 const GoogleAuthCallback = () => {
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { login } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -14,21 +14,26 @@ const GoogleAuthCallback = () => {
     const profilePic = params.get("profilePic") || "";
 
     if (token && email && username) {
-      const normalizedUser = { token, email, username, profilePic };
-      localStorage.setItem("authToken", token);  // ✅ store JWT token
-      localStorage.setItem("authUser", JSON.stringify(normalizedUser));
-      setUser(normalizedUser);
+      const userData = { email, username, profilePic };
 
-      // Clean URL
+      // ✅ Save token + user in localStorage + context
+      login(token, userData);
+
+      // ✅ Clean URL (remove query params but don’t break history)
       window.history.replaceState({}, document.title, "/");
 
-      navigate("/gallery"); // ✅ redirect to gallery after login
+      // ✅ Redirect
+      navigate("/gallery");
     } else {
-      navigate("/"); // fallback
+      navigate("/");
     }
-  }, [navigate, setUser]);
+  }, [navigate, login]);
 
-  return <div>Logging in with Google...</div>;
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <p className="text-lg font-semibold">Logging you in with Google...</p>
+    </div>
+  );
 };
 
 export default GoogleAuthCallback;
