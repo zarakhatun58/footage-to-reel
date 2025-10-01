@@ -14,15 +14,8 @@ const GoogleAuthCallback = () => {
     const profilePic = params.get("profilePic") || "";
 
     if (token && email && username) {
-      const userData = { email, username, profilePic };
-
-      // ✅ Save token + user in localStorage + context
-      login(token, userData);
-
-      // ✅ Clean URL (remove query params but don’t break history)
+      login(token, { email, username, profilePic });
       window.history.replaceState({}, document.title, "/");
-
-      // ✅ Redirect
       navigate("/gallery");
     } else {
       navigate("/");
