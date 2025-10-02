@@ -7,28 +7,24 @@ const Gallery = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchPhotos = async () => {
-    if (!user?.token) return setLoading(false);
+const fetchPhotos = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/google-photos`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
 
-    try {
-      setLoading(true);
-      const res = await fetch(`${BASE_URL}/api/auth/google-photos`, {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch photos");
-
-      const data = await res.json();
-      setPhotos(data.mediaItems || []);
-    } catch (err) {
-      console.error(err);
-      setPhotos([]); // fallback to empty array
-    } finally {
-      setLoading(false);
+    if (res.status === 403) {
+      alert("You need to re-login to grant access to Google Photos.");
+      return;
     }
-  };
+
+    const data = await res.json();
+    setPhotos(data.mediaItems || []);
+  } catch (err) {
+    console.error(err);
+    setPhotos([]);
+  }
+};
 
   useEffect(() => {
     if (isAuthenticated) fetchPhotos();
