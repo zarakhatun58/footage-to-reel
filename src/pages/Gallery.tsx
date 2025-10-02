@@ -25,8 +25,8 @@ const Gallery = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        // Handle Photos scope missing
         if (res.status === 403 && data?.error?.includes("Photos")) {
+          // Photos scope missing
           setError(
             "Google Photos access not granted. Click below to grant access."
           );
@@ -48,6 +48,7 @@ const Gallery = () => {
   };
 
   const requestPhotosAccess = async () => {
+    if (!user?.token) return;
     try {
       const res = await fetch(`${BASE_URL}/api/auth/google-photos-scope`, {
         headers: { Authorization: `Bearer ${user.token}` },
