@@ -1,13 +1,18 @@
 import { BASE_URL } from "@/services/apis";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Gallery = () => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- Fetch photos from backend ---
   const fetchPhotos = async () => {
     if (!user?.token) {
       setLoading(false);
@@ -25,11 +30,8 @@ const Gallery = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        if (res.status === 403 && data?.error?.includes("Photos")) {
-          // Photos scope missing
-          setError(
-            "Google Photos access not granted. Click below to grant access."
-          );
+        if (res.status === 403 && data?.error?.toLowerCase().includes("scope")) {
+          setError("Google Photos access not granted. Please grant access.");
         } else {
           setError(data?.error || "Failed to fetch photos.");
         }
@@ -38,24 +40,24 @@ const Gallery = () => {
       }
 
       setPhotos(data.mediaItems || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Fetch photos error:", err);
-      setError("Failed to fetch photos due to network error.");
+      setError("Network error while fetching photos.");
       setPhotos([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // --- Request Google Photos permission ---
   const requestPhotosAccess = async () => {
-    if (!user?.token) return;
     try {
       const res = await fetch(`${BASE_URL}/api/auth/google-photos-scope`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url; // Redirect to Google OAuth
+        window.location.href = data.url; // Redirect to Google OAuth consent
       } else {
         setError("Failed to get Google Photos authorization URL.");
       }
@@ -65,14 +67,24 @@ const Gallery = () => {
     }
   };
 
+  // --- Refetch if redirected after granting photos scope ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("photosScopeGranted") === "true") {
+      fetchPhotos();
+      navigate("/gallery", { replace: true }); // clean URL
+    }
+  }, [location.search, navigate]);
+
   useEffect(() => {
     if (isAuthenticated) fetchPhotos();
     else setLoading(false);
   }, [isAuthenticated]);
 
+  // --- UI states ---
   if (loading) return <p className="text-center mt-8">Loading photos...</p>;
 
-  if (error)
+  if (error) {
     return (
       <div className="text-center mt-8">
         <p className="text-red-500 mb-4">{error}</p>
@@ -86,10 +98,13 @@ const Gallery = () => {
         )}
       </div>
     );
+  }
 
-  if (!photos.length)
+  if (!photos.length) {
     return <p className="text-center mt-8">No photos found.</p>;
+  }
 
+  // --- Render photos ---
   return (
     <div className="gallery grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 m-auto h-[600px] overflow-y-auto">
       <h3 className="col-span-full text-xl font-semibold mb-4">Google Photos</h3>
