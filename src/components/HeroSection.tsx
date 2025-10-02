@@ -3,6 +3,18 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Folder, Play, Sparkles } from "lucide-react";
 
 const HeroSection = () => {
+  const container = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.04, delayChildren: 0.1 },
+    },
+  };
+
+  const child = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 },
+  };
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
       <div className="container mx-auto px-4 relative z-10 text-center mt-24">
@@ -17,16 +29,37 @@ const HeroSection = () => {
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
           className="text-3xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight text-gray-900"
+          variants={container}
+          initial="hidden"
+          animate="visible"
         >
-          Transform Your{" "}
+          {"Transform Your ".split("").map((char, i) => (
+            <motion.span key={i} variants={child}>
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))}
+
           <span className="gradient-text">
-            Video<br /> Process
-          </span><br />
-          with AI Stories
+            {"Video".split("").map((char, i) => (
+              <motion.span key={`v-${i}`} variants={child}>
+                {char}
+              </motion.span>
+            ))}
+            <br />
+            {"Process".split("").map((char, i) => (
+              <motion.span key={`p-${i}`} variants={child}>
+                {char}
+              </motion.span>
+            ))}
+          </span>
+          <br />
+
+          {"with AI Stories".split("").map((char, i) => (
+            <motion.span key={`s-${i}`} variants={child}>
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))}
         </motion.h1>
 
         <motion.p
