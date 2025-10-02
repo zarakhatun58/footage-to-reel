@@ -25,7 +25,6 @@ const Gallery = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        // Display backend error without forcing re-login
         setError(data?.error || "Failed to fetch photos.");
         setPhotos([]);
         return;
@@ -46,12 +45,30 @@ const Gallery = () => {
     else setLoading(false);
   }, [isAuthenticated]);
 
-  if (loading) return <p className="text-center mt-8">Loading photos...</p>;
-  if (error) return <p className="text-center mt-8 text-red-500">{error}</p>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-[300px]">
+        <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="text-center mt-8">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button
+          className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+          onClick={fetchPhotos}
+        >
+          Retry
+        </button>
+      </div>
+    );
+
   if (!photos.length) return <p className="text-center mt-8">No photos found.</p>;
 
   return (
-    <div className="gallery grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 m-auto h-[600px]">
+    <div className="gallery grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 m-auto h-[600px] overflow-y-auto">
       <h3 className="col-span-full text-xl font-semibold mb-4">Google Photos</h3>
       {photos.map((item) => (
         <div key={item.id} className="photo border rounded overflow-hidden">
@@ -65,6 +82,7 @@ const Gallery = () => {
     </div>
   );
 };
+
 
 export default Gallery;
 
