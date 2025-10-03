@@ -9,61 +9,65 @@ const Gallery = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchPhotos = async () => {
-    if (!user?.token) {
-      console.log("[Gallery] No token, aborting fetchPhotos");
-      return;
-    }
+const fetchPhotos = async (retry = true) => {
+  if (!user?.token) return;
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      console.log("[Gallery] Requesting Google Photos...");
-      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-        
-      });
+  try {
+    const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
 
-      console.log("[Gallery] Photos fetched:", res.data);
-      setPhotos(res.data.mediaItems || []);
-    } catch (err: any) {
-      console.error("[Gallery] fetchPhotos error:", err.response?.data || err.message);
+    setPhotos(res.data.mediaItems || []);
+  } catch (err: any) {
+    console.error("[Gallery] fetchPhotos error:", err.response?.data || err.message);
 
-      if (err.response?.status === 403 || err.response?.status === 401) {
-        console.log("[Gallery] Unauthorized / Missing scope → checking scopes...");
+    if ((err.response?.status === 403 || err.response?.status === 401) && retry) {
+      try {
+        const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
 
-        try {
-          const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          });
+        // Redirect user to consent screen if needed
+        if (scopeRes.data?.url) {
+          const consentWindow = window.open(scopeRes.data.url, "_blank", "width=500,height=600");
 
-          console.log("[Gallery] Scope response:", scopeRes.data);
+          // Poll until the consent screen closes, then retry fetching
+          const checkInterval = setInterval(async () => {
+            if (consentWindow?.closed) {
+              clearInterval(checkInterval);
+              console.log("[Gallery] Consent granted, retrying fetchPhotos...");
+              fetchPhotos(false); // retry once
+            }
+          }, 1000);
 
-          if (scopeRes.data?.url) {
-            console.log("[Gallery] Redirecting to Google OAuth:", scopeRes.data.url);
-            window.location.href = scopeRes.data.url; // send user to consent screen
-            return;
-          }
-
-          if (!scopeRes.data.hasPhotosScope) {
-            setError("Google Photos access not granted. Please re-connect your account.");
-          }
-        } catch (scopeErr: any) {
-          console.error("[Gallery] Scope request error:", scopeErr.response?.data || scopeErr.message);
-          setError("Failed to request Google Photos access.");
+          return;
         }
-      } else {
-        setError("Failed to load photos.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    if (user?.token) fetchPhotos();
-  }, [user?.token]);
+        if (!scopeRes.data.hasPhotosScope) {
+          setError("Google Photos access not granted. Please re-connect your account.");
+        }
+      } catch (scopeErr: any) {
+        console.error("[Gallery] Scope request error:", scopeErr.response?.data || scopeErr.message);
+        setError("Failed to request Google Photos access.");
+      }
+    } else {
+      setError("Failed to load photos.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+useEffect(() => {
+  if (user?.token) {
+    fetchPhotos();
+  }
+}, [user?.token]);
+
 
   if (authLoading) return <p>Loading authentication...</p>;
   if (!isAuthenticated) return <p>Please log in to view your Google Photos.</p>;
