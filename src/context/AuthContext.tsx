@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import axios from 'axios';
-import { BASE_URL } from '@/services/apis';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import axios from "axios";
+import { BASE_URL } from "@/services/apis";
 
 type User = {
   id?: string;
@@ -17,7 +17,6 @@ type AuthContextType = {
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
-  
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,8 +30,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      const savedToken = localStorage.getItem('authToken');
-      const savedUser = localStorage.getItem('authUser');
+      const savedToken = localStorage.getItem("authToken");
+      const savedUser = localStorage.getItem("authUser");
 
       if (!savedToken) {
         setLoading(false);
@@ -45,29 +44,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const parsedUser = JSON.parse(savedUser);
           if (isMounted) setUser({ ...parsedUser, token: savedToken });
         } catch {
-          localStorage.removeItem('authUser');
+          localStorage.removeItem("authUser");
         }
       }
 
-      // Fetch fresh profile from backend
+      // Always verify token & fetch profile
       try {
         const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${savedToken}` },
         });
+
         if (isMounted && res.data?.user) {
           const fullUser = { ...res.data.user, token: savedToken };
           setUser(fullUser);
-          localStorage.setItem('authUser', JSON.stringify(fullUser));
+          localStorage.setItem("authUser", JSON.stringify(fullUser));
         }
       } catch (err) {
-        console.error('Failed to fetch profile:', err);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
+        console.error("Failed to fetch profile:", err);
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("authUser");
         if (isMounted) setUser(null);
       } finally {
         if (isMounted) setLoading(false);
       }
     };
+
+    // --- Handle OAuth redirect (Google Photos callback) ---
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      // Fetch fresh profile with new token
+      axios
+        .get(`${BASE_URL}/api/auth/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          if (res.data?.user) {
+            const fullUser = { ...res.data.user, token };
+            setUser(fullUser);
+            localStorage.setItem("authToken", token);
+            localStorage.setItem("authUser", JSON.stringify(fullUser));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch profile after callback:", err);
+        })
+        .finally(() => {
+          setLoading(false);
+          // ✅ Clean URL (remove ?token=...)
+          window.history.replaceState({}, document.title, window.location.pathname);
+        });
+      return;
+    }
 
     initializeAuth();
     return () => {
@@ -77,19 +105,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (token: string, userData: Partial<User>) => {
     const fullUser = { ...userData, token };
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('authUser', JSON.stringify(fullUser));
+    localStorage.setItem("authToken", token);
+    localStorage.setItem("authUser", JSON.stringify(fullUser));
     setUser(fullUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, loading, isAuthenticated }}>
+    <AuthContext.Provider
+      value={{ user, setUser, login, logout, loading, isAuthenticated }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -97,6 +127,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
