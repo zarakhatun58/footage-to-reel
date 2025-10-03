@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "@/services/apis";
 
 const Gallery = () => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, login, isAuthenticated, loading: authLoading } = useAuth();
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,12 +20,12 @@ const Gallery = () => {
     setError("");
 
     try {
-      console.log("[Gallery] Requesting Google Photos...");
+      console.log("[Gallery] Requesting Google Photos API...");
       const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      console.log("[Gallery] Google Photos response:", res.data);
 
+      console.log("[Gallery] Google Photos response:", res.data);
       setPhotos(res.data.mediaItems || []);
     } catch (err: any) {
       console.error("[Gallery] fetchPhotos error:", err.response?.data || err.message);
@@ -44,17 +44,14 @@ const Gallery = () => {
             return;
           }
         } catch (scopeErr: any) {
-          console.error(
-            "[Gallery] scope request error:",
-            scopeErr.response?.data || scopeErr.message
-          );
+          console.error("[Gallery] scope request error:", scopeErr.response?.data || scopeErr.message);
           setError("Failed to request Google Photos access.");
         }
       } else {
         setError("Failed to load photos.");
       }
     } finally {
-      console.log("[Gallery] fetchPhotos finished, loading:", loading);
+      console.log("[Gallery] fetchPhotos finished");
       setLoading(false);
     }
   };
