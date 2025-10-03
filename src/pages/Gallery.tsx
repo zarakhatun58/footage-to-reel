@@ -10,8 +10,10 @@ const Gallery = () => {
   const [error, setError] = useState("");
 
   const fetchPhotos = async () => {
-    console.log("[Gallery] fetchPhotos called, user:", user);
-    if (!user?.token) return console.log("[Gallery] No token, aborting fetchPhotos");
+    if (!user?.token) {
+      console.log("[Gallery] No token, aborting fetchPhotos");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -21,24 +23,30 @@ const Gallery = () => {
       const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      console.log("[Gallery] Photos fetched:", res.data);
 
+      console.log("[Gallery] Photos fetched:", res.data);
       setPhotos(res.data.mediaItems || []);
     } catch (err: any) {
       console.error("[Gallery] fetchPhotos error:", err.response?.data || err.message);
 
-      if (err.response?.status === 403) {
-        console.log("[Gallery] 403 Forbidden - requesting Google Photos scope...");
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        console.log("[Gallery] Unauthorized / Missing scope → checking scopes...");
+
         try {
           const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
             headers: { Authorization: `Bearer ${user.token}` },
           });
+
           console.log("[Gallery] Scope response:", scopeRes.data);
 
-          if (scopeRes.data.url) {
+          if (scopeRes.data?.url) {
             console.log("[Gallery] Redirecting to Google OAuth:", scopeRes.data.url);
-            window.location.href = scopeRes.data.url;
+            window.location.href = scopeRes.data.url; // send user to consent screen
             return;
+          }
+
+          if (!scopeRes.data.hasPhotosScope) {
+            setError("Google Photos access not granted. Please re-connect your account.");
           }
         } catch (scopeErr: any) {
           console.error("[Gallery] Scope request error:", scopeErr.response?.data || scopeErr.message);
@@ -49,12 +57,10 @@ const Gallery = () => {
       }
     } finally {
       setLoading(false);
-      console.log("[Gallery] fetchPhotos finished");
     }
   };
 
   useEffect(() => {
-    console.log("[Gallery] useEffect triggered, user token:", user?.token);
     if (user?.token) fetchPhotos();
   }, [user?.token]);
 
