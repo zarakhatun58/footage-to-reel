@@ -22,6 +22,7 @@ const Gallery = () => {
       console.log("[Gallery] Requesting Google Photos...");
       const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
         headers: { Authorization: `Bearer ${user.token}` },
+        
       });
 
       console.log("[Gallery] Photos fetched:", res.data);
