@@ -1,41 +1,37 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // assumes you store JWT here
+import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "@/services/apis";
 
 const Gallery = () => {
-  const { user } = useAuth(); // user has { token, ... }
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const fetchPhotos = async () => {
+    if (!user?.token) return;
     setLoading(true);
     setError("");
 
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/auth/google-photos`,
-        {
-          headers: { Authorization: `Bearer ${user.token}` }, // ✅ always send token
-        }
-      );
+      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
       setPhotos(res.data.mediaItems || []);
     } catch (err: any) {
       console.error("fetchPhotos error:", err.response?.data || err.message);
 
       if (err.response?.status === 403) {
-        // ✅ Insufficient scopes → ask for Photos permission
         try {
-          const scopeRes = await axios.get(
-            `${BASE_URL}/api/auth/google-photos-scope`,
-            {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }
-          );
+          const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          });
 
           if (scopeRes.data.url) {
-            window.location.href = scopeRes.data.url; // redirect to Google OAuth
+            window.location.href = scopeRes.data.url;
+            return;
           }
         } catch (scopeErr: any) {
           console.error("scope request error:", scopeErr.response?.data || scopeErr.message);
@@ -53,7 +49,10 @@ const Gallery = () => {
     if (user?.token) {
       fetchPhotos();
     }
-  }, [user]);
+  }, [user?.token]);
+
+  if (authLoading) return <p>Loading authentication...</p>;
+  if (!isAuthenticated) return <p>Please log in to view your Google Photos.</p>;
 
   return (
     <div className="p-6">

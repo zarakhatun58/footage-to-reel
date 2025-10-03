@@ -1,4 +1,10 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+} from "react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
 
@@ -38,7 +44,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Restore user from localStorage
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser);
@@ -48,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Always verify token & fetch profile
       try {
         const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${savedToken}` },
@@ -72,8 +76,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // --- Handle OAuth redirect (Google Photos callback) ---
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+
     if (token) {
-      // Fetch fresh profile with new token
       axios
         .get(`${BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -91,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
         .finally(() => {
           setLoading(false);
-          // ✅ Clean URL (remove ?token=...)
+          // ✅ clean URL
           window.history.replaceState({}, document.title, window.location.pathname);
         });
       return;
