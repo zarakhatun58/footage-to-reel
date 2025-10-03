@@ -9,34 +9,32 @@ const Gallery = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
- const fetchPhotos = async () => {
-    if (!user?.token) return;
-
-    setLoading(true);
-    setError("");
-
+const fetchPhotos = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-        headers: { Authorization: `Bearer ${user.token}` },
+      setLoading(true);
+      const res = await axios.get("/api/auth/google-photos", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setPhotos(res.data.mediaItems || []);
-      console.log(res.data.mediaItems, "photos")
-    } catch (err: any) {
-      // Only show a generic error
-      console.error("[Gallery] fetchPhotos error:", err.response?.data || err.message);
-      setError("Failed to load photos.");
+      setError("");
+    } catch (err) {
+      const data = err.response?.data;
+
+      if (data?.needsScope && data.url) {
+        // Redirect to scope consent screen
+        window.location.href = data.url;
+        return;
+      }
+
+      setError(data?.error || "Failed to load photos");
     } finally {
       setLoading(false);
     }
   };
 
-
-
-useEffect(() => {
-  if (user?.token) {
+  useEffect(() => {
     fetchPhotos();
-  }
-}, [user?.token]);
+  }, []);
 
 
   if (authLoading) return <p>Loading authentication...</p>;
