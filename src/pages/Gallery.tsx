@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext"; // assumes you store JWT here
+import { BASE_URL } from "@/services/apis";
 
 const Gallery = () => {
   const { user } = useAuth(); // user has { token, ... }
@@ -14,7 +15,7 @@ const Gallery = () => {
 
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/auth/google-photos`,
+        `${BASE_URL}/api/auth/google-photos`,
         {
           headers: { Authorization: `Bearer ${user.token}` }, // ✅ always send token
         }
@@ -27,7 +28,7 @@ const Gallery = () => {
         // ✅ Insufficient scopes → ask for Photos permission
         try {
           const scopeRes = await axios.get(
-            `${process.env.REACT_APP_API_URL}/auth/google-photos-scope`,
+            `${BASE_URL}/api/auth/google-photos-scope`,
             {
               headers: { Authorization: `Bearer ${user.token}` },
             }
