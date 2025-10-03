@@ -214,6 +214,54 @@ export const Navbar = ({ activeSection, onSectionChange }: NavigationProps) => {
                                 </motion.button>
                             ))}
                             {/* <ThemeToggle /> */}
+
+                            {user ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="gap-2">
+                                            <User className="w-4 h-4" />
+                                            {user.profilePic && (
+                                                <img
+                                                    src={user.profilePic}
+                                                    alt={user.username ?? "User"}
+                                                    className="w-6 h-6 rounded-full object-cover"
+                                                />
+                                            )}
+                                            {user.username ?? "Profile"}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent align="end" className="w-56">
+                                        <DropdownMenuLabel className="text-sm">
+                                            {user.profilePic && (
+                                                <img
+                                                    src={user.profilePic}
+                                                    alt={user.username ?? "User"}
+                                                    className="w-6 h-6 rounded-full object-cover"
+                                                />
+                                            )}
+                                            {user.username ?? "Profile"}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                            {user?.email ?? "No email"}
+                                        </DropdownMenuLabel>
+
+                                        <DropdownMenuSeparator />
+
+                                        <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+                                            <LogOut className="w-4 h-4" />
+                                            Logout
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                <Button variant="ghost" size="sm" onClick={() => setShowAuthDialog(true)} className="border border-teal-500 text-teal-500 bg-white 
+             hover:bg-teal-500 hover:text-white 
+             active:bg-teal-600 
+             transition-colors rounded-sm">
+                                    Sign In
+                                </Button>
+                            )}
                         </motion.div>
                     )}
                 </div>

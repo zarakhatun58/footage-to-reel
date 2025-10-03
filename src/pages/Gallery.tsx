@@ -9,36 +9,26 @@ const Gallery = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-const fetchPhotos = async (retry = true) => {
-  if (!user?.token) return;
+ const fetchPhotos = async () => {
+    if (!user?.token) return;
 
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  try {
-    const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-    });
-
-    setPhotos(res.data.mediaItems || []);
-  } catch (err: any) {
-    if (err.response?.data?.needsScope && err.response?.data?.url) {
-      const consentWindow = window.open(err.response.data.url, "_blank", "width=500,height=600");
-
-      const checkInterval = setInterval(async () => {
-        if (consentWindow?.closed) {
-          clearInterval(checkInterval);
-          fetchPhotos(false);
-        }
-      }, 1000);
-
-      return;
+    try {
+      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setPhotos(res.data.mediaItems || []);
+      console.log(res.data.mediaItems, "photos")
+    } catch (err: any) {
+      // Only show a generic error
+      console.error("[Gallery] fetchPhotos error:", err.response?.data || err.message);
+      setError("Failed to load photos.");
+    } finally {
+      setLoading(false);
     }
-    setError("Failed to load photos.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
 
