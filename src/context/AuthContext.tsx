@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useState,
-  useContext,
-  ReactNode,
-  useEffect,
-} from "react";
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
 
@@ -23,6 +17,7 @@ type AuthContextType = {
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
+  refreshToken: () => Promise<string | null>; // ✅ new
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,10 +68,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // --- Handle OAuth redirect (Google Photos callback) ---
+    // Handle OAuth redirect
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-
     if (token) {
       axios
         .get(`${BASE_URL}/api/auth/profile`, {
@@ -95,7 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
         .finally(() => {
           setLoading(false);
-          // ✅ clean URL
           window.history.replaceState({}, document.title, window.location.pathname);
         });
       return;
@@ -120,9 +113,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  // ✅ Refresh token function
+  const refreshToken = async (): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      const res = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
+        userId: user.id,
+      });
+
+      const { token: newToken } = res.data;
+      if (newToken) {
+        const updatedUser = { ...user, token: newToken };
+        setUser(updatedUser);
+        localStorage.setItem("token", newToken);
+        localStorage.setItem("authUser", JSON.stringify(updatedUser));
+        return newToken;
+      }
+      return null;
+    } catch (err) {
+      console.error("Failed to refresh token:", err);
+      logout();
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, logout, loading, isAuthenticated }}
+      value={{ user, setUser, login, logout, loading, isAuthenticated, refreshToken }}
     >
       {children}
     </AuthContext.Provider>

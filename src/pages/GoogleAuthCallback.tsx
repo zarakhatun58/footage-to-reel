@@ -14,11 +14,22 @@ const GoogleAuthCallback = () => {
     const profilePic = params.get("profilePic") || "";
 
     if (token && email && username) {
+      // ✅ Save token in context and localStorage
       login(token, { email, username, profilePic });
-      window.history.replaceState({}, document.title, "/");
+      localStorage.setItem("token", token);
+      localStorage.setItem("user_email", email);
+      localStorage.setItem("user_name", username);
+      localStorage.setItem("user_profilePic", profilePic);
+
+      // ✅ Clean URL to remove token and query params
+      window.history.replaceState({}, document.title, "/gallery");
+
+      // ✅ Navigate to gallery page
       navigate("/gallery");
     } else {
-      navigate("/");
+      // ❌ Fallback if something is missing
+      console.warn("[GoogleAuthCallback] Missing token or user info");
+      navigate("/"); 
     }
   }, [navigate, login]);
 
