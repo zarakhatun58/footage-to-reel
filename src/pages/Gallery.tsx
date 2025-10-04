@@ -40,9 +40,8 @@ const Gallery = () => {
     } catch (err: any) {
       const data = err.response?.data;
 
-      if (data?.needsScope && data.url) {
-        // Redirect to consent screen if missing permissions
-        window.location.href = data.url;
+      if (data?.needsScope) {
+        setError("Google Photos access not granted. Please reconnect your Google account.");
         return;
       }
 
