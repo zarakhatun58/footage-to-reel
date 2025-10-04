@@ -30,7 +30,7 @@ export const FeaturesSection = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("token");
 
         // Stories count
         let storiesData = { count: 0 };

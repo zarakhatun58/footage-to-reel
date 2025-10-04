@@ -176,7 +176,7 @@ const handleSuccess = async (credentialResponse: CredentialResponse) => {
             googleLogout();
 
             // Clear local auth token
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
 
             // Reset user in context if needed
             setUser(null);

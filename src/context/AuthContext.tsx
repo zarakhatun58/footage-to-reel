@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      const savedToken = localStorage.getItem("authToken");
+      const savedToken = localStorage.getItem("token");
       const savedUser = localStorage.getItem("authUser");
 
       if (!savedToken) {
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
-        localStorage.removeItem("authToken");
+        localStorage.removeItem("token");
         localStorage.removeItem("authUser");
         if (isMounted) setUser(null);
       } finally {
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (res.data?.user) {
             const fullUser = { ...res.data.user, token };
             setUser(fullUser);
-            localStorage.setItem("authToken", token);
+            localStorage.setItem("token", token);
             localStorage.setItem("authUser", JSON.stringify(fullUser));
           }
         })
@@ -109,13 +109,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (token: string, userData: Partial<User>) => {
     const fullUser = { ...userData, token };
-    localStorage.setItem("authToken", token);
+    localStorage.setItem("token", token);
     localStorage.setItem("authUser", JSON.stringify(fullUser));
     setUser(fullUser);
   };
 
   const logout = () => {
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
     localStorage.removeItem("authUser");
     setUser(null);
   };

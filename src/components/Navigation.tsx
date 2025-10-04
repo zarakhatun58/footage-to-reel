@@ -44,7 +44,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
 const handleLogout = () => {
   try {
     googleLogout();
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
     setUser(null);
     // Full page reload to the home page
     window.location.href = "/";

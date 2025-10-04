@@ -37,7 +37,7 @@ const GoogleLoginButton = ({ onClose }: { onClose: () => void }) => {
         token,
       };
 
-      localStorage.setItem("authToken", token);
+      localStorage.setItem("token", token);
       setUser(normalizedUser);
 
       alert(`✅ Google login successful! Welcome ${user.username || user.email}`);

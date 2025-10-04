@@ -4,20 +4,31 @@ import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "@/services/apis";
 
 const Gallery = () => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-const fetchPhotos = async () => {
+  // ✅ Step 1: Grab token from URL (after Google login redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      localStorage.setItem("token", token);
+      window.history.replaceState({}, document.title, "/gallery"); // clean URL
+    }
+  }, []);
+
+  // ✅ Step 2: Fetch photos using stored token
+  const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/auth/google-photos", {
+      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setPhotos(res.data.mediaItems || []);
       setError("");
-    } catch (err) {
+    } catch (err: any) {
       const data = err.response?.data;
 
       if (data?.needsScope && data.url) {
@@ -35,7 +46,6 @@ const fetchPhotos = async () => {
   useEffect(() => {
     fetchPhotos();
   }, []);
-
 
   if (authLoading) return <p>Loading authentication...</p>;
   if (!isAuthenticated) return <p>Please log in to view your Google Photos.</p>;
