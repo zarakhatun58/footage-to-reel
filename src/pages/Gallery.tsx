@@ -4,35 +4,44 @@ import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "@/services/apis";
 
 const Gallery = () => {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ Step 1: Grab token from URL (after Google login redirect)
+  // ✅ Step 1: Handle OAuth redirect — save token if present
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+
     if (token) {
       localStorage.setItem("token", token);
-      window.history.replaceState({}, document.title, "/gallery"); // clean URL
+      window.history.replaceState({}, document.title, "/gallery"); // Clean URL
     }
   }, []);
 
-  // ✅ Step 2: Fetch photos using stored token
+  // ✅ Step 2: Fetch photos using token (from context or localStorage)
   const fetchPhotos = async () => {
     try {
       setLoading(true);
+
+      const token = user?.token || localStorage.getItem("token");
+      if (!token) {
+        setError("No token found. Please log in again.");
+        return;
+      }
+
       const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
+
       setPhotos(res.data.mediaItems || []);
       setError("");
     } catch (err: any) {
       const data = err.response?.data;
 
       if (data?.needsScope && data.url) {
-        // Redirect to scope consent screen
+        // Redirect to consent screen if missing permissions
         window.location.href = data.url;
         return;
       }
@@ -45,8 +54,9 @@ const Gallery = () => {
 
   useEffect(() => {
     fetchPhotos();
-  }, []);
+  }, [user]); // Re-run if user updates (after login)
 
+  // ✅ Step 3: Conditional UI states
   if (authLoading) return <p>Loading authentication...</p>;
   if (!isAuthenticated) return <p>Please log in to view your Google Photos.</p>;
 
