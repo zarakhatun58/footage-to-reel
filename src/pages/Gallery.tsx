@@ -4,11 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "@/services/apis";
 
 const Gallery = () => {
-  const { user, isAuthenticated, loading: authLoading, refreshToken } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // ✅ Step 1: Save token from OAuth redirect
+  // ✅ Handle OAuth redirect token
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
@@ -18,38 +19,64 @@ const Gallery = () => {
     }
   }, []);
 
-  // ✅ Step 2: Fetch photos safely with auto-refresh
   const fetchPhotos = async () => {
     setLoading(true);
     try {
       let token = user?.token || localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        setError("No token found. Please log in again.");
+        return;
+      }
 
-      const load = async (authToken: string) => {
+      const fetchFromApi = async (currentToken: string) => {
         const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         });
-        return res.data.mediaItems || [];
+        return res.data;
       };
 
       try {
-        const items = await load(token);
-        setPhotos(items);
+        const data = await fetchFromApi(token);
+        setPhotos(data.mediaItems || []);
+        setError("");
       } catch (err: any) {
-        // Token expired → refresh
-        if ((err.response?.status === 401 || err.response?.data?.error === "Google account needs re-login.") && refreshToken) {
-          const newToken = await refreshToken();
-          if (!newToken) return;
+        const data = err.response?.data;
+
+        // Photos scope missing → redirect user to consent
+        if (data?.needsScope && data?.url) {
+          window.location.href = data.url;
+          return;
+        }
+
+        // Token expired → refresh token
+        if (data?.error === "Google account needs re-login." || err.response?.status === 401) {
+          // Call backend refresh-token endpoint
+          const refreshRes = await axios.post(
+            `${BASE_URL}/api/auth/refresh-token`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          const newToken = refreshRes.data?.token;
+          if (!newToken) {
+            setError("Session expired. Please log in again.");
+            return;
+          }
+
           localStorage.setItem("token", newToken);
           token = newToken;
-          const items = await load(token);
-          setPhotos(items);
+
+          const retryData = await fetchFromApi(token);
+          setPhotos(retryData.mediaItems || []);
+          setError("");
+          return;
         }
-        // Missing scope → redirect to consent
-        else if (err.response?.data?.needsScope && err.response?.data?.url) {
-          window.location.href = err.response.data.url;
-        }
+
+        setError(data?.error || "Failed to load photos");
       }
+    } catch (err) {
+      console.error("Gallery fetchPhotos error:", err);
+      setError("Unexpected error while fetching photos");
     } finally {
       setLoading(false);
     }
@@ -66,6 +93,7 @@ const Gallery = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Google Photos Gallery</h1>
       {loading && <p>Loading photos...</p>}
+      {error && <p className="text-red-500">{error}</p>}
       {photos.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {photos.map((photo) => (
