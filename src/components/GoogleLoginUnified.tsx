@@ -6,7 +6,7 @@ const GOOGLE_CLIENT_ID =
 
 // ✅ Use your frontend URL, not backend, for redirect
 // Google will call backend automatically using that code
-const REDIRECT_URI = "https://footage-to-reel.onrender.com/auth/callback";
+const REDIRECT_URI = "https://footage-flow-server.onrender.com/api/auth/google/callback";
 
 export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
   const handleLogin = () => {
