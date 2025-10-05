@@ -6,15 +6,21 @@ const REDIRECT_URI = "https://footage-flow-server.onrender.com/api/auth/google/c
 
 export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
   const handleLogin = () => {
-    const scope = encodeURIComponent(
-      "openid profile email https://www.googleapis.com/auth/photoslibrary.readonly"
+   const scope = encodeURIComponent(
+      [
+        "openid",
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/photoslibrary.readonly",
+      ].join(" ")
     );
 
-    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(
       REDIRECT_URI
     )}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=true`;
 
-    window.location.href = url;
+    // Redirect to Google OAuth screen
+    window.location.href = authUrl;
   };
   return (
     <button
