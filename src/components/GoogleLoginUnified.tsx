@@ -12,7 +12,7 @@ export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
 
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(
       REDIRECT_URI
-    )}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=false`;
+    )}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
 
     window.location.href = url;
   };
