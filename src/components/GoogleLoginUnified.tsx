@@ -15,6 +15,9 @@ export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
     )}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
 
     window.location.href = url;
+    console.log("Google Client ID:", GOOGLE_CLIENT_ID);
+console.log("Google Redirect URI:", REDIRECT_URI);
+
   };
   return (
     <button

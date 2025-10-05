@@ -10,36 +10,57 @@ type Photo = {
 };
 
 const Gallery = () => {
-   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const token = localStorage.getItem("token");
+  // ✅ Capture token from redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      localStorage.setItem("token", token);
+      window.history.replaceState({}, document.title, "/gallery");
+    }
+  }, []);
+
+  const getToken = () => localStorage.getItem("token");
+
+  const fetchPhotos = async () => {
+    const token = getToken();
+    if (!token) return setError("Please log in first.");
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data?.needsScope) {
+        setError("Google Photos access required. Please log in again.");
+        setPhotos([]);
+        return;
+      }
+
+      setPhotos(res.data.mediaItems || []);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to fetch photos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPhotos = async () => {
-      if (!token) return;
-      setLoading(true);
-      try {
-        const res = await axios.get("https://your-backend.com/api/auth/google-photos", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setPhotos(res.data.mediaItems || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPhotos();
-  }, [token]);
-
-  if (loading) return <p>Loading...</p>;
-  if (!photos.length) return <p>No photos found</p>;
+    if (getToken()) fetchPhotos();
+  }, []);
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Google Photos Gallery</h1>
       {loading && <p>Loading photos...</p>}
+      {error && <p className="text-red-500">{error}</p>}
 
       {photos.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
