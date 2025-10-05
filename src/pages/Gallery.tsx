@@ -15,46 +15,61 @@ const Gallery = () => {
   const [error, setError] = useState("");
 
   // ✅ Capture token from redirect
+  // useEffect(() => {
+  //   const params = new URLSearchParams(window.location.search);
+  //   const token = params.get("token");
+  //   if (token) {
+  //     localStorage.setItem("token", token);
+  //     window.history.replaceState({}, document.title, "/gallery");
+  //   }
+  // }, []);
+
+  // const getToken = () => localStorage.getItem("token");
+
+  // const fetchPhotos = async () => {
+  //   const token = getToken();
+  //   if (!token) return setError("Please log in first.");
+
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     if (res.data?.needsScope) {
+  //       setError("Google Photos access required. Please log in again.");
+  //       setPhotos([]);
+  //       return;
+  //     }
+
+  //     setPhotos(res.data.mediaItems || []);
+  //   } catch (err: any) {
+  //     setError(err.response?.data?.error || "Failed to fetch photos");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (getToken()) fetchPhotos();
+  // }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-    if (token) {
-      localStorage.setItem("token", token);
-      window.history.replaceState({}, document.title, "/gallery");
-    }
-  }, []);
+    if (!token) return;
 
-  const getToken = () => localStorage.getItem("token");
+    localStorage.setItem("token", token);
 
-  const fetchPhotos = async () => {
-    const token = getToken();
-    if (!token) return setError("Please log in first.");
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+    axios
+      .get("https://footage-flow-server.onrender.com/api/auth/google-photos", {
         headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.data?.needsScope) {
-        setError("Google Photos access required. Please log in again.");
-        setPhotos([]);
-        return;
-      }
-
-      setPhotos(res.data.mediaItems || []);
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to fetch photos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (getToken()) fetchPhotos();
+      })
+      .then((res) => setPhotos(res.data.mediaItems || []))
+      .catch((err) => console.error("Failed to load photos", err));
   }, []);
+
 
   return (
     <div className="p-6">
