@@ -41,8 +41,8 @@ const AppWrapper = () => {
         {/* <Route path="/editor" element={<VideoEditor />} />
         <Route path="/upload" element={<UploadInterface />} /> */}
         {/* <Route path="/upload" element={<VideoUploadArea />} /> */}
-        {/* <Route path="/projects" element={<ProjectGallery />} />
-        <Route path="/gallery" element={<Gallery />} /> */}
+        {/* <Route path="/projects" element={<ProjectGallery />} />*/}
+        <Route path="/gallery" element={<Gallery />} /> 
         <Route path="*" element={<NotFound />} />
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
@@ -50,7 +50,7 @@ const AppWrapper = () => {
           <Route path="/editor" element={<VideoEditor />} />
           <Route path="/upload" element={<UploadInterface />} />
           <Route path="/projects" element={<ProjectGallery />} />
-          <Route path="/gallery" element={<Gallery />} />
+          {/* <Route path="/gallery" element={<Gallery />} /> */}
         </Route>
       </Routes>
 

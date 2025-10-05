@@ -3,118 +3,107 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "@/services/apis";
 
+type Photo = {
+  id: string;
+  baseUrl: string;
+  filename?: string;
+};
+
 const Gallery = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [photos, setPhotos] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [needsScope, setNeedsScope] = useState(false);
 
-  // ✅ Handle OAuth redirect token
+  const getValidToken = (): string | null => user?.token || localStorage.getItem("token");
+
+  // ✅ Capture redirect token (after Google login)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     if (token) {
       localStorage.setItem("token", token);
       window.history.replaceState({}, document.title, "/gallery");
-      console.log("[Gallery] New token saved from redirect:", token);
+      console.log("[Gallery] ✅ Saved token from Google redirect:", token);
     }
   }, []);
 
+  // ✅ Centralized API call with token + auto refresh
+  const fetchWithAuth = async (endpoint: string, token: string) => {
+    try {
+      const res = await axios.get(`${BASE_URL}${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data;
+    } catch (err: any) {
+      // Token expired → try refresh once
+      if (err.response?.status === 401) {
+        console.warn("[Gallery] Token expired — refreshing...");
+        const refreshRes = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
+          userId: user?.id,
+        });
+        const newToken = refreshRes.data?.token;
+        if (!newToken) throw new Error("Token refresh failed");
+        localStorage.setItem("token", newToken);
+        console.log("[Gallery] ✅ Token refreshed, retrying request...");
+        const retry = await axios.get(`${BASE_URL}${endpoint}`, {
+          headers: { Authorization: `Bearer ${newToken}` },
+        });
+        return retry.data;
+      }
+      throw err;
+    }
+  };
+
+  // ✅ Fetch Google Photos
   const fetchPhotos = async () => {
     setLoading(true);
-    console.log("[Gallery] Fetching photos...");
+    setError("");
+    setNeedsScope(false);
     try {
-      let token = user?.token || localStorage.getItem("token");
+      const token = getValidToken();
       if (!token) {
-        console.warn("[Gallery] No token found.");
         setError("No token found. Please log in again.");
         return;
       }
 
-      const fetchFromApi = async (currentToken: string) => {
-        console.log("[Gallery] Sending request to /api/auth/google-photos...");
-        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        });
-        console.log("[Gallery] Google Photos response:", res.data);
-        return res.data;
-      };
+      console.log("[Gallery] Fetching photos with token...");
+      const data = await fetchWithAuth("/api/auth/google-photos", token);
 
-      try {
-        const data = await fetchFromApi(token);
-        setPhotos(data.mediaItems || []);
-        console.log("[Gallery] ✅ Loaded photos:", data.mediaItems);
-        setError("");
-      } catch (err: any) {
-        console.error("[Gallery] API Error:", err.response?.data || err);
-
-        const data = err.response?.data;
-
-        // Missing Google Photos scope — show button
-        if (data?.needsScope) {
-          console.warn("[Gallery] Google Photos scope not granted.");
-          setNeedsScope(true);
-          setError("Google Photos access required. Please grant permission.");
-          return;
-        }
-
-        // Token expired — try refresh
-        if (data?.error === "Google account needs re-login." || err.response?.status === 401) {
-          console.log("[Gallery] Token expired. Attempting refresh...");
-          const refreshRes = await axios.post(
-            `${BASE_URL}/api/auth/refresh-token`,
-            {},
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          const newToken = refreshRes.data?.token;
-          if (!newToken) {
-            console.error("[Gallery] Token refresh failed.");
-            setError("Session expired. Please log in again.");
-            return;
-          }
-
-          localStorage.setItem("token", newToken);
-          token = newToken;
-          console.log("[Gallery] Token refreshed successfully:", newToken);
-
-          const retryData = await fetchFromApi(token);
-          setPhotos(retryData.mediaItems || []);
-          console.log("[Gallery] ✅ Retried and loaded photos:", retryData.mediaItems);
-          setError("");
-          return;
-        }
-
-        setError(data?.error || "Failed to load photos");
+      if (data?.needsScope) {
+        setNeedsScope(true);
+        setError("Google Photos access required. Please grant permission.");
+        return;
       }
-    } catch (err) {
-      console.error("[Gallery] Unexpected fetch error:", err);
-      setError("Unexpected error while fetching photos");
+
+      setPhotos(data.mediaItems || []);
+      console.log("[Gallery] ✅ Photos loaded:", data.mediaItems?.length || 0);
+    } catch (err: any) {
+      console.error("[Gallery] ❌ API Error:", err.response?.data || err.message);
+      setError(err.response?.data?.error || "Failed to load photos");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle initial fetch
+  // ✅ Initial load after authentication
   useEffect(() => {
     if (isAuthenticated) fetchPhotos();
   }, [user, isAuthenticated]);
 
-  // Handle scope grant
+  // ✅ Handle “Grant Permission” button
   const handleGrantScope = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getValidToken();
       if (!token) return setError("No user token found.");
-      console.log("[Gallery] Requesting Photos permission grant...");
+      console.log("[Gallery] Requesting Photos permission...");
 
       const res = await axios.get(`${BASE_URL}/api/auth/request-photos-scope`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("[Gallery] Scope request response:", res.data);
-
-      if (res.data.url) {
+      if (res.data?.url) {
         window.open(res.data.url, "_blank", "width=600,height=700");
       } else {
         setError("Failed to get authorization URL.");
@@ -125,8 +114,10 @@ const Gallery = () => {
     }
   };
 
+  // ✅ UI
   if (authLoading) return <p>Loading authentication...</p>;
   if (!isAuthenticated) return <p>Please log in to view your Google Photos.</p>;
+
 
   return (
     <div className="p-6">
@@ -161,5 +152,4 @@ const Gallery = () => {
     </div>
   );
 };
-
 export default Gallery;
