@@ -8,34 +8,37 @@ type Photo = {
   filename?: string;
 };
 
-
-
 const Gallery = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-useEffect(() => {
-  const fetchPhotos = async () => {
-    try {
-      const token = localStorage.getItem("token"); // ✅ get JWT from login storage
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("Please log in with Google first.");
+          setLoading(false);
+          return;
+        }
 
-      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // ✅ attach token in header
-        },
-      });
+        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      setPhotos(res.data.mediaItems || []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load Google Photos. Make sure you granted permission.");
-    }
-  };
+        setPhotos(res.data.mediaItems || []);
+      } catch (err) {
+        console.error("❌ Google Photos error:", err);
+        setError("Failed to load Google Photos. Make sure you granted permission.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchPhotos();
-}, []);
-
+    fetchPhotos();
+  }, []);
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
