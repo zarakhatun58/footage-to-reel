@@ -15,61 +15,35 @@ const Gallery = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleGallery = async () => {
-      setLoading(true);
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const tokenFromUrl = params.get("token");
 
-      // 1️⃣ Check token from URL or localStorage
-      const params = new URLSearchParams(window.location.search);
-      const tokenFromUrl = params.get("token");
-      const token = tokenFromUrl || localStorage.getItem("token");
+  if (tokenFromUrl) {
+    localStorage.setItem("token", tokenFromUrl);
+    navigate("/gallery", { replace: true }); // remove ?token=...
+  }
 
-      if (!token) {
-        setError("Please log in with Google first.");
-        setLoading(false);
-        return;
-      }
+  const fetchPhotos = async () => {
+    const token = tokenFromUrl || localStorage.getItem("token"); // ✅ use tokenFromUrl first
+    if (!token) {
+      setError("Please log in with Google first.");
+      return;
+    }
 
-      if (tokenFromUrl) {
-        localStorage.setItem("token", tokenFromUrl);
-        // Clean URL
-        navigate("/gallery", { replace: true });
-      }
+    try {
+      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPhotos(res.data.mediaItems || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load Google Photos. Make sure you granted permission.");
+    }
+  };
 
-      try {
-        // 2️⃣ Try fetching Google Photos
-        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setPhotos(res.data.mediaItems || []);
-      } catch (err: any) {
-        console.error("Failed to load photos:", err.response?.data || err.message);
-
-        // 3️⃣ Handle missing Photos scope
-        if (err.response?.status === 403 || err.response?.data?.error?.includes("scope")) {
-          try {
-            const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (scopeRes.data.url) {
-              // Redirect user to Google consent page to grant Photos scope
-              window.location.href = scopeRes.data.url;
-              return;
-            }
-          } catch (scopeErr) {
-            console.error("Failed to request Photos scope:", scopeErr);
-          }
-        }
-
-        setError("Failed to load Google Photos. Make sure you granted permission.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    handleGallery();
-  }, [navigate]);
+  fetchPhotos();
+}, [location, navigate]);
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
