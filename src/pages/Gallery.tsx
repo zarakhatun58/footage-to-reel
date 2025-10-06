@@ -8,7 +8,7 @@ type Photo = {
   filename?: string;
 };
 
-// ✅ Setup Axios interceptors only once
+// ✅ Axios interceptors only handle token refresh
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -31,7 +31,7 @@ axios.interceptors.response.use(
         }
       } catch {
         localStorage.removeItem("token");
-        window.location.href = `${BASE_URL}/api/auth/google`; // fallback login
+        localStorage.removeItem("authUser");
       }
     }
     return Promise.reject(error);
@@ -62,14 +62,14 @@ const Gallery = () => {
       setLoading(true);
       setError("");
       try {
-        // ✅ 1. Try fetching photos
+        // ✅ Try fetching photos
         const res = await axios.get(`${BASE_URL}/api/auth/google-photos`);
         setPhotos(res.data.mediaItems || []);
       } catch (err: any) {
         const msg = err?.response?.data?.error || err.message;
         console.error("❌ Error fetching photos:", msg);
 
-        // ✅ 2. If missing scope, request permission automatically
+        // ✅ If missing scope, request permission automatically
         if (
           msg.includes("insufficient authentication scopes") ||
           err.response?.status === 403
@@ -79,7 +79,8 @@ const Gallery = () => {
               `${BASE_URL}/api/auth/google-photos-scope`
             );
             if (!scopeRes.data.hasPhotosScope && scopeRes.data.url) {
-              window.location.href = scopeRes.data.url; // redirect to Google consent
+              // redirect user to Google consent screen
+              window.location.href = scopeRes.data.url;
               return;
             }
           } catch (scopeErr) {
