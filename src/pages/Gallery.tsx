@@ -76,7 +76,7 @@ const Gallery = () => {
         ) {
           try {
             const scopeRes = await axios.get(
-              `${BASE_URL}/api/auth/request-photos-scope`
+              `${BASE_URL}/api/auth/google-photos-scope`
             );
             if (!scopeRes.data.hasPhotosScope && scopeRes.data.url) {
               window.location.href = scopeRes.data.url; // redirect to Google consent
