@@ -8,6 +8,37 @@ type Photo = {
   filename?: string;
 };
 
+// ✅ Setup Axios interceptors outside the component
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshRes = await axios.get(`${BASE_URL}/api/auth/refresh-token`);
+        const newToken = refreshRes.data.accessToken;
+        if (newToken) {
+          localStorage.setItem("token", newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axios(originalRequest);
+        }
+      } catch {
+        localStorage.removeItem("token");
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 const Gallery = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,39 +62,11 @@ const Gallery = () => {
     const fetchPhotos = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
+        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`);
         setPhotos(res.data.mediaItems || []);
       } catch (err: any) {
         console.error("❌ Error fetching photos:", err);
-
-        // 🧠 If token expired (401), auto refresh and retry
-        if (err.response?.status === 401) {
-          try {
-            const refreshRes = await axios.get(
-              `${BASE_URL}/api/auth/refresh-token`,
-              { headers: { Authorization: `Bearer ${storedToken}` } }
-            );
-
-            const newToken = refreshRes.data.accessToken;
-            if (newToken) {
-              localStorage.setItem("token", newToken);
-              // Retry fetching photos
-              const retry = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-                headers: { Authorization: `Bearer ${newToken}` },
-              });
-              setPhotos(retry.data.mediaItems || []);
-              return;
-            }
-          } catch (refreshErr) {
-            console.error("Failed to refresh token:", refreshErr);
-            localStorage.removeItem("token");
-            setError("Session expired. Please log in again.");
-          }
-        } else {
-          setError("Failed to load Google Photos.");
-        }
+        setError("Failed to load Google Photos.");
       } finally {
         setLoading(false);
       }
