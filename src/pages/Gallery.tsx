@@ -18,7 +18,14 @@ const Gallery = () => {
 useEffect(() => {
   const fetchPhotos = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`);
+      const token = localStorage.getItem("token"); // ✅ get JWT from login storage
+
+      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ attach token in header
+        },
+      });
+
       setPhotos(res.data.mediaItems || []);
     } catch (err) {
       console.error(err);
@@ -28,6 +35,7 @@ useEffect(() => {
 
   fetchPhotos();
 }, []);
+
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
