@@ -8,7 +8,7 @@ type Photo = {
   filename?: string;
 };
 
-// ✅ Setup Axios interceptors outside the component
+// Setup Axios interceptors outside the component
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -33,6 +33,7 @@ axios.interceptors.response.use(
         }
       } catch {
         localStorage.removeItem("token");
+        window.location.href = "/"; // redirect to login if refresh fails
       }
     }
     return Promise.reject(error);
@@ -59,20 +60,35 @@ const Gallery = () => {
       return;
     }
 
+    const source = axios.CancelToken.source();
+
     const fetchPhotos = async () => {
       setLoading(true);
+      setError("");
       try {
-        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`);
+        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+          cancelToken: source.token,
+        });
         setPhotos(res.data.mediaItems || []);
       } catch (err: any) {
         console.error("❌ Error fetching photos:", err);
-        setError("Failed to load Google Photos.");
+
+        if (err.response?.status === 403) {
+          // Missing scope, redirect to request
+          window.location.href = `${BASE_URL}/api/auth/google-photos-scope`;
+        } else if (!axios.isCancel(err)) {
+          setError("Failed to load Google Photos.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchPhotos();
+
+    return () => {
+      source.cancel("Component unmounted");
+    };
   }, []);
 
   return (
@@ -83,6 +99,10 @@ const Gallery = () => {
 
       {loading && <p className="text-center text-gray-500">Loading photos...</p>}
       {error && <p className="text-center text-red-500 font-medium">{error}</p>}
+
+      {!loading && photos.length === 0 && !error && (
+        <p className="text-center text-gray-600">No photos to display.</p>
+      )}
 
       {!loading && photos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6">
