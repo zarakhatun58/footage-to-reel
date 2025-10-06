@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "@/services/apis";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type Photo = {
   id: string;
@@ -12,15 +13,23 @@ const Gallery = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+ const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tokenFromUrl = params.get("token");
+
+    if (tokenFromUrl) {
+      localStorage.setItem("token", tokenFromUrl);
+      navigate("/gallery", { replace: true }); // remove ?token=... from URL
+    }
+
     const fetchPhotos = async () => {
-      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         if (!token) {
           setError("Please log in with Google first.");
-          setLoading(false);
           return;
         }
 
@@ -30,15 +39,13 @@ const Gallery = () => {
 
         setPhotos(res.data.mediaItems || []);
       } catch (err) {
-        console.error("❌ Google Photos error:", err);
+        console.error(err);
         setError("Failed to load Google Photos. Make sure you granted permission.");
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchPhotos();
-  }, []);
+  }, [location, navigate]);
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
