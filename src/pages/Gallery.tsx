@@ -8,24 +8,22 @@ type Photo = {
   filename?: string;
 };
 
-// Setup Axios interceptors outside the component
+// ✅ Setup Axios interceptors only once
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 axios.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshRes = await axios.get(`${BASE_URL}/api/auth/refresh-token`);
-        const newToken = refreshRes.data.accessToken;
+        const refresh = await axios.get(`${BASE_URL}/api/auth/refresh-token`);
+        const newToken = refresh.data.accessToken;
         if (newToken) {
           localStorage.setItem("token", newToken);
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -33,7 +31,7 @@ axios.interceptors.response.use(
         }
       } catch {
         localStorage.removeItem("token");
-        window.location.href = "/"; // redirect to login if refresh fails
+        window.location.href = `${BASE_URL}/api/auth/google`; // fallback login
       }
     }
     return Promise.reject(error);
@@ -46,37 +44,49 @@ const Gallery = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // ✅ Save token if redirected back with ?token=
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get("token");
-
     if (tokenFromUrl) {
       localStorage.setItem("token", tokenFromUrl);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    const storedToken = localStorage.getItem("token");
-    if (!storedToken) {
-      setError("Please log in with Google to view your photos.");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Please sign in with Google to continue.");
       return;
     }
-
-    const source = axios.CancelToken.source();
 
     const fetchPhotos = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-          cancelToken: source.token,
-        });
+        // ✅ 1. Try fetching photos
+        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`);
         setPhotos(res.data.mediaItems || []);
       } catch (err: any) {
-        console.error("❌ Error fetching photos:", err);
+        const msg = err?.response?.data?.error || err.message;
+        console.error("❌ Error fetching photos:", msg);
 
-        if (err.response?.status === 403) {
-          // Missing scope, redirect to request
-          window.location.href = `${BASE_URL}/api/auth/google-photos-scope`;
-        } else if (!axios.isCancel(err)) {
+        // ✅ 2. If missing scope, request permission automatically
+        if (
+          msg.includes("insufficient authentication scopes") ||
+          err.response?.status === 403
+        ) {
+          try {
+            const scopeRes = await axios.get(
+              `${BASE_URL}/api/auth/request-photos-scope`
+            );
+            if (!scopeRes.data.hasPhotosScope && scopeRes.data.url) {
+              window.location.href = scopeRes.data.url; // redirect to Google consent
+              return;
+            }
+          } catch (scopeErr) {
+            console.error("Failed to request Photos scope:", scopeErr);
+            setError("Failed to request Google Photos permission.");
+          }
+        } else {
           setError("Failed to load Google Photos.");
         }
       } finally {
@@ -85,10 +95,6 @@ const Gallery = () => {
     };
 
     fetchPhotos();
-
-    return () => {
-      source.cancel("Component unmounted");
-    };
   }, []);
 
   return (
@@ -99,10 +105,6 @@ const Gallery = () => {
 
       {loading && <p className="text-center text-gray-500">Loading photos...</p>}
       {error && <p className="text-center text-red-500 font-medium">{error}</p>}
-
-      {!loading && photos.length === 0 && !error && (
-        <p className="text-center text-gray-600">No photos to display.</p>
-      )}
 
       {!loading && photos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6">
