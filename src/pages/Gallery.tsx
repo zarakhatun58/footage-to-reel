@@ -16,54 +16,47 @@ const Gallery = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-useEffect(() => {
-  const init = async () => {
-    try {
-      // 1️⃣ Save token if present in URL
-      const params = new URLSearchParams(location.search);
-      const tokenFromUrl = params.get("token");
-      if (tokenFromUrl) {
-        localStorage.setItem("token", tokenFromUrl);
-        navigate("/gallery", { replace: true });
-      }
+  useEffect(() => {
+    const init = async () => {
+      try {
+        // 1️⃣ Save token if present in URL
+        const params = new URLSearchParams(location.search);
+        const tokenFromUrl = params.get("token");
+        if (tokenFromUrl) {
+          localStorage.setItem("token", tokenFromUrl);
+          navigate("/gallery", { replace: true });
+        }
 
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Please log in with Google first.");
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("Please log in with Google first.");
+          setLoading(false);
+          return;
+        }
+
+        // 2️⃣ Fetch Google Photos directly
+        const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.data.mediaItems || res.data.mediaItems.length === 0) {
+          setError("No photos found in your Google account.");
+        } else {
+          setPhotos(res.data.mediaItems);
+        }
+      } catch (err: any) {
+        console.error("Gallery init error:", err);
+        setError(
+          err.response?.data?.error ||
+            "Failed to load Google Photos. Please log in again."
+        );
+      } finally {
         setLoading(false);
-        return;
       }
+    };
 
-      // 2️⃣ Ask backend if user has Google Photos scope
-      const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!scopeRes.data.hasPhotosScope) {
-        // Redirect to backend-generated Google OAuth URL
-        window.location.href = scopeRes.data.url;
-        return;
-      }
-
-      // 3️⃣ Fetch photos if permission granted
-      const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPhotos(res.data.mediaItems || []);
-    } catch (err: any) {
-      console.error("Gallery init error:", err);
-      setError(
-        err.response?.data?.error ||
-          "Failed to load Google Photos. Please grant permission again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  init();
-}, [location, navigate]);
-
+    init();
+  }, [location, navigate]);
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
