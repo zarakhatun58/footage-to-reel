@@ -19,14 +19,15 @@ const Gallery = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        // Get token from URL if exists
+        // 1️⃣ Save token if present in URL
         const params = new URLSearchParams(location.search);
         const tokenFromUrl = params.get("token");
         if (tokenFromUrl) {
           localStorage.setItem("token", tokenFromUrl);
-          navigate("/gallery", { replace: true }); // remove token from URL
+          navigate("/gallery", { replace: true });
         }
 
+        // 2️⃣ Fetch token from localStorage
         const token = localStorage.getItem("token");
         if (!token) {
           setError("Please log in with Google first.");
@@ -34,28 +35,35 @@ const Gallery = () => {
           return;
         }
 
-        // Check Photos scope
+        // 3️⃣ Check Google Photos scope
         const scopeRes = await axios.get(`${BASE_URL}/api/auth/google-photos-scope`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!scopeRes.data.hasPhotosScope) {
-          // Redirect user to Google Photos OAuth
-          window.location.href = scopeRes.data.url;
+          // 4️⃣ If user hasn't granted permission — redirect to Google OAuth
+          const clientId = "495282347288-bj7l1q7f0c5kbk23623sppibg1tml4dp.apps.googleusercontent.com";
+          const redirectUri = encodeURIComponent(
+            "https://footage-flow-server.onrender.com/api/auth/photos-callback"
+          );
+          const scope = encodeURIComponent("https://www.googleapis.com/auth/photoslibrary.readonly");
+          const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${scopeRes.data.userId || "state"}`;
+
+          window.location.href = authUrl;
           return;
         }
 
-        // Fetch photos
+        // 5️⃣ Fetch photos if permission granted
         const res = await axios.get(`${BASE_URL}/api/auth/google-photos`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         setPhotos(res.data.mediaItems || []);
       } catch (err: any) {
-        console.error(err);
+        console.error("Gallery init error:", err);
         setError(
           err.response?.data?.error ||
-            "Failed to load Google Photos. Make sure you granted permission."
+            "Failed to load Google Photos. Please grant permission again."
         );
       } finally {
         setLoading(false);
