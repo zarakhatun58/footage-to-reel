@@ -22,6 +22,8 @@ import Footer from "./components/Footer";
 import Gallery from "./pages/Gallery";
 import ProtectedRoute from "./context/ProtectedRoute";
 import GoogleAuthCallback from "./pages/GoogleAuthCallback";
+import Terms from "./components/Terms";
+import Privacy from "./components/Privacy";
 
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const AppWrapper = () => {
         {/* <Route path="/projects" element={<ProjectGallery />} />*/}
         <Route path="/gallery" element={<Gallery />} /> 
         <Route path="*" element={<NotFound />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/story-generator" element={<StoryGenerator />} />
