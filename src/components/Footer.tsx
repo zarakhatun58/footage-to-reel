@@ -29,7 +29,7 @@ const Footer = () => {
                     <ul className="mt-3 space-y-2">
                         <li><a href="#" className="hover:text-primary">Documentation</a></li>
                         <li><a href="#" className="hover:text-primary">Tutorials</a></li>
-                        <li><a href="#" className="hover:text-primary">Blog</a></li>
+                        <li> <a href="/privacy" target="_blank">Privacy Policy</a></li>
                     </ul>
                 </div>
 
