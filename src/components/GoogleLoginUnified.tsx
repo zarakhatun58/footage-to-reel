@@ -7,7 +7,7 @@ const REDIRECT_URI = "https://footage-flow-server.onrender.com/api/auth/google/c
 export const GoogleLoginUnified = ({ onClose }: { onClose?: () => void }) => {
   const handleLogin = () => {
     const scope = encodeURIComponent(
-      "openid profile email https://www.googleapis.com/auth/photoslibrary.readonly"
+      "openid profile email https://www.googleapis.com/auth/photospicker.mediaitems.readonly"
     );
 
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(
